@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --aside-width: 400px;
   --cart-aside-summary-height-with-discount: 300px;
@@ -366,6 +370,7 @@ button.reset:hover:not(:has(> *)) {
 }
 
 .recommended-products-grid {
+
   display: grid;
   grid-gap: 1.5rem;
   grid-template-columns: repeat(2, 1fr);

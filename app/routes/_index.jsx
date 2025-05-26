@@ -2,6 +2,9 @@ import {Await, useLoaderData, Link} from '@remix-run/react';
 import {Suspense} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
+import {WigGuideSection} from '~/components/WigGuideSection';
+import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
+import BG from '../assets/bg.svg'
 
 /**
  * @type {MetaFunction}
@@ -66,6 +69,8 @@ export default function Homepage() {
     <div className="home">
       <FeaturedCollection collection={data.featuredCollection} />
       <RecommendedProducts products={data.recommendedProducts} />
+        <WigGuideSection />
+        <CustomerReviewsSection />
     </div>
   );
 }
@@ -76,23 +81,101 @@ export default function Homepage() {
  * }}
  */
 function FeaturedCollection({collection}) {
-  if (!collection) return null;
-  const image = collection?.image;
-  return (
-    <Link
-      className="featured-collection"
-      to={`/collections/${collection.handle}`}
-    >
-      {image && (
-        <div className="featured-collection-image">
-          <Image data={image} sizes="100vw" />
-        </div>
-      )}
-      <h1>{collection.title}</h1>
-    </Link>
-  );
-}
+    if (!collection) return null;
 
+    return (
+        <div
+            className="featured-collection-container"
+            style={{
+                position: 'relative',
+                width: '100vw',
+                height: '100vh',
+                margin: '0',
+                padding: '0',
+                left: '50%',
+                right: '50%',
+                marginLeft: '-50vw',
+                marginRight: '-50vw',
+                overflow: 'hidden'
+            }}
+        >
+            <Link
+                to={`/collections/${collection.handle}`}
+                style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0
+                }}
+            >
+                <img
+                    src={BG}
+                    alt={collection.title}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        display: 'block'
+                    }}
+                />
+
+                {/* Content overlay positioned on the left side */}
+                <div className="tracking-wider font-medium font-poppins" style={{
+                    fontFamily: "'Poppins', sans-serif",
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    paddingLeft: '80px',
+
+                }}>
+                    {/* Title text styled as in the screenshot */}
+                    <p  className="tracking-wider font-medium" style={{
+                        fontFamily: "'Poppins', sans-serif",
+                        color: 'white',
+                        fontSize: '45px',
+                        maxWidth: '400px',
+                        lineHeight: '1.2',
+                        marginBottom: '30px'
+                    }}>
+                        A relevant title would go here
+                    </p>
+
+                    {/* Action button styled as in the screenshot */}
+                    <div>
+                        <button
+                            style={{
+                                fontFamily: "'Poppins', sans-serif",
+                                color: 'white',
+                                backgroundColor: 'transparent',
+                                border: '1px solid white',
+                                padding: '12px 30px',
+                                fontSize: '0.9rem',
+                                letterSpacing: '1px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault(); // Prevent Link navigation
+                                // Add your button action here
+                            }}
+                        >
+                            AN ACTION
+                        </button>
+                    </div>
+                </div>
+            </Link>
+        </div>
+    );
+}
 /**
  * @param {{
  *   products: Promise<RecommendedProductsQuery | null>;
@@ -100,23 +183,26 @@ function FeaturedCollection({collection}) {
  */
 function RecommendedProducts({products}) {
   return (
-    <div className="recommended-products">
-      <h2>Recommended Products</h2>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Await resolve={products}>
-          {(response) => (
-            <div className="recommended-products-grid">
-              {response
-                ? response.products.nodes.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))
-                : null}
-            </div>
-          )}
-        </Await>
-      </Suspense>
-      <br />
-    </div>
+      <div className="recommended-products">
+          <div className="container-fluid mx-auto px-14"> {/* Container with consistent padding */}
+              <p className="pt-10 pb-10 text-[45px] font-poppins font-regular">OUR BEST SELLERS</p>
+
+              <Suspense fallback={<div className="py-10">Loading...</div>}>
+                  <Await resolve={products}>
+                      {(response) => (
+                          <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                              {response
+                                  ? response.products.nodes.map((product) => (
+                                      <ProductItem key={product.id} product={product} />
+                                  ))
+                                  : null}
+                          </div>
+                      )}
+                  </Await>
+              </Suspense>
+          </div>
+          <br />
+      </div>
   );
 }
 
@@ -164,7 +250,7 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
   }
   query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    products(first: 4, sortKey: UPDATED_AT, reverse: true) {
+    products(first: 8, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...RecommendedProduct
       }

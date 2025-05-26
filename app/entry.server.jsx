@@ -17,6 +17,17 @@ export default async function handleRequest(
   remixContext,
   context,
 ) {
+
+  responseHeaders.set(
+      'Content-Security-Policy',
+      "default-src 'self'; " +
+      "style-src 'self' 'unsafe-inline' https://cdn.shopify.com https://fonts.googleapis.com http://localhost:*; " +
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com; " +
+      "img-src 'self' data: https:; " +
+      "connect-src 'self' https:;"
+  );
+
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
     shop: {
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
