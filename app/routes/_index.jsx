@@ -5,6 +5,7 @@ import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
 import BG from '../assets/bg.svg'
+import {ProductSkeleton} from "~/components/ProductSkeleton.jsx";
 
 /**
  * @type {MetaFunction}
@@ -181,29 +182,35 @@ function FeaturedCollection({collection}) {
  *   products: Promise<RecommendedProductsQuery | null>;
  * }}
  */
-function RecommendedProducts({products}) {
-  return (
-      <div className="recommended-products">
-          <div className="container-fluid mx-auto px-14"> {/* Container with consistent padding */}
-              <p className="pt-10 pb-10 text-[45px] font-poppins font-regular">OUR BEST SELLERS</p>
+export function RecommendedProducts({products}) {
+    return (
+        <div className="recommended-products" >
+            <div className="container-fluid mx-auto px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
+                <p className="pt-10 pb-10 text-[45px] font-poppins font-regular">OUR BEST SELLERS</p>
 
-              <Suspense fallback={<div className="py-10">Loading...</div>}>
-                  <Await resolve={products}>
-                      {(response) => (
-                          <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                              {response
-                                  ? response.products.nodes.map((product) => (
-                                      <ProductItem key={product.id} product={product} />
-                                  ))
-                                  : null}
-                          </div>
-                      )}
-                  </Await>
-              </Suspense>
-          </div>
-          <br />
-      </div>
-  );
+                <Suspense fallback={
+                    <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {Array.from({ length: 8 }).map((_, index) => (
+                            <ProductSkeleton key={index} />
+                        ))}
+                    </div>
+                }>
+                    <Await resolve={products}>
+                        {(response) => (
+                            <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {response
+                                    ? response.products.nodes.map((product) => (
+                                        <ProductItem key={product.id} product={product} />
+                                    ))
+                                    : null}
+                            </div>
+                        )}
+                    </Await>
+                </Suspense>
+            </div>
+            <br />
+        </div>
+    );
 }
 
 const FEATURED_COLLECTION_QUERY = `#graphql

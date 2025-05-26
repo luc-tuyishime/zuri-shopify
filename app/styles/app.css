@@ -26,6 +26,10 @@ img {
   cursor: pointer;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /*
 * --------------------------------------------------
 * components/Aside

@@ -20,7 +20,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
 
   const navigationItems = [
     { id: 'shop-now', title: 'Shop Now', url: '/collections/all' },
-    { id: 'best-sellers', title: 'Our Best Sellers', url: '/collections/best-sellers' },
+    { id: 'best-sellers', title: 'Our Best Sellers', url: '#best-sellers' },
     { id: 'about', title: 'About Us', url: '/pages/about' }
   ];
 
