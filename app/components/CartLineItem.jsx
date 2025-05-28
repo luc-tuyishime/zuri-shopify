@@ -3,6 +3,7 @@ import {useVariantUrl} from '~/lib/variants';
 import {Link} from '@remix-run/react';
 import {ProductPrice} from './ProductPrice';
 import {useAside} from './Aside';
+import { useLocale } from '~/hooks/useLocale';
 
 /**
  * A single line item in the cart. It displays the product image, title, price.
@@ -13,52 +14,80 @@ import {useAside} from './Aside';
  * }}
  */
 export function CartLineItem({layout, line}) {
-  const {id, merchandise} = line;
-  const {product, title, image, selectedOptions} = merchandise;
-  const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
-  const {close} = useAside();
 
-  return (
-    <li key={id} className="cart-line">
-      {image && (
-        <Image
-          alt={title}
-          aspectRatio="1/1"
-          data={image}
-          height={100}
-          loading="lazy"
-          width={100}
-        />
-      )}
+    const {id, merchandise} = line;
+    const {product, title, image, selectedOptions} = merchandise;
+    const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
+    const {close} = useAside();
+    const [locale] = useLocale();
 
-      <div>
-        <Link
-          prefetch="intent"
-          to={lineItemUrl}
-          onClick={() => {
-            if (layout === 'aside') {
-              close();
-            }
-          }}
-        >
-          <p>
-            <strong>{product.title}</strong>
-          </p>
-        </Link>
-        <ProductPrice price={line?.cost?.totalAmount} />
-        <ul>
-          {selectedOptions.map((option) => (
-            <li key={option.name}>
-              <small>
-                {option.name}: {option.value}
-              </small>
-            </li>
-          ))}
-        </ul>
-        <CartLineQuantity line={line} />
-      </div>
-    </li>
-  );
+    return (
+        <li key={id} className="flex items-start space-x-4 py-6 border-b border-gray-200 last:border-b-0">
+            {/* Product Image */}
+            {image && (
+                <div className="flex-shrink-0">
+                    <Image
+                        alt={title}
+                        aspectRatio="1/1"
+                        data={image}
+                        height={80}
+                        loading="lazy"
+                        width={80}
+                        className="rounded-lg object-cover"
+                    />
+                </div>
+            )}
+
+            {/* Product Details */}
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                        <Link
+                            prefetch="intent"
+                            to={lineItemUrl}
+                            onClick={() => {
+                                if (layout === 'aside') {
+                                    close();
+                                }
+                            }}
+                            className="text-gray-900 hover:text-[#8B4513] transition-colors duration-200"
+                        >
+                            <h3 className="font-medium text-sm line-clamp-2">
+                                {product.title}
+                            </h3>
+                        </Link>
+
+                        {/* Product Options */}
+                        {selectedOptions.length > 0 && (
+                            <div className="mt-1 space-y-1">
+                                {selectedOptions.map((option) => (
+                                    <p key={option.name} className="text-xs text-gray-500">
+                                        {option.name}: <span className="font-medium">{option.value}</span>
+                                    </p>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Price */}
+                    <div className="text-right ml-4">
+                        <div className="font-semibold text-gray-900">
+                            <ProductPrice price={line?.cost?.totalAmount} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quantity Controls */}
+                <div className="mt-4 flex items-center justify-between">
+                    <CartLineQuantity line={line} />
+                    <CartLineRemoveButton
+                        lineIds={[id]}
+                        disabled={!!line.isOptimistic}
+                    />
+                </div>
+            </div>
+        </li>
+    );
 }
 
 /**
@@ -68,39 +97,51 @@ export function CartLineItem({layout, line}) {
  * @param {{line: CartLine}}
  */
 function CartLineQuantity({line}) {
-  if (!line || typeof line?.quantity === 'undefined') return null;
-  const {id: lineId, quantity, isOptimistic} = line;
-  const prevQuantity = Number(Math.max(0, quantity - 1).toFixed(0));
-  const nextQuantity = Number((quantity + 1).toFixed(0));
+    const [locale] = useLocale();
 
-  return (
-    <div className="cart-line-quantity">
-      <small>Quantity: {quantity} &nbsp;&nbsp;</small>
-      <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
-        <button
-          aria-label="Decrease quantity"
-          disabled={quantity <= 1 || !!isOptimistic}
-          name="decrease-quantity"
-          value={prevQuantity}
-        >
-          <span>&#8722; </span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
-        <button
-          aria-label="Increase quantity"
-          name="increase-quantity"
-          value={nextQuantity}
-          disabled={!!isOptimistic}
-        >
-          <span>&#43;</span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineRemoveButton lineIds={[lineId]} disabled={!!isOptimistic} />
-    </div>
-  );
+    if (!line || typeof line?.quantity === 'undefined') return null;
+    const {id: lineId, quantity, isOptimistic} = line;
+    const prevQuantity = Number(Math.max(0, quantity - 1).toFixed(0));
+    const nextQuantity = Number((quantity + 1).toFixed(0));
+
+    return (
+        <div className="flex items-center">
+      <span className="text-sm text-gray-600 mr-3">
+        {locale === 'fr' ? 'Quantité:' : 'Quantity:'}
+      </span>
+
+            {/* Quantity Controls - Styled like your screenshot */}
+            <div className="flex items-center border border-gray-300 rounded-lg bg-white">
+                <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
+                    <button
+                        aria-label={locale === 'fr' ? 'Diminuer la quantité' : 'Decrease quantity'}
+                        disabled={quantity <= 1 || !!isOptimistic}
+                        name="decrease-quantity"
+                        value={prevQuantity}
+                        className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-l-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span className="text-lg font-medium">−</span>
+                    </button>
+                </CartLineUpdateButton>
+
+                <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-white">
+                    <span className="text-sm font-medium text-gray-900">{quantity}</span>
+                </div>
+
+                <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
+                    <button
+                        aria-label={locale === 'fr' ? 'Augmenter la quantité' : 'Increase quantity'}
+                        name="increase-quantity"
+                        value={nextQuantity}
+                        disabled={!!isOptimistic}
+                        className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-r-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span className="text-lg font-medium">+</span>
+                    </button>
+                </CartLineUpdateButton>
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -113,18 +154,24 @@ function CartLineQuantity({line}) {
  * }}
  */
 function CartLineRemoveButton({lineIds, disabled}) {
-  return (
-    <CartForm
-      fetcherKey={getUpdateKey(lineIds)}
-      route="/cart"
-      action={CartForm.ACTIONS.LinesRemove}
-      inputs={{lineIds}}
-    >
-      <button disabled={disabled} type="submit">
-        Remove
-      </button>
-    </CartForm>
-  );
+    const [locale] = useLocale();
+
+    return (
+        <CartForm
+            fetcherKey={getUpdateKey(lineIds)}
+            route="/cart"
+            action={CartForm.ACTIONS.LinesRemove}
+            inputs={{lineIds}}
+        >
+            <button
+                disabled={disabled}
+                type="submit"
+                className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {locale === 'fr' ? 'Supprimer' : 'Remove'}
+            </button>
+        </CartForm>
+    );
 }
 
 /**
@@ -134,18 +181,18 @@ function CartLineRemoveButton({lineIds, disabled}) {
  * }}
  */
 function CartLineUpdateButton({children, lines}) {
-  const lineIds = lines.map((line) => line.id);
+    const lineIds = lines.map((line) => line.id);
 
-  return (
-    <CartForm
-      fetcherKey={getUpdateKey(lineIds)}
-      route="/cart"
-      action={CartForm.ACTIONS.LinesUpdate}
-      inputs={{lines}}
-    >
-      {children}
-    </CartForm>
-  );
+    return (
+        <CartForm
+            fetcherKey={getUpdateKey(lineIds)}
+            route="/cart"
+            action={CartForm.ACTIONS.LinesUpdate}
+            inputs={{lines}}
+        >
+            {children}
+        </CartForm>
+    );
 }
 
 /**
@@ -156,7 +203,7 @@ function CartLineUpdateButton({children, lines}) {
  * @param {string[]} lineIds - line ids affected by the update
  */
 function getUpdateKey(lineIds) {
-  return [CartForm.ACTIONS.LinesUpdate, ...lineIds].join('-');
+    return [CartForm.ACTIONS.LinesUpdate, ...lineIds].join('-');
 }
 
 /** @typedef {OptimisticCartLine<CartApiQueryFragment>} CartLine */

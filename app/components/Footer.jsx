@@ -1,11 +1,16 @@
 import {Suspense} from 'react';
 import {Await, NavLink, Link} from '@remix-run/react';
 import LogoWhite from '../assets/Vector.svg';
+import {useLocale} from "~/hooks/useLocale.js";
+import {useTranslation} from "~/lib/i18n.js";
 
 /**
  * @param {FooterProps}
  */
 export function Footer({footer: footerPromise, header, publicStoreDomain}) {
+  const [locale] = useLocale();
+  const t = useTranslation(locale);
+
   return (
       <Suspense>
         <Await resolve={footerPromise}>
@@ -28,45 +33,45 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
                         />
                       </Link>
                       <p className="text-[11px] font-inter font-medium mb-6">
-                        We are led and founded by a Black woman, who envisions women being recognized for their thoughtful designs through custom-made wigs created with a tech platform.
+                        {t.footer.companyDescription}
                       </p>
-                      <p className="font-bold text-[11px] mb-8">Be Bold.</p>
-                      <p className="text-[11px] mt-16">©2024 all right reserved. Zuri Rwanda Ltd</p>
+                      <p className="font-bold text-[11px] mb-8">{t.footer.beBold}</p>
+                      <p className="text-[11px] mt-16">{t.footer.copyright}</p>
                     </div>
 
                     {/* Explore Column */}
                     <div className="col-span-1">
-                      <p className="font-medium font-inter text-[16px] mb-6">EXPLORE</p>
+                      <p className="font-medium font-inter text-[16px] mb-6">{t.footer.explore}</p>
                       <nav className="flex flex-col space-y-3">
-                        <NavLink to="/" className="font-medium font-inter text-[11px] text-[#806D6D]">Home</NavLink>
-                        <NavLink to="/pages/about" className="font-medium font-inter text-[11px] text-[#806D6D]">About</NavLink>
-                        <NavLink to="/collections/best-sellers" className="font-medium font-inter text-[11px] text-[#806D6D]">Best sellers</NavLink>
-                        <NavLink to="/collections/wigs" className="font-medium font-inter text-[11px] text-[#806D6D]">Wigs</NavLink>
-                        <NavLink to="/pages/wig-care" className="font-medium font-inter text-[11px] text-[#806D6D]">Wig care</NavLink>
-                        <NavLink to="/pages/hair-care" className="font-medium font-inter text-[11px] text-[#806D6D]">Hair care</NavLink>
-                        <NavLink to="/pages/community" className="font-medium font-inter text-[11px] text-[#806D6D]">Community</NavLink>
+                        <NavLink to="/" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.home}</NavLink>
+                        <NavLink to="/pages/about" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.about}</NavLink>
+                        <NavLink to="/collections/best-sellers" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.bestSellers}</NavLink>
+                        <NavLink to="/collections/wigs" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.wigs}</NavLink>
+                        <NavLink to="/pages/wig-care" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.wigCare}</NavLink>
+                        <NavLink to="/pages/hair-care" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.hairCare}</NavLink>
+                        <NavLink to="/pages/community" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.community}</NavLink>
                       </nav>
                     </div>
 
                     {/* Shops Column */}
                     <div className="col-span-1">
-                      <h3 className="font-medium font-inter text-[16px] mb-6">Shops</h3>
+                      <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.shops}</h3>
                       <nav className="flex flex-col space-y-3">
                         <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">Kigali</a>
                         <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">Uganda</a>
                         <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">DRC</a>
                       </nav>
 
-                      <h3 className="font-medium font-inter text-[16px] mb-4 mt-8">Contact</h3>
+                      <h3 className="font-medium font-inter text-[16px] mb-4 mt-8">{t.footer.contact}</h3>
                       <p className="font-medium font-inter text-[11px] text-[#806D6D] mb-2">info@myzuri.com</p>
                       <a href="tel:+2351567262" className="font-medium font-inter text-[11px] text-[#806D6D]">+2351567262</a>
                     </div>
 
                     {/* Follow Column */}
                     <div className="col-span-1">
-                      <h3 className="font-medium font-inter text-[16px] mb-6">FOLLOW</h3>
+                      <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.follow}</h3>
                       <nav className="flex flex-col space-y-3">
-                        <a href="https://instagram.com/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">Instagram</a>
+                        <a href="https://www.instagram.com/zuribelgique" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">Instagram</a>
                         <a href="https://twitter.com/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">Twitter</a>
                         <a href="https://linkedin.com/company/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">LinkedIn</a>
                       </nav>
@@ -75,10 +80,10 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
                     {/* Legal Column */}
                     <div className="col-span-1 flex flex-col">
                       <div>
-                        <h3 className="font-medium font-inter text-[16px] mb-6">LEGAL</h3>
+                        <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.legal}</h3>
                         <nav className="flex flex-col space-y-3">
-                          <NavLink to="/policies/terms-of-service" className="font-medium font-inter text-[11px] text-[#806D6D]">Terms</NavLink>
-                          <NavLink to="/policies/privacy-policy" className="font-medium font-inter text-[11px] text-[#806D6D]">Privacy</NavLink>
+                          <NavLink to="/policies/terms-of-service" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.terms}</NavLink>
+                          <NavLink to="/policies/privacy-policy" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.privacy}</NavLink>
                         </nav>
                       </div>
                       {/* Positioned to touch bottom */}

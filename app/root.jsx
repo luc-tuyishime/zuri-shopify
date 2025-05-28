@@ -20,6 +20,7 @@ import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from './components/PageLayout';
+import { LanguageProvider } from '~/components/LanguageProvider';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -79,6 +80,8 @@ export async function loader(args) {
   return {
     ...deferredData,
     ...criticalData,
+    locale: 'fr',
+    country: 'FR',
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
     shop: getShopAnalytics({
       storefront,
@@ -170,6 +173,7 @@ export function Layout({children}) {
         <Links />
       </head>
       <body>
+      <LanguageProvider>
         {data ? (
           <Analytics.Provider
             cart={data.cart}
@@ -183,6 +187,7 @@ export function Layout({children}) {
         )}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
+      </LanguageProvider>
       </body>
     </html>
   );

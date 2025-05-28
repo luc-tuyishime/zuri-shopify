@@ -7,7 +7,7 @@ import {CartMain} from '~/components/CartMain';
  * @type {MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return [{title: `Zuri | Cart`}];
 };
 
 /**
@@ -103,8 +103,22 @@ export async function action({request, context}) {
  * @param {LoaderFunctionArgs}
  */
 export async function loader({context}) {
-  const {cart} = context;
-  return await cart.get();
+  const {cart, storefront} = context;
+  const cartData = await cart.get();
+
+  // If cart exists, refetch it with EUR context
+  if (cartData?.id) {
+    const {cart: cartWithEur} = await storefront.query(CART_QUERY, {
+      variables: {
+        cartId: cartData.id,
+        country: 'FR',     // Add this for EUR
+        language: 'FR',    // Add this for French
+      },
+    });
+    return cartWithEur;
+  }
+
+  return cartData;
 }
 
 export default function Cart() {
@@ -118,6 +132,68 @@ export default function Cart() {
     </div>
   );
 }
+
+const CART_QUERY = `#graphql
+  query Cart(
+    $cartId: ID!
+    $country: CountryCode
+    $language: LanguageCode
+  ) @inContext(country: $country, language: $language) {
+    cart(id: $cartId) {
+      id
+      checkoutUrl
+      totalQuantity
+      cost {
+        subtotalAmount {
+          amount
+          currencyCode
+        }
+        totalAmount {
+          amount
+          currencyCode
+        }
+      }
+      lines(first: 100) {
+        nodes {
+          id
+          quantity
+          cost {
+            totalAmount {
+              amount
+              currencyCode
+            }
+          }
+          merchandise {
+            ... on ProductVariant {
+              id
+              title
+              price {
+                amount
+                currencyCode
+              }
+              product {
+                id
+                title
+                handle
+              }
+              selectedOptions {
+                name
+                value
+              }
+              image {
+                id
+                url
+                altText
+                width
+                height
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 /** @template T @typedef {import('@remix-run/react').MetaFunction<T>} MetaFunction */
 /** @typedef {import('@shopify/hydrogen').CartQueryDataReturn} CartQueryDataReturn */

@@ -2,6 +2,9 @@ import {Suspense} from 'react';
 import {Await, NavLink, useAsyncValue} from '@remix-run/react';
 import {useAnalytics, useOptimisticCart} from '@shopify/hydrogen';
 import {useAside} from '~/components/Aside';
+import { LanguageSwitcher } from '~/components/LanguageSwitcher';
+import { useTranslation, getLocale, setLocale } from '~/lib/i18n';
+import { useLocale } from '~/hooks/useLocale';
 
 import CartIcon from '../assets/bucket-brown.png';
 import AccountIcon from '../assets/user-brown.png';
@@ -18,10 +21,15 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const {open} = useAside();
 
+  const [currentLocale, setCurrentLocale] = useLocale();
+  const t = useTranslation(currentLocale);
+
+
+
   const navigationItems = [
-    { id: 'shop-now', title: 'Shop Now', url: '/collections/all' },
-    { id: 'best-sellers', title: 'Our Best Sellers', url: '#best-sellers' },
-    { id: 'about', title: 'About Us', url: '/pages/about' }
+    { id: 'shop-now', title: t.navigation.shopNow, url: '/collections/all' },
+    { id: 'best-sellers', title: t.navigation.bestSellers, url: '#best-sellers' },
+    { id: 'about', title: t.navigation.aboutUs, url: '/pages/about' }
   ];
 
   useEffect(() => {
@@ -65,9 +73,12 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               ))}
             </nav>
 
-            {/* Icons */}
+            <LanguageSwitcher
+                currentLocale={currentLocale}
+                onLocaleChange={setCurrentLocale}
+            />
+
             <div className="flex items-center space-x-6">
-              {/* Cart */}
               <button
                   className="focus:outline-none relative"
                   aria-label="Cart"

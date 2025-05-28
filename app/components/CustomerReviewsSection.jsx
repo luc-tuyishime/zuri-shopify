@@ -1,6 +1,10 @@
 import IMAGE from '../assets/image.png';
+import {useLocale} from "~/hooks/useLocale.js";
+import {useTranslation} from "~/lib/i18n.js";
 
 export function CustomerReviewsSection() {
+    const [locale] = useLocale();
+    const t = useTranslation(locale);
     const reviews = [
         {
             id: 1,
@@ -69,11 +73,11 @@ export function CustomerReviewsSection() {
                     <div>
                         <h2 className="text-[45px] font-poppins font-medium leading-tight mb-8">
 
-                            Check out what our customers are saying <br /> about our products
+                            {t.homepage.customerTestimonials}
 
                         </h2>
                         <button className="border border-gray-800 text-gray-800 px-8 py-3 font-poppins font-medium hover:bg-gray-800 hover:text-white transition-colors duration-300">
-                            READ ALL REVIEWS
+                            {t.homepage.readAllReviewsBtn}
                         </button>
                     </div>
 

@@ -1,17 +1,19 @@
 import {Await, useLoaderData, Link} from '@remix-run/react';
-import {Suspense} from 'react';
+import {Suspense, useEffect, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
 import BG from '../assets/bg.svg'
 import {ProductSkeleton} from "~/components/ProductSkeleton.jsx";
+import {getLocale, useTranslation} from "~/lib/i18n.js";
+import {useLocale} from "~/hooks/useLocale.js";
 
 /**
  * @type {MetaFunction}
  */
 export const meta = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [{title: 'Zuri | Home'}];
 };
 
 /**
@@ -183,10 +185,13 @@ function FeaturedCollection({collection}) {
  * }}
  */
 export function RecommendedProducts({products}) {
+    const [locale] = useLocale();
+    const t = useTranslation(locale);
+
     return (
         <div className="recommended-products" >
             <div className="container-fluid mx-auto px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                <p className="pt-10 pb-10 text-[45px] font-poppins font-regular">OUR BEST SELLERS</p>
+                <p className="pt-10 pb-10 text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
 
                 <Suspense fallback={
                     <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -200,7 +205,7 @@ export function RecommendedProducts({products}) {
                             <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                 {response
                                     ? response.products.nodes.map((product) => (
-                                        <ProductItem key={product.id} product={product} />
+                                        <ProductItem key={product.id} product={product}  variant="rounded" />
                                     ))
                                     : null}
                             </div>

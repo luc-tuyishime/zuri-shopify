@@ -15,6 +15,9 @@ export function AddToCartButton({
   disabled,
   lines,
   onClick,
+    className,
+    style,
+                                  ...props
 }) {
   return (
     <CartForm route="/cart" inputs={{lines}} action={CartForm.ACTIONS.LinesAdd}>
@@ -28,7 +31,10 @@ export function AddToCartButton({
           <button
             type="submit"
             onClick={onClick}
+            className={className}
+            style={style}
             disabled={disabled ?? fetcher.state !== 'idle'}
+            {...props}
           >
             {children}
           </button>

@@ -1,4 +1,10 @@
+import {useTranslation} from "~/lib/i18n.js";
+import {useLocale} from "~/hooks/useLocale.js";
+
 export function WigGuideSection() {
+    const [locale] = useLocale();
+    const t = useTranslation(locale);
+
     return (
         <div className="wig-guide-section bg-white py-16">
             <div className="container mx-auto px-14">
@@ -7,17 +13,14 @@ export function WigGuideSection() {
                     {/* Left side - Title */}
                     <div>
                         <h2 className="text-[45px] font-poppins font-regular text-[#000000] leading-tight">
-                            HOW TO CHOOSE THE PERFECT WIG FOR YOU
+                            {t.homepage.howToChoose}
                         </h2>
                     </div>
 
                     {/* Right side - Description */}
                     <div className="flex items-center">
                         <p className="text-[19px] font-poppins font-regular text-[#542C17] leading-relaxed">
-                            Discover confidence with our premium wigs, designed for style, comfort,
-                            and a natural look. Whether you're seeking a bold transformation or
-                            everyday elegance, our diverse collection offers the perfect match for you.
-                            Experience lightweight, breathable designs crafted for all-day wear.
+                            {t.homepage.discoverConfidence}
                         </p>
                     </div>
                 </div>

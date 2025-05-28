@@ -1,4 +1,10 @@
-import {useLoaderData} from '@remix-run/react';
+import {json, useLoaderData} from '@remix-run/react';
+
+import { useState } from 'react';
+import { Money } from '@shopify/hydrogen';
+import { useLocale } from '~/hooks/useLocale';
+import { useTranslation } from '~/lib/i18n';
+
 import {
   getSelectedProductOptions,
   Analytics,
@@ -17,7 +23,7 @@ import {redirectIfHandleIsLocalized} from '~/lib/redirect';
  */
 export const meta = ({data}) => {
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `Zuri | ${data?.product.title ?? ''}`},
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,
@@ -28,14 +34,30 @@ export const meta = ({data}) => {
 /**
  * @param {LoaderFunctionArgs} args
  */
-export async function loader(args) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
+export async function loader({ params, request, context }) {
+  const { handle } = params;
+  const { storefront } = context;
 
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
+  if (!handle) {
+    throw new Error('Expected product handle to be defined');
+  }
 
-  return {...deferredData, ...criticalData};
+  const { product } = await storefront.query(PRODUCT_QUERY, {
+    variables: {
+      handle,
+      selectedOptions: [],
+      country: 'FR',      // Set to France for EUR
+      language: 'FR',     // Set to French
+    },
+  });
+
+  if (!product?.id) {
+    throw new Response(null, { status: 404 });
+  }
+
+  return json({
+    product,
+  });
 }
 
 /**
@@ -84,66 +106,216 @@ function loadDeferredData({context, params}) {
 }
 
 export default function Product() {
-  /** @type {LoaderReturnData} */
-  const {product} = useLoaderData();
+  const { product } = useLoaderData();
+  const [locale] = useLocale();
+  const t = useTranslation(locale);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // Optimistically selects a variant with given available variant information
-  const selectedVariant = useOptimisticVariant(
-    product.selectedOrFirstAvailableVariant,
-    getAdjacentAndFirstAvailableVariants(product),
-  );
+  // Use the selected or first available variant
+  const selectedVariant = product.selectedOrFirstAvailableVariant;
 
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
+  // Get product options for the ProductForm
+  const productOptions = product.options || [];
 
-  // Get the product options array
-  const productOptions = getProductOptions({
-    ...product,
-    selectedOrFirstAvailableVariant: selectedVariant,
-  });
+  const { title, descriptionHtml, images } = product;
 
-  const {title, descriptionHtml} = product;
+  // Get all product images (fallback to variant image if no product images)
+  const productImages = images?.nodes || (selectedVariant?.image ? [selectedVariant.image] : []);
+
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
+      <div className="min-h-screen bg-[#F8F6F3] pt-24">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+
+            {/* Left Side - Product Info */}
+            <div className="order-2 lg:order-1">
+              <div className="max-w-lg">
+                {/* Product Title */}
+                <h1 className="lg:text-5xl font-light font-poppins text-[56px] text-[#002F45] mb-6">
+                  {title}
+                </h1>
+
+                {/* Plant-based badge */}
+                <div className="mb-4">
+                <span className="font-semibold font-poppins text-[16px] text-[#7D390F] tracking-wide">
+                  {locale === 'fr' ? '100% INGRÉDIENTS D\'ORIGINE VÉGÉTALE' : '100% PLANT-BASED INGREDIENTS'}
+                </span>
+                </div>
+
+                {/* Rating */}
+                <div className="flex items-center mb-6">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                        <svg key={i} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                        </svg>
+                    ))}
+                  </div>
+                  <span className="ml-2 text-sm text-gray-600">200 Reviews</span>
+                </div>
+
+                {/* Subtitle */}
+                <h2 className="font-regular font-poppins text-[16px] text-[#002F45]  mb-4">
+                  {locale === 'fr' ? 'Cheveux Lisses, Beauté Sans Effort' : 'Smooth Hair, Effortless Beauty'}
+                </h2>
+
+                {/* Description */}
+                <div className="font-regular font-poppins text-[16px] text-[#002F45] mb-6 [&_*]:leading-relaxed">
+                  {descriptionHtml ? (
+                      <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                  ) : (
+                      <p>
+                        {locale === 'fr'
+                            ? 'Silk Smooth est un shampooing premium conçu pour nettoyer, nourrir et rehausser l\'éclat naturel de vos cheveux. Sa formule douce mais efficace aide à maintenir l\'équilibre hydratant, laissant les cheveux doux, maniables et revitalisés.'
+                            : 'Silk Smooth is a premium shampoo crafted to cleanse, nourish, and enhance the natural shine of your hair. Its gentle yet effective formula helps maintain moisture balance, leaving hair soft, manageable, and revitalized.'
+                        }
+                      </p>
+                  )}
+                </div>
+
+
+
+                {/* Product Options */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">
+                    {locale === 'fr' ? 'Sélectionner une variante' : 'Select a variant'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.options?.map((option) =>
+                        option.optionValues.map((value) => (
+                            <button
+                                key={value.name}
+                                className="px-4 py-2 border border-gray-300 rounded text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            >
+                              {value.name}
+                            </button>
+                        ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Purchase Options */}
+                <div className="mb-6">
+                  <div className="border border-gray-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <input
+                            type="radio"
+                            name="purchase-option"
+                            className="mr-3"
+                            defaultChecked
+                        />
+                        <span className="font-medium">
+                        {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}
+                      </span>
+                      </div>
+                      <div className="text-lg font-semibold">
+                        <Money data={selectedVariant?.price} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <input
+                            type="radio"
+                            name="purchase-option"
+                            className="mr-3"
+                        />
+                        <span className="font-medium">
+                        {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}
+                      </span>
+                      </div>
+                      <div className="text-lg font-semibold text-green-600">
+                        {selectedVariant?.price && (
+                            <Money
+                                data={{
+                                  amount: (parseFloat(selectedVariant.price.amount) * 0.65).toFixed(2),
+                                  currencyCode: selectedVariant.price.currencyCode
+                                }}
+                            />
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 ml-6">
+                      {locale === 'fr' ? 'Livraison chaque mois' : 'Delivery every 1 month'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ProductForm with Add to Cart Functionality */}
+                <div className="max-w-lg">
+                  <ProductForm
+                      productOptions={productOptions}
+                      selectedVariant={selectedVariant}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Image Carousel */}
+            <div className="order-1 lg:order-2">
+              <div className="sticky top-24">
+                {/* Main Image */}
+                <div className="mb-4">
+                  <div className="aspect-square bg-[#E8C4A0] rounded-2xl overflow-hidden">
+                    {productImages[selectedImageIndex] && (
+                        <img
+                            src={productImages[selectedImageIndex].url}
+                            alt={productImages[selectedImageIndex].altText || product.title}
+                            className="w-full h-full object-cover"
+                        />
+                    )}
+                  </div>
+                </div>
+
+                {/* Thumbnail Images */}
+                {productImages.length > 1 && (
+                    <div className="flex gap-2 justify-center">
+                      {productImages.map((image, index) => (
+                          <button
+                              key={image.id}
+                              onClick={() => setSelectedImageIndex(index)}
+                              className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                                  selectedImageIndex === index
+                                      ? 'border-[#8B4513]'
+                                      : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                          >
+                            <img
+                                src={image.url}
+                                alt={image.altText}
+                                className="w-full h-full object-cover"
+                            />
+                          </button>
+                      ))}
+
+
+                    </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Analytics.ProductView
+            data={{
+              products: [
+                {
+                  id: product.id,
+                  title: product.title,
+                  price: selectedVariant?.price.amount || '0',
+                  vendor: product.vendor,
+                  variantId: selectedVariant?.id || '',
+                  variantTitle: selectedVariant?.title || '',
+                  quantity: 1,
+                },
+              ],
+            }}
         />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
       </div>
-      <Analytics.ProductView
-        data={{
-          products: [
-            {
-              id: product.id,
-              title: product.title,
-              price: selectedVariant?.price.amount || '0',
-              vendor: product.vendor,
-              variantId: selectedVariant?.id || '',
-              variantTitle: selectedVariant?.title || '',
-              quantity: 1,
-            },
-          ],
-        }}
-      />
-    </div>
   );
 }
 
@@ -194,6 +366,15 @@ const PRODUCT_FRAGMENT = `#graphql
     description
     encodedVariantExistence
     encodedVariantAvailability
+    images(first: 10) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
     options {
       name
       optionValues {
