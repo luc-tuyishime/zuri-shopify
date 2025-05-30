@@ -472,6 +472,34 @@ button.reset:hover:not(:has(> *)) {
   grid-gap: 0.75rem;
 }
 
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  flex: 1;
+  min-height: 200px;
+}
+
+.product-content {
+  flex: 1;
+}
+
+.product-button {
+  margin-top: auto;
+}
+
 .product-options-item,
 .product-options-item:disabled {
   padding: 0.25rem 0.5rem;
@@ -479,6 +507,13 @@ button.reset:hover:not(:has(> *)) {
   font-size: 1rem;
   font-family: inherit;
 }
+
+.product-form .bg-red-200 button {
+  width: 100% !important;
+  display: block !important;
+}
+
+
 
 .product-option-label-swatch {
   width: 1.25rem;

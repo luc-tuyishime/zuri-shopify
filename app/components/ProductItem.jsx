@@ -90,33 +90,30 @@ export function ProductItem({product, loading, variant = 'rounded'}) {
 
             {/* Product Info - Different layout for collection page */}
             {variant === 'collection' && (
-                <div className="p-4">
-                    <h3 className="font-regular font-poppins text-[20px] text-[#002F45] mb-2">
-                        {product.title}
-                    </h3>
+                <div className="product-info">
+                    <div className="product-content">
+                        <h3 className="font-regular font-poppins text-[20px] text-[#002F45] mb-2 truncate">
+                            {product.title}
+                        </h3>
 
-                    {/* Rating */}
-                    <div className="flex items-center mb-2">
-                        <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                                <svg
-                                    key={i}
-                                    className="w-4 h-4 text-yellow-400 fill-current"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                                </svg>
-                            ))}
+                        <div className="flex items-center mb-2">
+                            <div className="flex items-center">
+                                {[...Array(5)].map((_, i) => (
+                                    <svg key={i} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                                    </svg>
+                                ))}
+                            </div>
+                            <span className="ml-2 text-sm text-gray-600">123 reviews</span>
                         </div>
-                        <span className="ml-2 text-sm text-gray-600">123 reviews</span>
+
+                        <div className="font-semibold font-poppins text-[20px] text-[#002F45] mb-4">
+                            {product.priceRange.minVariantPrice.currencyCode === 'EUR' ? '€' : '$'}
+                            {parseFloat(product.priceRange.minVariantPrice.amount).toFixed(2)}
+                        </div>
                     </div>
 
-                    <div className="font-semibold font-poppins text-[20px] text-[#002F45]">
-                        {product.priceRange.minVariantPrice.currencyCode === 'EUR' ? '€' : '$'}
-                        {parseFloat(product.priceRange.minVariantPrice.amount).toFixed(2)}
-                    </div>
-
-                    <button className="w-full mt-4 px-4 py-2 bg-white border rounded-lg font-poppins text-[14px] border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200">
+                    <button className="product-button w-full px-4 py-2 bg-white border rounded-lg font-poppins text-[14px] border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200">
                         {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
                     </button>
                 </div>

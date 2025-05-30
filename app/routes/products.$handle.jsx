@@ -124,7 +124,7 @@ export default function Product() {
 
 
   return (
-      <div className="min-h-screen bg-[#F8F6F3] pt-24">
+      <div className="min-h-screen  pt-24">
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
@@ -246,12 +246,13 @@ export default function Product() {
                 </div>
 
                 {/* ProductForm with Add to Cart Functionality */}
-                <div className="max-w-lg">
+                <div className="w-full flex flex-col">
                   <ProductForm
                       productOptions={productOptions}
                       selectedVariant={selectedVariant}
                   />
                 </div>
+
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
 import BG from '../assets/bg.svg'
+import VIDEO from '../assets/video.mp4'
 import {ProductSkeleton} from "~/components/ProductSkeleton.jsx";
 import {getLocale, useTranslation} from "~/lib/i18n.js";
 import {useLocale} from "~/hooks/useLocale.js";
@@ -102,6 +103,40 @@ function FeaturedCollection({collection}) {
                 overflow: 'hidden'
             }}
         >
+            {/* Background Video */}
+            <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center',
+                    zIndex: 1,
+                    imageRendering: 'crisp-edges',
+                    transform: 'translateZ(0)',
+                    backfaceVisibility: 'hidden'
+                }}
+            >
+                <source src={VIDEO} type="video/mp4" />
+                {/* Fallback for browsers that don't support video */}
+                <img
+                    src={BG}
+                    alt={collection.title}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center'
+                    }}
+                />
+            </video>
+
             <Link
                 to={`/collections/${collection.handle}`}
                 style={{
@@ -110,21 +145,10 @@ function FeaturedCollection({collection}) {
                     height: '100%',
                     position: 'absolute',
                     top: 0,
-                    left: 0
+                    left: 0,
+                    zIndex: 2
                 }}
             >
-                <img
-                    src={BG}
-                    alt={collection.title}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: 'center',
-                        display: 'block'
-                    }}
-                />
-
                 {/* Content overlay positioned on the left side */}
                 <div className="tracking-wider font-medium font-poppins" style={{
                     fontFamily: "'Poppins', sans-serif",
@@ -137,10 +161,9 @@ function FeaturedCollection({collection}) {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     paddingLeft: '80px',
-
                 }}>
                     {/* Title text styled as in the screenshot */}
-                    <p  className="tracking-wider font-medium" style={{
+                    <p className="tracking-wider font-medium" style={{
                         fontFamily: "'Poppins', sans-serif",
                         color: 'white',
                         fontSize: '45px',
@@ -169,6 +192,12 @@ function FeaturedCollection({collection}) {
                             onClick={(e) => {
                                 e.preventDefault(); // Prevent Link navigation
                                 // Add your button action here
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent';
                             }}
                         >
                             AN ACTION

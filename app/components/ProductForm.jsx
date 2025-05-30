@@ -15,101 +15,95 @@ export function ProductForm({productOptions, selectedVariant}) {
     const [locale] = useLocale();
 
     return (
-        <div className="product-form space-y-6">
-            {productOptions.map((option) => {
-                // If there is only a single value in the option values, don't display the option
-                if (option.optionValues.length === 1) return null;
+        <div className="w-full product-form space-y-6">
+            {/*{productOptions.map((option) => {*/}
+            {/*    // If there is only a single value in the option values, don't display the option*/}
+            {/*    if (option.optionValues.length === 1) return null;*/}
 
-                return (
-                    <div className="product-options" key={option.name}>
-                        <h5 className="text-sm font-medium text-gray-900 mb-3">
-                            {option.name}
-                        </h5>
-                        <div className="flex flex-wrap gap-2">
-                            {option.optionValues.map((value) => {
-                                const {
-                                    name,
-                                    handle,
-                                    variantUriQuery,
-                                    selected,
-                                    available,
-                                    exists,
-                                    isDifferentProduct,
-                                    swatch,
-                                } = value;
+            {/*    return (*/}
+            {/*        <div className="product-options" key={option.name}>*/}
+            {/*            <h5 className="text-sm font-medium text-gray-900 mb-3">*/}
+            {/*                {option.name}*/}
+            {/*            </h5>*/}
+            {/*            <div className="flex flex-wrap gap-2">*/}
+            {/*                {option.optionValues.map((value) => {*/}
+            {/*                    const {*/}
+            {/*                        name,*/}
+            {/*                        handle,*/}
+            {/*                        variantUriQuery,*/}
+            {/*                        selected,*/}
+            {/*                        available,*/}
+            {/*                        exists,*/}
+            {/*                        isDifferentProduct,*/}
+            {/*                        swatch,*/}
+            {/*                    } = value;*/}
 
-                                const buttonClass = `
-                  px-4 py-2 border rounded-md text-sm font-medium transition-all duration-200
-                  ${selected
-                                    ? 'border-[#8B4513] bg-[#8B4513] text-white'
-                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                                }
-                  ${!available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  ${exists && !selected ? 'hover:bg-gray-50' : ''}
-                `;
+            {/*                    const buttonClass = `*/}
+            {/*      px-4 py-2 border rounded-md text-sm font-medium transition-all duration-200*/}
+            {/*      ${selected*/}
+            {/*                        ? 'border-[#8B4513] bg-[#8B4513] text-white'*/}
+            {/*                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'*/}
+            {/*                    }*/}
+            {/*      ${!available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}*/}
+            {/*      ${exists && !selected ? 'hover:bg-gray-50' : ''}*/}
+            {/*    `;*/}
 
-                                if (isDifferentProduct) {
-                                    // SEO
-                                    // When the variant is a combined listing child product
-                                    // that leads to a different url, we need to render it
-                                    // as an anchor tag
-                                    return (
-                                        <Link
-                                            className={buttonClass}
-                                            key={option.name + name}
-                                            prefetch="intent"
-                                            preventScrollReset
-                                            replace
-                                            to={`/products/${handle}?${variantUriQuery}`}
-                                        >
-                                            <ProductOptionSwatch swatch={swatch} name={name} />
-                                        </Link>
-                                    );
-                                } else {
-                                    // SEO
-                                    // When the variant is an update to the search param,
-                                    // render it as a button with javascript navigating to
-                                    // the variant so that SEO bots do not index these as
-                                    // duplicated links
-                                    return (
-                                        <button
-                                            type="button"
-                                            className={buttonClass}
-                                            key={option.name + name}
-                                            disabled={!exists}
-                                            onClick={() => {
-                                                if (!selected) {
-                                                    navigate(`?${variantUriQuery}`, {
-                                                        replace: true,
-                                                        preventScrollReset: true,
-                                                    });
-                                                }
-                                            }}
-                                        >
-                                            <ProductOptionSwatch swatch={swatch} name={name} />
-                                        </button>
-                                    );
-                                }
-                            })}
-                        </div>
-                    </div>
-                );
-            })}
+            {/*                    if (isDifferentProduct) {*/}
+            {/*                        // SEO*/}
+            {/*                        // When the variant is a combined listing child product*/}
+            {/*                        // that leads to a different url, we need to render it*/}
+            {/*                        // as an anchor tag*/}
+            {/*                        return (*/}
+            {/*                            <Link*/}
+            {/*                                className={buttonClass}*/}
+            {/*                                key={option.name + name}*/}
+            {/*                                prefetch="intent"*/}
+            {/*                                preventScrollReset*/}
+            {/*                                replace*/}
+            {/*                                to={`/products/${handle}?${variantUriQuery}`}*/}
+            {/*                            >*/}
+            {/*                                <ProductOptionSwatch swatch={swatch} name={name} />*/}
+            {/*                            </Link>*/}
+            {/*                        );*/}
+            {/*                    } else {*/}
+            {/*                        // SEO*/}
+            {/*                        // When the variant is an update to the search param,*/}
+            {/*                        // render it as a button with javascript navigating to*/}
+            {/*                        // the variant so that SEO bots do not index these as*/}
+            {/*                        // duplicated links*/}
+            {/*                        return (*/}
+            {/*                            <button*/}
+            {/*                                type="button"*/}
+            {/*                                className={buttonClass}*/}
+            {/*                                key={option.name + name}*/}
+            {/*                                disabled={!exists}*/}
+            {/*                                onClick={() => {*/}
+            {/*                                    if (!selected) {*/}
+            {/*                                        navigate(`?${variantUriQuery}`, {*/}
+            {/*                                            replace: true,*/}
+            {/*                                            preventScrollReset: true,*/}
+            {/*                                        });*/}
+            {/*                                    }*/}
+            {/*                                }}*/}
+            {/*                            >*/}
+            {/*                                <ProductOptionSwatch swatch={swatch} name={name} />*/}
+            {/*                            </button>*/}
+            {/*                        );*/}
+            {/*                    }*/}
+            {/*                })}*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    );*/}
+            {/*})}*/}
 
             {/* Styled Add to Cart Button */}
-            <div className="mt-8 bg-red-200 ">
+            <div className="mt-8  bg-red-200">
                 <AddToCartButton
                     disabled={!selectedVariant || !selectedVariant.availableForSale}
                     onClick={() => {
                         open('cart');
                     }}
-                    style={{
-                        width: '100%',
-                        display: 'block',
-                        boxSizing: 'border-box',
-                        margin: '0',
-                        padding: '12px 24px'
-                    }}
+
                     lines={
                         selectedVariant
                             ? [
@@ -121,7 +115,7 @@ export function ProductForm({productOptions, selectedVariant}) {
                             ]
                             : []
                     }
-                    className={`
+                    className={`w-full
              py-3 px-6 rounded-md font-medium text-white transition-colors duration-200
             ${selectedVariant?.availableForSale
                         ? 'bg-[#8B4513] hover:bg-[#7A3A0F] focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2'
