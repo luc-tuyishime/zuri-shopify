@@ -513,6 +513,23 @@ button.reset:hover:not(:has(> *)) {
   display: block !important;
 }
 
+[data-shopify="cart-form"],
+.cart-form,
+form[action="/cart"] {
+  width: 100% !important;
+  display: block !important;
+}
+
+/* Make sure all cart form buttons are full width */
+[data-shopify="cart-form"] button,
+.cart-form button,
+form[action="/cart"] button {
+  width: 100% !important;
+  display: block !important;
+}
+
+
+
 
 
 .product-option-label-swatch {

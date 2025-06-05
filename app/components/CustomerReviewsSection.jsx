@@ -67,7 +67,7 @@ export function CustomerReviewsSection() {
 
     return (
         <div className="customer-reviews-section bg-white py-16">
-            <div className="container mx-auto px-14">
+            <div className="container mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
                     {/* Left side - Title and Button */}
                     <div>

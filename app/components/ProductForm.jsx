@@ -15,7 +15,7 @@ export function ProductForm({productOptions, selectedVariant}) {
     const [locale] = useLocale();
 
     return (
-        <div className="w-full product-form space-y-6">
+        <div className="product-form space-y-6">
             {/*{productOptions.map((option) => {*/}
             {/*    // If there is only a single value in the option values, don't display the option*/}
             {/*    if (option.optionValues.length === 1) return null;*/}
@@ -97,12 +97,17 @@ export function ProductForm({productOptions, selectedVariant}) {
             {/*})}*/}
 
             {/* Styled Add to Cart Button */}
-            <div className="mt-8  bg-red-200">
+            <div className={`mt-8 py-3 px-6 rounded-md font-medium text-white transition-colors duration-200
+            ${selectedVariant?.availableForSale
+                ? 'bg-[#8B4513] hover:bg-[#7A3A0F] focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2'
+                : 'bg-gray-400 cursor-not-allowed'
+            }`}>
                 <AddToCartButton
                     disabled={!selectedVariant || !selectedVariant.availableForSale}
                     onClick={() => {
                         open('cart');
                     }}
+
 
                     lines={
                         selectedVariant
@@ -115,13 +120,7 @@ export function ProductForm({productOptions, selectedVariant}) {
                             ]
                             : []
                     }
-                    className={`w-full
-             py-3 px-6 rounded-md font-medium text-white transition-colors duration-200
-            ${selectedVariant?.availableForSale
-                        ? 'bg-[#8B4513] hover:bg-[#7A3A0F] focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2'
-                        : 'bg-gray-400 cursor-not-allowed'
-                    }
-          `}
+
                 >
                     {selectedVariant?.availableForSale
                         ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')

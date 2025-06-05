@@ -42,24 +42,49 @@ async function loadCriticalData({ context, request }) {
   // Build query string for filtering
   const queryParts = [];
 
+  // Handle category filter (can be multiple)
   if (searchParams.get('category') && searchParams.get('category') !== '') {
-    queryParts.push(`product_type:"${searchParams.get('category')}"`);
+    const categories = searchParams.get('category').split(',');
+    const categoryQueries = categories.map(cat => `product_type:"${cat}"`);
+    if (categoryQueries.length > 0) {
+      queryParts.push(`(${categoryQueries.join(' OR ')})`);
+    }
   }
 
-  if (searchParams.get('color') && searchParams.get('color') !== '') {
-    queryParts.push(`tag:"${searchParams.get('color')}"`);
+  // Handle longueur filter (can be multiple)
+  if (searchParams.get('longueur') && searchParams.get('longueur') !== '') {
+    const longueurs = searchParams.get('longueur').split(',');
+    const longueurQueries = longueurs.map(lng => `tag:"${lng}"`);
+    if (longueurQueries.length > 0) {
+      queryParts.push(`(${longueurQueries.join(' OR ')})`);
+    }
   }
 
-  if (searchParams.get('scent') && searchParams.get('scent') !== '') {
-    queryParts.push(`tag:"${searchParams.get('scent')}"`);
+  // Handle texture filter (can be multiple)
+  if (searchParams.get('texture') && searchParams.get('texture') !== '') {
+    const textures = searchParams.get('texture').split(',');
+    const textureQueries = textures.map(txt => `tag:"${txt}"`);
+    if (textureQueries.length > 0) {
+      queryParts.push(`(${textureQueries.join(' OR ')})`);
+    }
   }
 
-  if (searchParams.get('length') && searchParams.get('length') !== '') {
-    queryParts.push(`tag:"${searchParams.get('length')}"`);
+  // Handle couleur filter (can be multiple)
+  if (searchParams.get('couleur') && searchParams.get('couleur') !== '') {
+    const couleurs = searchParams.get('couleur').split(',');
+    const couleurQueries = couleurs.map(col => `tag:"${col}"`);
+    if (couleurQueries.length > 0) {
+      queryParts.push(`(${couleurQueries.join(' OR ')})`);
+    }
   }
 
-  if (searchParams.get('laceSize') && searchParams.get('laceSize') !== '') {
-    queryParts.push(`tag:"${searchParams.get('laceSize')}"`);
+  // Handle capSize filter (can be multiple)
+  if (searchParams.get('capSize') && searchParams.get('capSize') !== '') {
+    const capSizes = searchParams.get('capSize').split(',');
+    const capSizeQueries = capSizes.map(size => `tag:"${size}"`);
+    if (capSizeQueries.length > 0) {
+      queryParts.push(`(${capSizeQueries.join(' OR ')})`);
+    }
   }
 
   const minPrice = searchParams.get('minPrice');
@@ -112,22 +137,21 @@ export default function Collection() {
 
   // Filter states
   const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
-    color: searchParams.get('color') || '',
-    scent: searchParams.get('scent') || '',
-    length: searchParams.get('length') || '',
-    laceSize: searchParams.get('laceSize') || '',
+    category: searchParams.get('category') ? searchParams.get('category').split(',') : [],
+    longueur: searchParams.get('longueur') ? searchParams.get('longueur').split(',') : [],
+    texture: searchParams.get('texture') ? searchParams.get('texture').split(',') : [],
+    couleur: searchParams.get('couleur') ? searchParams.get('couleur').split(',') : [],
+    capSize: searchParams.get('capSize') ? searchParams.get('capSize').split(',') : [],
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
   });
 
   const [expandedSections, setExpandedSections] = useState({
     category: true,
-    color: false,
-    scent: false,
-    option: false,
-    length: false,
-    laceSize: false,
+    longueur: false,
+    texture: false,
+    couleur: false,
+    capSize: false,
     price: false,
   });
 
@@ -139,51 +163,84 @@ export default function Collection() {
       { value: 'Hair Products', label: locale === 'fr' ? 'Produits Capillaires' : 'Hair Products' },
       { value: 'Best Sellers', label: locale === 'fr' ? 'Meilleures Ventes' : 'Best Sellers' },
     ],
-    color: [
-      { value: '', label: locale === 'fr' ? 'Toutes les couleurs' : 'All colors' },
-      { value: 'Châtain caramel', label: locale === 'fr' ? 'Châtain caramel' : 'Caramel Brown' },
-      { value: 'Noir', label: locale === 'fr' ? 'Noir' : 'Black' },
-      { value: 'Blonde', label: locale === 'fr' ? 'Blonde' : 'Blonde' },
-      { value: 'Auburn', label: locale === 'fr' ? 'Auburn' : 'Auburn' },
-    ],
-    scent: [
-      { value: '', label: locale === 'fr' ? 'Tous les parfums' : 'All scents' },
-      { value: 'Vanilla', label: locale === 'fr' ? 'Vanille' : 'Vanilla' },
-      { value: 'Coconut', label: locale === 'fr' ? 'Noix de coco' : 'Coconut' },
-      { value: 'Lavender', label: locale === 'fr' ? 'Lavande' : 'Lavender' },
-    ],
-    length: [
-      { value: '', label: locale === 'fr' ? 'Toutes les longueurs' : 'All lengths' },
+    longueur: [
+      { value: '', label: locale === 'fr' ? 'Sélectionner une longueur' : 'Select length' },
       { value: '12"', label: '12"' },
       { value: '14"', label: '14"' },
       { value: '16"', label: '16"' },
       { value: '18"', label: '18"' },
       { value: '20"', label: '20"' },
+      { value: '22"', label: '22"' },
+      { value: '24"', label: '24"' },
     ],
-    laceSize: [
-      { value: '', label: locale === 'fr' ? 'Toutes les tailles' : 'All sizes' },
-      { value: '4x4', label: '4x4' },
-      { value: '5x5', label: '5x5' },
-      { value: '13x4', label: '13x4' },
-      { value: '13x6', label: '13x6' },
+    texture: [
+      { value: '', label: locale === 'fr' ? 'Sélectionner votre texture' : 'Select your texture' },
+      // Add your actual texture values from Shopify here
+      { value: 'Lisse', label: locale === 'fr' ? 'Lisse' : 'Straight' },
+      { value: 'Ondulé', label: locale === 'fr' ? 'Ondulé' : 'Wavy' },
+      { value: 'Bouclé', label: locale === 'fr' ? 'Bouclé' : 'Curly' },
+      { value: 'Crépu', label: locale === 'fr' ? 'Crépu' : 'Kinky' },
+    ],
+    couleur: [
+      { value: '', label: locale === 'fr' ? 'Sélectionner votre couleur' : 'Select your color' },
+      // Update these with your actual French color tags from Shopify
+      { value: 'Noir Naturel', label: locale === 'fr' ? 'Noir Naturel' : 'Natural Black' },
+      { value: 'Brun Foncé', label: locale === 'fr' ? 'Brun Foncé' : 'Dark Brown' },
+      { value: 'Châtain', label: locale === 'fr' ? 'Châtain' : 'Chestnut' },
+      { value: 'Blonde', label: locale === 'fr' ? 'Blonde' : 'Blonde' },
+      { value: 'Auburn', label: locale === 'fr' ? 'Auburn' : 'Auburn' },
+    ],
+    capSize: [
+      { value: '', label: locale === 'fr' ? 'Sélectionner votre tour de tête' : 'Select your head size' },
+      { value: 'Petit', label: locale === 'fr' ? 'Petit (21-21.5")' : 'Small (21-21.5")' },
+      { value: 'Moyen', label: locale === 'fr' ? 'Moyen (22-22.5")' : 'Medium (22-22.5")' },
+      { value: 'Grand', label: locale === 'fr' ? 'Grand (23-23.5")' : 'Large (23-23.5")' },
     ],
   };
 
   const updateFilter = (key, value) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
+    if (key === 'minPrice' || key === 'maxPrice') {
+      // Handle price inputs normally
+      const newFilters = { ...filters, [key]: value };
+      setFilters(newFilters);
 
-    // Update URL params
-    const newSearchParams = new URLSearchParams(searchParams);
-    if (value) {
-      newSearchParams.set(key, value);
+      const newSearchParams = new URLSearchParams(searchParams);
+      if (value) {
+        newSearchParams.set(key, value);
+      } else {
+        newSearchParams.delete(key);
+      }
+      newSearchParams.delete('cursor');
+      newSearchParams.delete('direction');
+      setSearchParams(newSearchParams);
     } else {
-      newSearchParams.delete(key);
+      // Handle checkbox filters (arrays)
+      const currentValues = filters[key] || [];
+      let newValues;
+
+      if (currentValues.includes(value)) {
+        // Remove if already selected
+        newValues = currentValues.filter(v => v !== value);
+      } else {
+        // Add if not selected
+        newValues = [...currentValues, value];
+      }
+
+      const newFilters = { ...filters, [key]: newValues };
+      setFilters(newFilters);
+
+      // Update URL params
+      const newSearchParams = new URLSearchParams(searchParams);
+      if (newValues.length > 0) {
+        newSearchParams.set(key, newValues.join(','));
+      } else {
+        newSearchParams.delete(key);
+      }
+      // Reset pagination when filters change
+      newSearchParams.delete('cursor');
+      newSearchParams.delete('direction');
+      setSearchParams(newSearchParams);
     }
-    // Reset pagination when filters change
-    newSearchParams.delete('cursor');
-    newSearchParams.delete('direction');
-    setSearchParams(newSearchParams);
   };
 
   const toggleSection = (section) => {
@@ -195,11 +252,11 @@ export default function Collection() {
 
   const clearAllFilters = () => {
     setFilters({
-      category: '',
-      color: '',
-      scent: '',
-      length: '',
-      laceSize: '',
+      category: [],
+      longueur: [],
+      texture: [],
+      couleur: [],
+      capSize: [],
       minPrice: '',
       maxPrice: '',
     });
@@ -228,7 +285,6 @@ export default function Collection() {
                   </button>
                 </div>
 
-                {/* Category Filter */}
                 <div className="mb-8">
                   <button
                       onClick={() => toggleSection('category')}
@@ -239,160 +295,171 @@ export default function Collection() {
                   </button>
                   {expandedSections.category && (
                       <div className="space-y-3 ml-0">
-                        {filterOptions.category.map((option) => (
-                            <button
+                        {filterOptions.category.filter(option => option.value !== '').map((option) => (
+                            <label
                                 key={option.value}
-                                onClick={() => updateFilter('category', option.value)}
-                                className={`block text-left text-[14px] font-poppins font-regular text-sm w-full ${
-                                    filters.category === option.value
-                                        ? 'text-[#FF7575] font-medium'
-                                        : 'text-[#00000066]  hover:text-gray-900'
-                                }`}
+                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
                             >
-                              {option.label}
-                              {filters.category === option.value && (
-                                  <span className="ml-2 text-red-500">✓</span>
-                              )}
-                            </button>
+                              <input
+                                  type="checkbox"
+                                  checked={filters.category.includes(option.value)}
+                                  onChange={() => updateFilter('category', option.value)}
+                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                              />
+                              <span className={`text-[14px] font-poppins font-regular ${
+                                  filters.category.includes(option.value)
+                                      ? 'text-[#FF7575] font-medium'
+                                      : 'text-[#00000066]'
+                              }`}>
+                {option.label}
+              </span>
+                            </label>
                         ))}
                       </div>
                   )}
                 </div>
 
-                {/* Color Filter */}
+                {/* Longueur Filter with Checkboxes */}
                 <div className="mb-8">
                   <button
-                      onClick={() => toggleSection('color')}
-                      className="flex items-center justify-between w-full text-left  text-[14.63px] font-poppins font-regular text-[#000000]  font-medium mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Couleur' : 'Color'}</span>
-                    <span className="text-lg">{expandedSections.color ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.color && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.color.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => updateFilter('color', option.value)}
-                                className={`block text-left text-[14px] font-poppins font-regular text-sm w-full ${
-                                    filters.color === option.value
-                                        ? 'text-[#FF7575] font-medium'
-                                        : 'text-[#00000066] hover:text-gray-900'
-                                }`}
-                            >
-                              {option.label}
-                            </button>
-                        ))}
-                      </div>
-                  )}
-                </div>
-
-                {/* Scent Filter */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('scent')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Parfum' : 'Scent'}</span>
-                    <span className="text-lg">{expandedSections.scent ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.scent && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.scent.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => updateFilter('scent', option.value)}
-                                className={`block text-left text-[14px] font-poppins font-regular text-sm w-full ${
-                                    filters.scent === option.value
-                                        ? 'text-[#FF7575] font-medium'
-                                        : 'text-[#00000066] hover:text-gray-900'
-                                }`}
-                            >
-                              {option.label}
-                            </button>
-                        ))}
-                      </div>
-                  )}
-                </div>
-
-                {/* Option Filter (placeholder - you can customize this) */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('option')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Option' : 'Option'}</span>
-                    <span className="text-lg">{expandedSections.option ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.option && (
-                      <div className="space-y-3 ml-0">
-                        <button className="block text-left text-sm w-full text-gray-600 hover:text-gray-900">
-                          {locale === 'fr' ? 'Option 1' : 'Option 1'}
-                        </button>
-                        <button className="block text-left text-sm w-full text-gray-600 hover:text-gray-900">
-                          {locale === 'fr' ? 'Option 2' : 'Option 2'}
-                        </button>
-                      </div>
-                  )}
-                </div>
-
-                {/* Length Filter */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('length')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
+                      onClick={() => toggleSection('longueur')}
+                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
                   >
                     <span>{locale === 'fr' ? 'Longueur' : 'Length'}</span>
-                    <span className="text-lg">{expandedSections.length ? '−' : '+'}</span>
+                    <span className="text-lg">{expandedSections.longueur ? '−' : '+'}</span>
                   </button>
-                  {expandedSections.length && (
+                  {expandedSections.longueur && (
                       <div className="space-y-3 ml-0">
-                        {filterOptions.length.map((option) => (
-                            <button
+                        {filterOptions.longueur.filter(option => option.value !== '').map((option) => (
+                            <label
                                 key={option.value}
-                                onClick={() => updateFilter('length', option.value)}
-                                className={`block text-left text-[14px] font-poppins font-regular text-sm w-full ${
-                                    filters.length === option.value
-                                        ? 'text-[#FF7575] font-medium'
-                                        : 'text-[#00000066] hover:text-gray-900'
-                                }`}
+                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
                             >
-                              {option.label}
-                            </button>
+                              <input
+                                  type="checkbox"
+                                  checked={filters.longueur.includes(option.value)}
+                                  onChange={() => updateFilter('longueur', option.value)}
+                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                              />
+                              <span className={`text-[14px] font-poppins font-regular ${
+                                  filters.longueur.includes(option.value)
+                                      ? 'text-[#FF7575] font-medium'
+                                      : 'text-[#00000066]'
+                              }`}>
+                {option.label}
+              </span>
+                            </label>
                         ))}
                       </div>
                   )}
                 </div>
 
-                {/* Lace Size Filter */}
+                {/* Texture Filter with Checkboxes */}
                 <div className="mb-8">
                   <button
-                      onClick={() => toggleSection('laceSize')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
+                      onClick={() => toggleSection('texture')}
+                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
                   >
-                    <span>{locale === 'fr' ? 'Taille de Dentelle' : 'Lace Size'}</span>
-                    <span className="text-lg">{expandedSections.laceSize ? '−' : '+'}</span>
+                    <span>{locale === 'fr' ? 'Texture' : 'Texture'}</span>
+                    <span className="text-lg">{expandedSections.texture ? '−' : '+'}</span>
                   </button>
-                  {expandedSections.laceSize && (
+                  {expandedSections.texture && (
                       <div className="space-y-3 ml-0">
-                        {filterOptions.laceSize.map((option) => (
-                            <button
+                        {filterOptions.texture.filter(option => option.value !== '').map((option) => (
+                            <label
                                 key={option.value}
-                                onClick={() => updateFilter('laceSize', option.value)}
-                                className={`block text-left  text-[14px] font-poppins font-regular text-sm w-full ${
-                                    filters.laceSize === option.value
-                                        ? 'text-[#FF7575] font-medium'
-                                        : 'text-[#00000066] hover:text-gray-900'
-                                }`}
+                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
                             >
-                              {option.label}
-                            </button>
+                              <input
+                                  type="checkbox"
+                                  checked={filters.texture.includes(option.value)}
+                                  onChange={() => updateFilter('texture', option.value)}
+                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                              />
+                              <span className={`text-[14px] font-poppins font-regular ${
+                                  filters.texture.includes(option.value)
+                                      ? 'text-[#FF7575] font-medium'
+                                      : 'text-[#00000066]'
+                              }`}>
+                {option.label}
+              </span>
+                            </label>
                         ))}
                       </div>
                   )}
                 </div>
 
-                {/* Price Filter */}
+                {/* Couleur Filter with Checkboxes */}
+                <div className="mb-8">
+                  <button
+                      onClick={() => toggleSection('couleur')}
+                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
+                  >
+                    <span>{locale === 'fr' ? 'Couleur' : 'Color'}</span>
+                    <span className="text-lg">{expandedSections.couleur ? '−' : '+'}</span>
+                  </button>
+                  {expandedSections.couleur && (
+                      <div className="space-y-3 ml-0">
+                        {filterOptions.couleur.filter(option => option.value !== '').map((option) => (
+                            <label
+                                key={option.value}
+                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                            >
+                              <input
+                                  type="checkbox"
+                                  checked={filters.couleur.includes(option.value)}
+                                  onChange={() => updateFilter('couleur', option.value)}
+                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                              />
+                              <span className={`text-[14px] font-poppins font-regular ${
+                                  filters.couleur.includes(option.value)
+                                      ? 'text-[#FF7575] font-medium'
+                                      : 'text-[#00000066]'
+                              }`}>
+                {option.label}
+              </span>
+                            </label>
+                        ))}
+                      </div>
+                  )}
+                </div>
+
+                {/* Cap Size Filter with Checkboxes */}
+                <div className="mb-8">
+                  <button
+                      onClick={() => toggleSection('capSize')}
+                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
+                  >
+                    <span>{locale === 'fr' ? 'Tour de tête' : 'Cap Size'}</span>
+                    <span className="text-lg">{expandedSections.capSize ? '−' : '+'}</span>
+                  </button>
+                  {expandedSections.capSize && (
+                      <div className="space-y-3 ml-0">
+                        {filterOptions.capSize.filter(option => option.value !== '').map((option) => (
+                            <label
+                                key={option.value}
+                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                            >
+                              <input
+                                  type="checkbox"
+                                  checked={filters.capSize.includes(option.value)}
+                                  onChange={() => updateFilter('capSize', option.value)}
+                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                              />
+                              <span className={`text-[14px] font-poppins font-regular ${
+                                  filters.capSize.includes(option.value)
+                                      ? 'text-[#FF7575] font-medium'
+                                      : 'text-[#00000066]'
+                              }`}>
+                {option.label}
+              </span>
+                            </label>
+                        ))}
+                      </div>
+                  )}
+                </div>
+
+                {/* Price Filter - Keep as is */}
                 <div className="mb-8">
                   <button
                       onClick={() => toggleSection('price')}

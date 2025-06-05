@@ -134,103 +134,22 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
             <div className="md:hidden bg-zuri-beige py-4">
               <div className="container mx-auto px-6">
                 <nav className="flex flex-col space-y-4">
-                  {header?.menu?.items?.map((item) => (
+                  {/* Use the same navigationItems as desktop */}
+                  {navigationItems.map((item) => (
                       <NavLink
                           key={item.id}
                           to={item.url}
-                          className="uppercase text-sm tracking-wider py-2"
+                          className="uppercase text-sm tracking-wider py-2 text-[#542C17] font-inter"
                           onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {item.title}
                       </NavLink>
-                  )) || (
-                      <>
-                        <NavLink
-                            to="/collections/all"
-                            className="uppercase text-sm tracking-wider py-2"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          Shop Now
-                        </NavLink>
-                        <NavLink
-                            to="/collections/best-sellers"
-                            className="uppercase text-sm tracking-wider py-2"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          Our Best Sellers
-                        </NavLink>
-                        <NavLink
-                            to="/pages/about"
-                            className="uppercase text-sm tracking-wider py-2"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          About Us
-                        </NavLink>
-                      </>
-                  )}
+                  ))}
                 </nav>
               </div>
             </div>
         )}
       </header>
-  );
-}
-
-/**
- * @param {{
- *   menu: HeaderProps['header']['menu'];
- *   primaryDomainUrl: HeaderProps['header']['shop']['primaryDomain']['url'];
- *   viewport: Viewport;
- *   publicStoreDomain: HeaderProps['publicStoreDomain'];
- * }}
- */
-export function HeaderMenu({
-  menu,
-  primaryDomainUrl,
-  viewport,
-  publicStoreDomain,
-}) {
-  const className = `header-menu-${viewport}`;
-  const {close} = useAside();
-
-  return (
-    <nav className={className} role="navigation">
-      {viewport === 'mobile' && (
-        <NavLink
-          end
-          onClick={close}
-          prefetch="intent"
-          style={activeLinkStyle}
-          to="/"
-        >
-          Home
-        </NavLink>
-      )}
-      {(menu || FALLBACK_HEADER_MENU).items.map((item) => {
-        if (!item.url) return null;
-
-        // if the url is internal, we strip the domain
-        const url =
-          item.url.includes('myshopify.com') ||
-          item.url.includes(publicStoreDomain) ||
-          item.url.includes(primaryDomainUrl)
-            ? new URL(item.url).pathname
-            : item.url;
-        return (
-          <NavLink
-            className="header-menu-item"
-            end
-            key={item.id}
-            onClick={close}
-            prefetch="intent"
-            style={activeLinkStyle}
-            to={url}
-          >
-            {item.title}
-          </NavLink>
-        );
-      })}
-    </nav>
   );
 }
 

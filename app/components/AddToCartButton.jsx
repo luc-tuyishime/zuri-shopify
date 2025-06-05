@@ -17,6 +17,7 @@ export function AddToCartButton({
   onClick,
     className,
     style,
+
                                   ...props
 }) {
   return (
