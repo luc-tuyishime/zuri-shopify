@@ -1,5 +1,5 @@
 import {Await, useLoaderData, Link} from '@remix-run/react';
-import {Suspense, useEffect, useState} from 'react';
+import {Suspense, useEffect, useMemo, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
@@ -84,128 +84,234 @@ export default function Homepage() {
  *   collection: FeaturedCollectionFragment;
  * }}
  */
-function FeaturedCollection({collection}) {
+function FeaturedCollection({ collection }) {
+    const [isMobile, setIsMobile] = useState(false);
+    const [videoLoaded, setVideoLoaded] = useState(false);
+
     if (!collection) return null;
 
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     return (
-        <div
-            className="featured-collection-container"
-            style={{
-                position: 'relative',
-                width: '100vw',
-                height: '100vh',
-                margin: '0',
-                padding: '0',
-                left: '50%',
-                right: '50%',
-                marginLeft: '-50vw',
-                marginRight: '-50vw',
-                overflow: 'hidden'
-            }}
-        >
-            {/* Background Video */}
-            <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'center',
-                    zIndex: 1,
-                    imageRendering: 'crisp-edges',
-                    transform: 'translateZ(0)',
-                    backfaceVisibility: 'hidden'
-                }}
-            >
-                <source src={VIDEO} type="video/mp4" />
-                {/* Fallback for browsers that don't support video */}
-                <img
-                    src={BG}
-                    alt={collection.title}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: 'center'
-                    }}
-                />
-            </video>
+        <>
+            <div className="hero-video-container">
+                {/* Optimized Background Media */}
+                {isMobile ? (
+                    // Mobile: Use image instead of video for better performance
+                    <div
+                        className="hero-background-image"
+                        style={{
+                            backgroundImage: `url(${BG})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    />
+                ) : (
+                    // Desktop: Use optimized video
+                    <>
+                        {/* Fallback image while video loads */}
+                        {!videoLoaded && (
+                            <div
+                                className="hero-background-image"
+                                style={{
+                                    backgroundImage: `url(${BG})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    backgroundRepeat: 'no-repeat'
+                                }}
+                            />
+                        )}
 
-            <Link
-                to={`/collections/${collection.handle}`}
-                style={{
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    zIndex: 2
-                }}
-            >
-                {/* Content overlay positioned on the left side */}
-                <div className="tracking-wider font-medium font-poppins" style={{
-                    fontFamily: "'Poppins', sans-serif",
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    paddingLeft: '80px',
-                }}>
-                    {/* Title text styled as in the screenshot */}
-                    <p className="tracking-wider font-medium" style={{
-                        fontFamily: "'Poppins', sans-serif",
-                        color: 'white',
-                        fontSize: '45px',
-                        maxWidth: '400px',
-                        lineHeight: '1.2',
-                        marginBottom: '30px'
-                    }}>
-                        A relevant title would go here
-                    </p>
-
-                    {/* Action button styled as in the screenshot */}
-                    <div>
-                        <button
+                        <video
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            preload="metadata"
+                            onLoadedData={() => setVideoLoaded(true)}
+                            className="hero-video"
                             style={{
-                                fontFamily: "'Poppins', sans-serif",
-                                color: 'white',
-                                backgroundColor: 'transparent',
-                                border: '1px solid white',
-                                padding: '12px 30px',
-                                fontSize: '0.9rem',
-                                letterSpacing: '1px',
-                                cursor: 'pointer',
-                                fontWeight: '500',
-                                transition: 'all 0.3s ease'
-                            }}
-                            onClick={(e) => {
-                                e.preventDefault(); // Prevent Link navigation
-                                // Add your button action here
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = 'transparent';
+                                opacity: videoLoaded ? 1 : 0,
+                                transition: 'opacity 0.5s ease'
                             }}
                         >
+                            <source src={VIDEO} type="video/mp4" />
+                        </video>
+                    </>
+                )}
+
+                {/* Content Overlay - Fully Responsive */}
+                <Link
+                    to={`/collections/${collection.handle}`}
+                    className="hero-link"
+                >
+                    <div className="hero-content">
+                        {/* Responsive Title */}
+                        <h1 className="hero-title">
+                            A relevant title would go here
+                        </h1>
+
+                        {/* Responsive Action Button */}
+                        <button className="hero-button">
                             AN ACTION
                         </button>
                     </div>
-                </div>
-            </Link>
-        </div>
+                </Link>
+            </div>
+
+            {/* Move styles to external CSS or use CSS Modules */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .hero-video-container {
+                    position: relative;
+                    width: 100vw;
+                    height: 100vh;
+                    min-height: 500px;
+                    margin: 0;
+                    padding: 0;
+                    left: 50%;
+                    right: 50%;
+                    margin-left: -50vw;
+                    margin-right: -50vw;
+                    overflow: hidden;
+                }
+
+                .hero-background-image,
+                .hero-video {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    object-position: center;
+                    z-index: 1;
+                }
+
+                .hero-link {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    z-index: 2;
+                    text-decoration: none;
+                }
+
+                .hero-content {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    padding: 20px;
+                    padding-left: 80px;
+                }
+
+                .hero-title {
+                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    color: white;
+                    font-size: clamp(28px, 5vw, 45px);
+                    font-weight: 500;
+                    line-height: 1.2;
+                    margin: 0 0 30px 0;
+                    max-width: min(400px, 80vw);
+                    letter-spacing: 0.5px;
+                }
+
+                .hero-button {
+                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    color: white;
+                    background-color: transparent;
+                    border: 1px solid white;
+                    padding: 12px 30px;
+                    font-size: clamp(14px, 2vw, 16px);
+                    letter-spacing: 1px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: all 0.3s ease;
+                    border-radius: 0;
+                    text-transform: uppercase;
+                    width: fit-content;
+                }
+
+                .hero-button:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    transform: translateY(-1px);
+                }
+
+                .hero-button:active {
+                    transform: translateY(0);
+                }
+
+                @media (max-width: 768px) {
+                    .hero-video-container {
+                        height: 70vh;
+                        min-height: 400px;
+                    }
+
+                    .hero-content {
+                        padding: 20px;
+                        text-align: center;
+                        align-items: center;
+                    }
+
+                    .hero-title {
+                        font-size: 32px;
+                        margin-bottom: 24px;
+                        max-width: 90vw;
+                        text-align: center;
+                    }
+
+                    .hero-button {
+                        padding: 14px 24px;
+                        font-size: 14px;
+                        width: auto;
+                        min-width: 160px;
+                    }
+                }
+
+                @media (min-width: 769px) and (max-width: 1024px) {
+                    .hero-content {
+                        padding-left: 40px;
+                    }
+
+                    .hero-title {
+                        font-size: 38px;
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .hero-button {
+                        transition: none;
+                    }
+                    
+                    .hero-button:hover {
+                        transform: none;
+                    }
+                }
+
+                @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+                    .hero-background-image {
+                        background-size: cover;
+                    }
+                }
+                `
+            }} />
+        </>
     );
 }
 /**
@@ -217,21 +323,28 @@ export function RecommendedProducts({products}) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
 
+    const fallbackSkeleton = useMemo(() => (
+        <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+                <ProductSkeleton key={index} />
+            ))}
+        </div>
+    ), []);
+
+    const gridClasses = useMemo(() =>
+            "recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6",
+        []
+    );
+
     return (
         <div className="recommended-products" >
             <div className="container-fluid mx-auto px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
                 <p className="pt-10 pb-10 text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
 
-                <Suspense fallback={
-                    <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {Array.from({ length: 8 }).map((_, index) => (
-                            <ProductSkeleton key={index} />
-                        ))}
-                    </div>
-                }>
+                <Suspense fallback={fallbackSkeleton}>
                     <Await resolve={products}>
                         {(response) => (
-                            <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className={gridClasses}>
                                 {response
                                     ? response.products.nodes.map((product) => (
                                         <ProductItem key={product.id} product={product}  variant="rounded" />

@@ -1,5 +1,5 @@
 import {Await, Link} from '@remix-run/react';
-import {Suspense, useId} from 'react';
+import {lazy, Suspense, useId} from 'react';
 import {Aside} from '~/components/Aside';
 import {Footer} from '~/components/Footer';
 import {Header} from '~/components/Header';
@@ -10,6 +10,9 @@ import {
 } from '~/components/SearchFormPredictive';
 import {SearchResultsPredictive} from '~/components/SearchResultsPredictive';
 
+// const { Footer } = lazy(() => import('~/components/Footer'));
+// const { Header } = lazy(() => import('~/components/Header'));
+// const { CartMain } = lazy(() => import('~/components/CartMain'));
 /**
  * @param {PageLayoutProps}
  */

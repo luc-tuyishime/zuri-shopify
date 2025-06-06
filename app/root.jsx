@@ -21,6 +21,8 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from './components/PageLayout';
 import { LanguageProvider } from '~/components/LanguageProvider';
+import BG from './assets/bg.svg'
+import VIDEO from './assets/video.mp4'
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -167,6 +169,8 @@ export function Layout({children}) {
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="preload" as="image" href={BG} />
+        <link rel="preload" as="video" href={VIDEO} />
 
         {/*<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />*/}
         <Meta />
