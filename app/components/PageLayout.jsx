@@ -95,40 +95,41 @@ function LazyCartAside({cart}) {
         <div className="animate-pulse space-y-4 p-4">
             <div className="h-6 bg-gray-300 rounded w-1/2"></div>
             {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex space-x-4">
+                <div key={i} className="flex space-x-4 py-6 border-b border-gray-200">
                     <div className="h-16 w-16 bg-gray-300 rounded"></div>
                     <div className="flex-1 space-y-2">
                         <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                        <div className="flex justify-between items-center mt-4">
+                            <div className="flex items-center space-x-2">
+                                <div className="h-3 bg-gray-300 rounded w-16"></div>
+                                <div className="h-8 w-24 bg-gray-300 rounded"></div>
+                            </div>
+                            <div className="h-4 bg-gray-300 rounded w-16"></div>
+                        </div>
                     </div>
                 </div>
             ))}
+            <div className="border-t pt-4 space-y-2">
+                <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                <div className="h-6 bg-gray-300 rounded w-1/2"></div>
+            </div>
         </div>
     );
-
-    // Cart content component that handles the resolved cart data
-    const CartContent = ({ cart }) => {
-        // Use useEffect to trigger loading after render is complete
-        useEffect(() => {
-            if (cart && !shouldLoad) {
-                setShouldLoad(true);
-            }
-        }, [cart]);
-
-        return shouldLoad ? (
-            <Suspense fallback={<CartSkeleton />}>
-                <CartMain cart={cart} layout="aside" />
-            </Suspense>
-        ) : (
-            <CartSkeleton />
-        );
-    };
 
     return (
         <Aside type="cart" heading="CART">
             <Suspense fallback={<CartSkeleton />}>
                 <Await resolve={cart}>
-                    {(cart) => <CartContent cart={cart} />}
+                    {(cart) => {
+                        // Load the cart immediately when cart data is available
+                        // No need for additional state management
+                        return (
+                            <Suspense fallback={<CartSkeleton />}>
+                                <CartMain cart={cart} layout="aside" />
+                            </Suspense>
+                        );
+                    }}
                 </Await>
             </Suspense>
         </Aside>
@@ -188,7 +189,7 @@ function SearchAside() {
                                 Search
                             </label>
                             <input
-                                id="predictive-search-input" // ✅ Ajoutez cet ID
+                                id="predictive-search-input"
                                 name="q"
                                 onChange={fetchResults}
                                 onFocus={fetchResults}
