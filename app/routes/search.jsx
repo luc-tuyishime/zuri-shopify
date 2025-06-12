@@ -403,61 +403,52 @@ const ProductCard = memo(({ product, expandedTerms, locale }) => {
               />
             </div>
         )}
-        <div className="p-3 sm:p-4">
+        <div className="p-2 sm:p-3 md:p-4">
           <h3
-              className="font-medium text-sm sm:text-base lg:text-lg mb-2 line-clamp-2 leading-tight"
+              className="font-medium text-sm sm:text-base mb-2 line-clamp-2 leading-tight"
               dangerouslySetInnerHTML={{
                 __html: highlightSearchTerms(product.title)
               }}
           />
-          <p className="text-gray-600 text-xs sm:text-sm mb-2">{product.vendor}</p>
+          <p className="text-gray-600 text-xs mb-2">{product.vendor}</p>
 
-          {/* Product attributes - Responsive */}
+          {/* Product attributes - Mobile optimized */}
           <div className="text-xs text-gray-600 mb-3 space-y-1">
             {attributes.texture && (
-                <p><strong>{locale === 'fr' ? 'Texture :' : 'Texture:'}</strong> {attributes.texture}</p>
+                <p className="truncate"><strong>{locale === 'fr' ? 'Texture:' : 'Texture:'}</strong> {attributes.texture}</p>
             )}
             {attributes.longueur && (
-                <p><strong>{locale === 'fr' ? 'Longueur :' : 'Length:'}</strong> {attributes.longueur}</p>
-            )}
-            {attributes.densite && (
-                <p><strong>{locale === 'fr' ? 'Densité :' : 'Density:'}</strong> {attributes.densite}</p>
+                <p className="truncate"><strong>{locale === 'fr' ? 'Longueur:' : 'Length:'}</strong> {attributes.longueur}</p>
             )}
             {attributes.couleur && (
-                <p><strong>{locale === 'fr' ? 'Couleur :' : 'Color:'}</strong> {attributes.couleur}</p>
-            )}
-            {attributes.typeLace && (
-                <p><strong>{locale === 'fr' ? 'Type de lace :' : 'Lace type:'}</strong> {attributes.typeLace}</p>
-            )}
-            {attributes.babyHair && (
-                <p><strong>{locale === 'fr' ? 'Baby hair :' : 'Baby hair:'}</strong> {attributes.babyHair}</p>
+                <p className="truncate"><strong>{locale === 'fr' ? 'Couleur:' : 'Color:'}</strong> {attributes.couleur}</p>
             )}
           </div>
 
-          {/* Tags - Responsive */}
+          {/* Tags - Show only on larger screens */}
           {product.tags && product.tags.length > 0 && (
-              <div className="mb-3">
+              <div className="mb-3 hidden sm:block">
                 <div className="flex flex-wrap gap-1">
-                  {product.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="px-2 py-1 bg-gray-100 text-xs rounded">
-                  {tag}
-                </span>
+                  {product.tags.slice(0, 2).map(tag => (
+                      <span key={tag} className="px-2 py-1 bg-gray-100 text-xs rounded truncate">
+                        {tag}
+                      </span>
                   ))}
                 </div>
               </div>
           )}
 
           {price && (
-              <p className="text-base sm:text-lg font-semibold text-[#8B4513] mb-3">
+              <p className="text-sm sm:text-base font-semibold text-[#8B4513] mb-3">
                 {price.currencyCode === 'EUR' ? '€' : '$'}
                 {parseFloat(price.amount).toFixed(2)}
               </p>
           )}
           <Link
               to={`/products/${product.handle}`}
-              className="block w-full text-center px-3 py-2 sm:px-4 sm:py-2 bg-[#8B4513] text-white rounded hover:bg-[#7a3d0f] transition-colors duration-200 text-sm sm:text-base"
+              className="block w-full text-center px-2 py-2 sm:px-3 sm:py-2 bg-[#8B4513] text-white rounded hover:bg-[#7a3d0f] transition-colors duration-200 text-xs sm:text-sm"
           >
-            {locale === 'fr' ? 'Voir le produit' : 'View Product'}
+            {locale === 'fr' ? 'Voir' : 'View'}
           </Link>
         </div>
       </div>
@@ -482,13 +473,13 @@ const SearchSuggestions = memo(({ locale, inputRef }) => {
 
   return (
       <div className="text-sm text-gray-600">
-        <p className="mb-2">{locale === 'fr' ? 'Essayez de rechercher :' : 'Try searching for:'}</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2 text-xs sm:text-sm">{locale === 'fr' ? 'Essayez de rechercher :' : 'Try searching for:'}</p>
+        <div className="flex flex-wrap gap-1 sm:gap-2">
           {suggestions.map(suggestion => (
               <button
                   key={suggestion}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition-colors duration-200"
+                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition-colors duration-200"
               >
                 {suggestion}
               </button>
@@ -497,22 +488,6 @@ const SearchSuggestions = memo(({ locale, inputRef }) => {
       </div>
   );
 });
-
-// Product Grid Skeleton for better loading experience
-const ProductGridSkeleton = memo(() => (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
-      {Array.from({ length: 12 }).map((_, index) => (
-          <div key={index} className="bg-white border rounded-lg overflow-hidden animate-pulse">
-            <div className="aspect-square bg-gray-200"></div>
-            <div className="p-3 sm:p-4">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded mb-2 w-2/3"></div>
-              <div className="h-8 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-      ))}
-    </div>
-));
 
 // Main Search Page Component
 export default function SearchPage() {
@@ -531,9 +506,6 @@ export default function SearchPage() {
     total: result?.total || 0
   }), [result]);
 
-  console.log('Search terms used:', expandedTerms);
-  console.log('Products found:', searchData.products);
-
   // Memoized translations
   const translations = useMemo(() => ({
     searchTitle: locale === 'fr' ? 'Recherche' : 'Search',
@@ -546,35 +518,38 @@ export default function SearchPage() {
     products: locale === 'fr' ? 'Produits' : 'Products',
     articles: locale === 'fr' ? 'Articles' : 'Articles',
     pages: locale === 'fr' ? 'Pages' : 'Pages',
-    noResultsFound: locale === 'fr' ? 'Aucun résultat trouvé' : 'No results found',
+    noResultsFound: locale === 'fr' ? 'Aucun résultat' : 'No results',
     noResultsText: locale === 'fr'
-        ? 'Essayez de rechercher des termes de texture, longueur, densité, couleur ou type de lace.'
-        : 'Try searching for texture, length, density, color, or lace type terms.',
-    examples: locale === 'fr' ? 'Exemples :' : 'Examples:',
-    startSearch: locale === 'fr' ? 'Commencez votre recherche' : 'Start your search',
+        ? 'Essayez des termes différents'
+        : 'Try different terms',
+    startSearch: locale === 'fr' ? 'Commencez votre recherche' : 'Start searching',
     startSearchText: locale === 'fr'
-        ? 'Recherchez par texture, longueur, densité, couleur, type de lace, et plus encore.'
-        : 'Search by texture, length, density, color, lace type, and more.',
-    readArticle: locale === 'fr' ? 'Lire l\'article →' : 'Read Article →',
-    viewPage: locale === 'fr' ? 'Voir la page →' : 'View Page →',
-    error: locale === 'fr' ? 'Erreur :' : 'Error:'
+        ? 'Recherchez vos produits favoris'
+        : 'Search for your favorite products',
+    readArticle: locale === 'fr' ? 'Lire →' : 'Read →',
+    viewPage: locale === 'fr' ? 'Voir →' : 'View →',
+    error: locale === 'fr' ? 'Erreur:' : 'Error:'
   }), [locale]);
 
   return (
-      <div className="min-h-screen pt-16 sm:pt-20 md:pt-24 px-3 sm:px-4 md:px-6 lg:px-8">
+      <div className="min-h-screen pt-16 sm:pt-20 px-3 sm:px-4 md:px-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header - Responsive */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light font-poppins text-[#002F45] mb-4 sm:mb-6 text-center sm:text-left mt-4 sm:mt-0">
+          {/* Header - Mobile optimized */}
+          <div className="mb-4 sm:mb-6 mt-4 sm:mt-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-light text-[#002F45] mb-3 sm:mb-4 text-center sm:text-left">
               {translations.searchTitle}
             </h1>
 
-            {/* Search Form - Responsive */}
+            {/* Search Form - Mobile optimized */}
             <SearchForm>
               {({inputRef}) => (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex gap-2">
+                      <label htmlFor="search-input" className="sr-only">
+                        {translations.searchPlaceholder}
+                      </label>
                       <input
+                          id="search-input"
                           defaultValue={term || ''}
                           name="q"
                           placeholder={translations.searchPlaceholder}
@@ -585,63 +560,55 @@ export default function SearchPage() {
                       <button
                           type="submit"
                           disabled={isSearching}
-                          className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8B4513] text-white rounded-lg hover:bg-[#7a3d0f] transition-colors duration-200 font-medium text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          className="px-3 py-2 sm:px-4 sm:py-3 bg-[#8B4513] text-white rounded-lg hover:bg-[#7a3d0f] transition-colors duration-200 font-medium text-sm whitespace-nowrap disabled:opacity-50"
                       >
-                        {isSearching && (
-                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        )}
-                        {isSearching ? (locale === 'fr' ? 'Recherche...' : 'Searching...') : translations.searchButton}
+                        {isSearching ? '...' : translations.searchButton}
                       </button>
                     </div>
 
-                    {/* Search Suggestions - Responsive */}
+                    {/* Search Suggestions - Mobile optimized */}
                     <SearchSuggestions locale={locale} inputRef={inputRef} />
                   </div>
               )}
             </SearchForm>
           </div>
 
-          {/* Loading State - Show when searching */}
+          {/* Loading State */}
           {isSearching && (
-              <div className="flex items-center justify-center py-8 sm:py-12">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <div className="w-8 h-8 sm:w-12 sm:h-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <p className="text-gray-600 text-sm sm:text-base font-medium">
-                    {locale === 'fr' ? 'Recherche en cours...' : 'Searching...'}
+              <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 sm:border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-600 text-sm">
+                    {locale === 'fr' ? 'Recherche...' : 'Searching...'}
                   </p>
                 </div>
               </div>
           )}
 
-          {/* Results Summary - Responsive */}
+          {/* Results Summary - Mobile optimized */}
           {term && !isSearching && (
-              <div className="mb-4 sm:mb-6">
-                <p className="text-base sm:text-lg text-gray-600 text-center sm:text-left">
-                  {translations.foundResults} <strong>{searchData.total}</strong> {translations.resultsFor} <strong>"{term}"</strong>
+              <div className="mb-3 sm:mb-4">
+                <p className="text-sm sm:text-base text-gray-600 text-center">
+                  <strong>{searchData.total}</strong> {translations.resultsFor} <strong>"{term}"</strong>
                 </p>
               </div>
           )}
 
-          {/* Error Display - Responsive */}
+          {/* Error Display */}
           {error && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm sm:text-base">{translations.error} {error}</p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{translations.error} {error}</p>
               </div>
           )}
 
-          {/* Enhanced Products Display - Responsive Grid */}
+          {/* Products Display - Mobile optimized grid */}
           {!isSearching && searchData.products.length > 0 && (
-              <section className="mb-8 sm:mb-12">
-                <h2 className="text-xl sm:text-2xl font-medium text-[#002F45] mb-4 sm:mb-6 pb-2 border-b text-center sm:text-left">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-medium text-[#002F45] mb-3 sm:mb-4 text-center">
                   {translations.products} ({searchData.products.length})
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
-                  {searchData.products.map((product, index) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+                  {searchData.products.map((product) => (
                       <ProductCard
                           key={product.id}
                           product={product}
@@ -653,19 +620,19 @@ export default function SearchPage() {
               </section>
           )}
 
-          {/* Articles Section - Responsive */}
+          {/* Articles Section - Mobile optimized */}
           {!isSearching && searchData.articles.length > 0 && (
-              <section className="mb-8 sm:mb-12">
-                <h2 className="text-xl sm:text-2xl font-medium text-[#002F45] mb-4 sm:mb-6 pb-2 border-b text-center sm:text-left">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-medium text-[#002F45] mb-3 sm:mb-4 text-center">
                   {translations.articles} ({searchData.articles.length})
                 </h2>
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-3">
                   {searchData.articles.map((article) => (
-                      <div key={article.id} className="border rounded-lg p-3 sm:p-4">
-                        <h3 className="font-medium text-base sm:text-lg mb-2">{article.title}</h3>
+                      <div key={article.id} className="border rounded-lg p-3">
+                        <h3 className="font-medium text-sm sm:text-base mb-2 line-clamp-2">{article.title}</h3>
                         <Link
                             to={`/blogs/${article.blog?.handle}/${article.handle}`}
-                            className="text-[#8B4513] hover:underline text-sm sm:text-base"
+                            className="text-[#8B4513] hover:underline text-sm"
                         >
                           {translations.readArticle}
                         </Link>
@@ -675,19 +642,19 @@ export default function SearchPage() {
               </section>
           )}
 
-          {/* Pages Section - Responsive */}
+          {/* Pages Section - Mobile optimized */}
           {!isSearching && searchData.pages.length > 0 && (
-              <section className="mb-8 sm:mb-12">
-                <h2 className="text-xl sm:text-2xl font-medium text-[#002F45] mb-4 sm:mb-6 pb-2 border-b text-center sm:text-left">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-medium text-[#002F45] mb-3 sm:mb-4 text-center">
                   {translations.pages} ({searchData.pages.length})
                 </h2>
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-3">
                   {searchData.pages.map((page) => (
-                      <div key={page.id} className="border rounded-lg p-3 sm:p-4">
-                        <h3 className="font-medium text-base sm:text-lg mb-2">{page.title}</h3>
+                      <div key={page.id} className="border rounded-lg p-3">
+                        <h3 className="font-medium text-sm sm:text-base mb-2 line-clamp-2">{page.title}</h3>
                         <Link
                             to={`/pages/${page.handle}`}
-                            className="text-[#8B4513] hover:underline text-sm sm:text-base"
+                            className="text-[#8B4513] hover:underline text-sm"
                         >
                           {translations.viewPage}
                         </Link>
@@ -697,36 +664,33 @@ export default function SearchPage() {
               </section>
           )}
 
-          {/* No Results - Responsive */}
+          {/* No Results - Mobile optimized */}
           {term && !isSearching && searchData.total === 0 && (
-              <div className="text-center py-8 sm:py-12">
-                <div className="mb-4">
-                  <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-center py-8">
+                <div className="mb-3">
+                  <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <h2 className="text-lg sm:text-xl font-medium text-gray-600 mb-2">{translations.noResultsFound}</h2>
-                <p className="text-gray-500 mb-4 text-sm sm:text-base px-4">
+                <h2 className="text-base sm:text-lg font-medium text-gray-600 mb-2">{translations.noResultsFound}</h2>
+                <p className="text-gray-500 text-sm px-4">
                   {translations.noResultsText}
                 </p>
-                <div className="text-xs sm:text-sm text-gray-600 px-4">
-                  <p>{translations.examples} {locale === 'fr' ? '"lisse", "bouclé", "long", "court", "noir", "blond", "lace frontale"' : '"smooth", "curly", "long", "short", "black", "blonde", "frontal lace"'}</p>
-                </div>
               </div>
           )}
 
-          {/* Empty State - Responsive */}
+          {/* Empty State - Mobile optimized */}
           {!term && (
-              <div className="text-center py-8 sm:py-12">
-                <div className="mb-4">
-                  <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-center py-8">
+                <div className="mb-3">
+                  <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <h2 className="text-lg sm:text-xl font-medium text-gray-600 mb-2">
+                <h2 className="text-base sm:text-lg font-medium text-gray-600 mb-2">
                   {translations.startSearch}
                 </h2>
-                <p className="text-gray-500 text-sm sm:text-base px-4">
+                <p className="text-gray-500 text-sm px-4">
                   {translations.startSearchText}
                 </p>
               </div>

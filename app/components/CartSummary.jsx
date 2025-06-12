@@ -11,9 +11,6 @@ export function CartSummary({cart, layout}) {
         ? 'cart-summary-page max-w-md mx-auto'
         : 'cart-summary-aside';
 
-    console.log('=== CART DETAILS ===', cart);
-
-
     return (
         <div aria-labelledby="cart-summary" className={`${className} bg-white rounded-lg shadow-sm border p-6`}>
             <h4 className="text-xl font-semibold text-gray-900 mb-6 border-b border-gray-200 pb-4">

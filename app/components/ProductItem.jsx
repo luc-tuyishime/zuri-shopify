@@ -118,7 +118,7 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                 <div className="product-info p-3 sm:p-4">
                     <div className="product-content">
                         {/* Responsive Title */}
-                        <h3 className="font-regular font-poppins text-base sm:text-lg lg:text-xl text-[#002F45] mb-2 line-clamp-2 leading-tight text-ellipsis">
+                        <h3 className="font-regular font-poppins text-base sm:text-lg lg:text-xl text-[#002F45] mb-2 line-clamp-1 leading-tight text-ellipsis">
                             {product.title}
                         </h3>
 

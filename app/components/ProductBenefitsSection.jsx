@@ -39,16 +39,16 @@ export function ProductBenefitsSection({ product }) {
     ];
 
     return (
-        <div className="bg-gray-50 py-16">
+        <div className="bg-gray-50 py-8 md:py-16">
             <div className="container mx-auto px-4">
                 {/* Tab Navigation */}
-                <div className="flex justify-center mb-14">
-                    <div className="flex space-x-16">
+                <div className="flex justify-center mb-8 md:mb-14">
+                    <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-8 md:space-x-16">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`pb-2 text-[20px] font-medium tracking-wider transition-all duration-200 ${
+                                className={`pb-2 text-sm sm:text-base md:text-[20px] font-medium tracking-wider transition-all duration-200 ${
                                     activeTab === tab.id
                                         ? 'text-[#002F45] border-b-2 border-[#002F45]'
                                         : 'text-gray-400 hover:text-gray-600'
@@ -62,14 +62,14 @@ export function ProductBenefitsSection({ product }) {
 
                 {/* Benefits Content */}
                 {activeTab === 'benefits' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-6xl mx-auto">
                         {benefits.map((benefit, index) => (
-                            <div key={index} className="flex items-start space-x-4">
+                            <div key={index} className="flex items-start space-x-3 md:space-x-4">
                                 {/* Check Mark Icon */}
                                 <div className="flex-shrink-0 self-center">
-                                    <div className="w-8 h-8 bg-[#002F45] rounded-full flex items-center justify-center">
+                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[#002F45] rounded-full flex items-center justify-center">
                                         <svg
-                                            className="w-5 h-5 text-white"
+                                            className="w-3 h-3 md:w-5 md:h-5 text-white"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -86,10 +86,10 @@ export function ProductBenefitsSection({ product }) {
 
                                 {/* Benefit Content */}
                                 <div className="flex-1">
-                                    <h3 className="text-[16px] font-semibold text-[#002F45] mb-3 font-poppins">
+                                    <h3 className="text-sm sm:text-base md:text-[16px] font-semibold text-[#002F45] mb-2 md:mb-3 font-poppins">
                                         {benefit.title}
                                     </h3>
-                                    <p className="text-[16px] text-[#002F45] font-light leading-relaxed font-poppins">
+                                    <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light leading-relaxed font-poppins">
                                         {benefit.description}
                                     </p>
                                 </div>
@@ -101,10 +101,10 @@ export function ProductBenefitsSection({ product }) {
                 {/* Ingredients Content */}
                 {activeTab === 'ingredients' && (
                     <div className="max-w-4xl mx-auto text-center">
-                        <h3 className="text-2xl font-semibold text-[#002F45] mb-6 font-poppins">
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#002F45] mb-4 md:mb-6 font-poppins">
                             {locale === 'fr' ? 'Ingrédients Naturels' : 'Natural Ingredients'}
                         </h3>
-                        <p className="text-[#002F45] font-light leading-relaxed font-poppins">
+                        <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light leading-relaxed font-poppins">
                             {locale === 'fr'
                                 ? 'Notre formule contient des ingrédients soigneusement sélectionnés pour nourrir et protéger vos cheveux naturellement.'
                                 : 'Our formula contains carefully selected ingredients to nourish and protect your hair naturally.'
@@ -117,13 +117,13 @@ export function ProductBenefitsSection({ product }) {
                 {/* Usage Content */}
                 {activeTab === 'usage' && (
                     <div className="max-w-4xl mx-auto text-center">
-                        <h3 className="text-2xl font-semibold text-[#002F45] mb-6 font-poppins">
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#002F45] mb-4 md:mb-6 font-poppins">
                             {locale === 'fr' ? 'Mode d\'emploi' : 'How to Use'}
                         </h3>
-                        <div className="text-left space-y-4">
+                        <div className="text-left space-y-3 md:space-y-4">
                             <div className="flex items-start space-x-3">
-                                <span className="flex-shrink-0 w-6 h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-sm font-medium">1</span>
-                                <p className="text-[#002F45] font-light font-poppins">
+                                <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium">1</span>
+                                <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light font-poppins">
                                     {locale === 'fr'
                                         ? 'Mouillez abondamment vos cheveux avec de l\'eau tiède.'
                                         : 'Wet your hair thoroughly with lukewarm water.'
@@ -131,8 +131,8 @@ export function ProductBenefitsSection({ product }) {
                                 </p>
                             </div>
                             <div className="flex items-start space-x-3">
-                                <span className="flex-shrink-0 w-6 h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-sm font-medium">2</span>
-                                <p className="text-[#002F45] font-light font-poppins">
+                                <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium">2</span>
+                                <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light font-poppins">
                                     {locale === 'fr'
                                         ? 'Appliquez une petite quantité de shampooing sur vos cheveux mouillés.'
                                         : 'Apply a small amount of shampoo to your wet hair.'
@@ -140,8 +140,8 @@ export function ProductBenefitsSection({ product }) {
                                 </p>
                             </div>
                             <div className="flex items-start space-x-3">
-                                <span className="flex-shrink-0 w-6 h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-sm font-medium">3</span>
-                                <p className="text-[#002F45] font-light font-poppins">
+                                <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium">3</span>
+                                <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light font-poppins">
                                     {locale === 'fr'
                                         ? 'Massez doucement le cuir chevelu et les cheveux pour créer une mousse riche.'
                                         : 'Gently massage scalp and hair to create a rich lather.'
@@ -149,8 +149,8 @@ export function ProductBenefitsSection({ product }) {
                                 </p>
                             </div>
                             <div className="flex items-start space-x-3">
-                                <span className="flex-shrink-0 w-6 h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-sm font-medium">4</span>
-                                <p className="text-[#002F45] font-light font-poppins">
+                                <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 bg-[#002F45] text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium">4</span>
+                                <p className="text-sm sm:text-base md:text-[16px] text-[#002F45] font-light font-poppins">
                                     {locale === 'fr'
                                         ? 'Rincez abondamment à l\'eau tiède et répétez si nécessaire.'
                                         : 'Rinse thoroughly with lukewarm water and repeat if necessary.'

@@ -15,84 +15,84 @@ export function Footer({footer: footerPromise, header, publicStoreDomain}) {
       <Suspense>
         <Await resolve={footerPromise}>
           {(footer) => (
-              <footer className="bg-[#5C2E1C] text-white py-16 relative">
-                <div className="absolute top-0 left-0 w-[120px] h-[110px] border-r border-b border-white" style={{
+              <footer className="bg-[#5C2E1C] text-white py-8 md:py-16 relative">
+                <div className="hidden md:block absolute top-0 left-0 w-[100px] h-[105px] border-r border-b border-white" style={{
                   borderRight: '0.48px solid white',
                   borderBottom: '0.48px solid white'
                 }}></div>
 
                 <div className="container mx-auto px-4">
-                  <div className="pl-[60px] md:pl-[80px]">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-x-16 gap-y-10">
-                    {/* Logo and Company Info Column */}
-                    <div className="col-span-1 pr-8"> {/* Added extra padding to create space */}
-                      <Link to="/" className="block mb-6">
-                        <img
-                            src={LogoWhite}
-                            alt="ZURI"
-                        />
-                      </Link>
-                      <p className="text-[11px] font-inter font-medium mb-6">
-                        {t.footer.companyDescription}
-                      </p>
-                      <p className="font-bold text-[11px] mb-8">{t.footer.beBold}</p>
-                      <p className="text-[11px] mt-16">{t.footer.copyright}</p>
-                    </div>
+                  <div className="md:pl-[60px] md:pl-[80px]">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-x-8 md:gap-x-16 gap-y-8 md:gap-y-10">
+                      {/* Logo and Company Info Column */}
+                      <div className="col-span-1 md:pr-8">
+                        <Link to="/" className="block mb-4 md:mb-6">
+                          <img
+                              src={LogoWhite}
+                              alt="ZURI"
+                          />
+                        </Link>
+                        <p className="text-xs md:text-[11px] font-inter font-medium mb-4 md:mb-6">
+                          {t.footer.companyDescription}
+                        </p>
+                        <p className="font-bold text-xs md:text-[11px] mb-6 md:mb-8">{t.footer.beBold}</p>
+                        <p className="text-xs md:text-[11px] mt-8 md:mt-16">{t.footer.copyright}</p>
+                      </div>
 
-                    {/* Explore Column */}
-                    <div className="col-span-1">
-                      <p className="font-medium font-inter text-[16px] mb-6">{t.footer.explore}</p>
-                      <nav className="flex flex-col space-y-3">
-                        <NavLink to="/" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.home}</NavLink>
-                        <NavLink to="/pages/about" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.about}</NavLink>
-                        <NavLink to="/collections/best-sellers" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.bestSellers}</NavLink>
-                        <NavLink to="/collections/wigs" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.wigs}</NavLink>
-                        <NavLink to="/pages/wig-care" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.wigCare}</NavLink>
-                        <NavLink to="/pages/hair-care" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.hairCare}</NavLink>
-                        <NavLink to="/pages/community" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.community}</NavLink>
-                      </nav>
-                    </div>
-
-                    {/* Shops Column */}
-                    <div className="col-span-1">
-                      <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.shops}</h3>
-                      <nav className="flex flex-col space-y-3">
-                        <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">Kigali</a>
-                        <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">Uganda</a>
-                        <a href="#" className="font-medium font-inter text-[11px] text-[#806D6D]">DRC</a>
-                      </nav>
-
-                      <h3 className="font-medium font-inter text-[16px] mb-4 mt-8">{t.footer.contact}</h3>
-                      <p className="font-medium font-inter text-[11px] text-[#806D6D] mb-2">info@myzuri.com</p>
-                      <a href="tel:+2351567262" className="font-medium font-inter text-[11px] text-[#806D6D]">+2351567262</a>
-                    </div>
-
-                    {/* Follow Column */}
-                    <div className="col-span-1">
-                      <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.follow}</h3>
-                      <nav className="flex flex-col space-y-3">
-                        <a href="https://www.instagram.com/zuribelgique" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">Instagram</a>
-                        <a href="https://twitter.com/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">Twitter</a>
-                        <a href="https://linkedin.com/company/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-[11px] text-[#806D6D]">LinkedIn</a>
-                      </nav>
-                    </div>
-
-                    {/* Legal Column */}
-                    <div className="col-span-1 flex flex-col">
-                      <div>
-                        <h3 className="font-medium font-inter text-[16px] mb-6">{t.footer.legal}</h3>
-                        <nav className="flex flex-col space-y-3">
-                          <NavLink to="/policies/terms-of-service" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.terms}</NavLink>
-                          <NavLink to="/policies/privacy-policy" className="font-medium font-inter text-[11px] text-[#806D6D]">{t.footer.privacy}</NavLink>
+                      {/* Explore Column */}
+                      <div className="col-span-1">
+                        <p className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">{t.footer.explore}</p>
+                        <nav className="flex flex-col space-y-2 md:space-y-3">
+                          <NavLink to="/" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.home}</NavLink>
+                          <NavLink to="/pages/about" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.about}</NavLink>
+                          <NavLink to="/collections/best-sellers" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.bestSellers}</NavLink>
+                          <NavLink to="/collections/wigs" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.wigs}</NavLink>
+                          <NavLink to="/pages/wig-care" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.wigCare}</NavLink>
+                          <NavLink to="/pages/hair-care" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.hairCare}</NavLink>
+                          <NavLink to="/pages/community" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.community}</NavLink>
                         </nav>
                       </div>
-                      {/* Positioned to touch bottom */}
-                      <div className="mt-auto">
-                        <div className="border-t border-l border-r border-white rounded-tl-full rounded-tr-full h-40 w-40 ml-auto absolute bottom-0 right-4 md:right-16"></div>
+
+                      {/* Shops Column */}
+                      <div className="col-span-1">
+                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">{t.footer.shops}</h3>
+                        <nav className="flex flex-col space-y-2 md:space-y-3">
+                          <a href="#" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">Kigali</a>
+                          <a href="#" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">Uganda</a>
+                          <a href="#" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">DRC</a>
+                        </nav>
+
+                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-3 md:mb-4 mt-6 md:mt-8">{t.footer.contact}</h3>
+                        <p className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D] mb-2">info@myzuri.com</p>
+                        <a href="tel:+2351567262" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">+2351567262</a>
+                      </div>
+
+                      {/* Follow Column */}
+                      <div className="col-span-1">
+                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">{t.footer.follow}</h3>
+                        <nav className="flex flex-col space-y-2 md:space-y-3">
+                          <a href="https://www.instagram.com/zuribelgique" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">Instagram</a>
+                          <a href="https://twitter.com/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">Twitter</a>
+                          <a href="https://linkedin.com/company/zuri" target="_blank" rel="noopener noreferrer" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">LinkedIn</a>
+                        </nav>
+                      </div>
+
+                      {/* Legal Column */}
+                      <div className="col-span-1 flex flex-col">
+                        <div>
+                          <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">{t.footer.legal}</h3>
+                          <nav className="flex flex-col space-y-2 md:space-y-3">
+                            <NavLink to="/policies/terms-of-service" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.terms}</NavLink>
+                            <NavLink to="/policies/privacy-policy" className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]">{t.footer.privacy}</NavLink>
+                          </nav>
+                        </div>
+                        {/* Bottom right corner - hidden on mobile, exact original styling on desktop */}
+                        <div className="hidden md:block mt-auto">
+                          <div className="border-t border-l border-r border-white rounded-tl-full rounded-tr-full h-40 w-40 ml-auto absolute bottom-0 right-4 md:right-16"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 </div>
               </footer>
           )}

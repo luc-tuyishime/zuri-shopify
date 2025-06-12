@@ -75,7 +75,7 @@ function LazyFooter({ footer, header, publicStoreDomain }) {
     );
 }
 
-// Lazy Cart Component (loads on interaction)
+// Fixed Lazy Cart Component
 function LazyCartAside({cart}) {
     const [shouldLoad, setShouldLoad] = useState(false);
 
@@ -106,24 +106,29 @@ function LazyCartAside({cart}) {
         </div>
     );
 
+    // Cart content component that handles the resolved cart data
+    const CartContent = ({ cart }) => {
+        // Use useEffect to trigger loading after render is complete
+        useEffect(() => {
+            if (cart && !shouldLoad) {
+                setShouldLoad(true);
+            }
+        }, [cart]);
+
+        return shouldLoad ? (
+            <Suspense fallback={<CartSkeleton />}>
+                <CartMain cart={cart} layout="aside" />
+            </Suspense>
+        ) : (
+            <CartSkeleton />
+        );
+    };
+
     return (
         <Aside type="cart" heading="CART">
             <Suspense fallback={<CartSkeleton />}>
                 <Await resolve={cart}>
-                    {(cart) => {
-                        if (!shouldLoad) {
-                            // Trigger loading when cart data is available
-                            setShouldLoad(true);
-                        }
-
-                        return shouldLoad ? (
-                            <Suspense fallback={<CartSkeleton />}>
-                                <CartMain cart={cart} layout="aside" />
-                            </Suspense>
-                        ) : (
-                            <CartSkeleton />
-                        );
-                    }}
+                    {(cart) => <CartContent cart={cart} />}
                 </Await>
             </Suspense>
         </Aside>
@@ -179,7 +184,11 @@ function SearchAside() {
                 <SearchFormPredictive>
                     {({fetchResults, goToSearch, inputRef}) => (
                         <>
+                            <label htmlFor="predictive-search-input" className="sr-only">
+                                Search
+                            </label>
                             <input
+                                id="predictive-search-input" // ✅ Ajoutez cet ID
                                 name="q"
                                 onChange={fetchResults}
                                 onFocus={fetchResults}

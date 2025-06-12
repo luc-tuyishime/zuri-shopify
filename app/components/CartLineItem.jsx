@@ -114,10 +114,12 @@ function CartLineQuantity({line}) {
             <div className="flex items-center border border-gray-300 rounded-lg bg-white">
                 <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
                     <button
+                        id={`decrease-${lineId}`}
                         aria-label={locale === 'fr' ? 'Diminuer la quantité' : 'Decrease quantity'}
                         disabled={quantity <= 1 || !!isOptimistic}
                         name="decrease-quantity"
                         value={prevQuantity}
+                        type="submit"
                         className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-l-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <span className="text-lg font-medium">−</span>
@@ -130,10 +132,12 @@ function CartLineQuantity({line}) {
 
                 <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
                     <button
+                        id={`increase-${lineId}`}
                         aria-label={locale === 'fr' ? 'Augmenter la quantité' : 'Increase quantity'}
                         name="increase-quantity"
                         value={nextQuantity}
                         disabled={!!isOptimistic}
+                        type="submit"
                         className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-r-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <span className="text-lg font-medium">+</span>
@@ -164,6 +168,7 @@ function CartLineRemoveButton({lineIds, disabled}) {
             inputs={{lineIds}}
         >
             <button
+                id={`remove-${lineIds[0]}`}
                 disabled={disabled}
                 type="submit"
                 className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"

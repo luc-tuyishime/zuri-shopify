@@ -25,8 +25,6 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
   const [currentLocale, setCurrentLocale] = useLocale();
   const t = useTranslation(currentLocale);
 
-
-
   const navigationItems = [
     { id: 'shop-now', title: t.navigation.shopNow, url: '/collections/all' },
     { id: 'best-sellers', title: t.navigation.bestSellers, url: '/#best-sellers' },
@@ -52,22 +50,23 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               isScrolled ? 'bg-zuri-beige/95 backdrop-blur-sm shadow-sm' : 'bg-[#E9CFB6]'
           }`}
       >
-        <div className="container mx-auto px-6 flex items-center justify-between h-20">
+        <div className="container mx-auto px-4 md:px-6 flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <div>
+          <div className="flex-shrink-0">
             <NavLink prefetch="intent" to="/" className="text-2xl font-semibold tracking-wider">
-              <img src={Logo} alt={header?.shop?.name || 'ZURI'} />
+              <img src={Logo} alt={header?.shop?.name || 'ZURI'} className="h-8 md:h-auto w-auto" />
             </NavLink>
           </div>
 
-          <div className="flex items-center space-x-8">
+          {/* Desktop Navigation and Actions */}
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-8">
+            <nav className="flex space-x-6 lg:space-x-8">
               {navigationItems.map(item => (
                   <NavLink
                       key={item.id}
                       to={item.url}
-                      className="uppercase text-[15px] tracking-wider font-regular text-[#542C17] font-inter"
+                      className="uppercase text-sm lg:text-[15px] tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
                   >
                     {item.title}
                   </NavLink>
@@ -79,7 +78,38 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
                 onLocaleChange={setCurrentLocale}
             />
 
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 lg:space-x-6">
+              <button
+                  className="focus:outline-none relative hover:opacity-80 transition-opacity duration-200"
+                  aria-label="Cart"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    open('cart');
+                  }}
+              >
+                <img src={CartIcon} className="w-5 h-5" alt="Cart" />
+              </button>
+
+              {/* Account */}
+              <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
+                <img src={AccountIcon} className="w-5 h-5" alt="Account" />
+              </NavLink>
+
+              {/* Search */}
+              <Link
+                  to="/search"
+                  className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
+                  aria-label="Search"
+              >
+                <img src={SearchIcon} className="w-5 h-5" alt="Search" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile Actions and Menu Button */}
+          <div className="md:hidden flex items-center space-x-4">
+            {/* Mobile Icons */}
+            <div className="flex items-center space-x-3">
               <button
                   className="focus:outline-none relative"
                   aria-label="Cart"
@@ -91,12 +121,10 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
                 <img src={CartIcon} className="w-5 h-5" alt="Cart" />
               </button>
 
-              {/* Account */}
               <NavLink to="/account" className="focus:outline-none" aria-label="Account">
                 <img src={AccountIcon} className="w-5 h-5" alt="Account" />
               </NavLink>
 
-              {/* Search */}
               <Link
                   to="/search"
                   className="focus:outline-none"
@@ -105,47 +133,63 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
                 <img src={SearchIcon} className="w-5 h-5" alt="Search" />
               </Link>
             </div>
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button
-              className="md:hidden focus:outline-none"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle menu"
-          >
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Mobile Menu Button */}
+            <button
+                className="focus:outline-none p-1"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
             >
-              <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
+              <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-[#542C17]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+              >
+                {isMobileMenuOpen ? (
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                ) : (
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                    />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-            <div className="md:hidden bg-zuri-beige py-4">
-              <div className="container mx-auto px-6">
-                <nav className="flex flex-col space-y-4">
-                  {/* Use the same navigationItems as desktop */}
+            <div className="md:hidden bg-[#E9CFB6] border-t border-[#542C17]/10">
+              <div className="container mx-auto px-4">
+                <nav className="flex flex-col py-4">
                   {navigationItems.map((item) => (
                       <NavLink
                           key={item.id}
                           to={item.url}
-                          className="uppercase text-sm tracking-wider py-2 text-[#542C17] font-inter"
+                          className="uppercase text-sm tracking-wider py-3 text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 border-b border-[#542C17]/10 last:border-b-0"
                           onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {item.title}
                       </NavLink>
                   ))}
+
+                  {/* Mobile Language Switcher */}
+                  <div className="py-3 border-b border-[#542C17]/10 last:border-b-0">
+                    <LanguageSwitcher
+                        currentLocale={currentLocale}
+                        onLocaleChange={setCurrentLocale}
+                    />
+                  </div>
                 </nav>
               </div>
             </div>
@@ -159,39 +203,39 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
  */
 function HeaderCtas({isLoggedIn, cart}) {
   return (
-    <nav className="header-ctas" role="navigation">
-      <HeaderMenuMobileToggle />
-      <NavLink prefetch="intent" to="/account" style={activeLinkStyle}>
-        <Suspense fallback="Sign in">
-          <Await resolve={isLoggedIn} errorElement="Sign in">
-            {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
-          </Await>
-        </Suspense>
-      </NavLink>
-      <SearchToggle />
-      <CartToggle cart={cart} />
-    </nav>
+      <nav className="header-ctas" role="navigation">
+        <HeaderMenuMobileToggle />
+        <NavLink prefetch="intent" to="/account" style={activeLinkStyle}>
+          <Suspense fallback="Sign in">
+            <Await resolve={isLoggedIn} errorElement="Sign in">
+              {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
+            </Await>
+          </Suspense>
+        </NavLink>
+        <SearchToggle />
+        <CartToggle cart={cart} />
+      </nav>
   );
 }
 
 function HeaderMenuMobileToggle() {
   const {open} = useAside();
   return (
-    <button
-      className="header-menu-mobile-toggle reset"
-      onClick={() => open('mobile')}
-    >
-      <h3>☰</h3>
-    </button>
+      <button
+          className="header-menu-mobile-toggle reset"
+          onClick={() => open('mobile')}
+      >
+        <h3>☰</h3>
+      </button>
   );
 }
 
 function SearchToggle() {
   const {open} = useAside();
   return (
-    <button className="reset" onClick={() => open('search')}>
-      Search
-    </button>
+      <button className="reset" onClick={() => open('search')}>
+        Search
+      </button>
   );
 }
 
@@ -203,21 +247,21 @@ function CartBadge({count}) {
   const {publish, shop, cart, prevCart} = useAnalytics();
 
   return (
-    <a
-      href="/cart"
-      onClick={(e) => {
-        e.preventDefault();
-        open('cart');
-        publish('cart_viewed', {
-          cart,
-          prevCart,
-          shop,
-          url: window.location.href || '',
-        });
-      }}
-    >
-      Cart {count === null ? <span>&nbsp;</span> : count}
-    </a>
+      <a
+          href="/cart"
+          onClick={(e) => {
+            e.preventDefault();
+            open('cart');
+            publish('cart_viewed', {
+              cart,
+              prevCart,
+              shop,
+              url: window.location.href || '',
+            });
+          }}
+      >
+        Cart {count === null ? <span>&nbsp;</span> : count}
+      </a>
   );
 }
 
@@ -226,11 +270,11 @@ function CartBadge({count}) {
  */
 function CartToggle({cart}) {
   return (
-    <Suspense fallback={<CartBadge count={null} />}>
-      <Await resolve={cart}>
-        <CartBanner />
-      </Await>
-    </Suspense>
+      <Suspense fallback={<CartBadge count={null} />}>
+        <Await resolve={cart}>
+          <CartBanner />
+        </Await>
+      </Suspense>
   );
 }
 

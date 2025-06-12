@@ -396,6 +396,7 @@ export default function Collection() {
                                             </label>
                                             <input
                                                 type="number"
+                                                name={"price"}
                                                 value={filters.minPrice}
                                                 onChange={(e) => updateFilter('minPrice', e.target.value)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -408,6 +409,7 @@ export default function Collection() {
                                             </label>
                                             <input
                                                 type="number"
+                                                name={"maxprice"}
                                                 value={filters.maxPrice}
                                                 onChange={(e) => updateFilter('maxPrice', e.target.value)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"

@@ -11,33 +11,33 @@ import {CartSummary} from './CartSummary';
  * @param {CartMainProps}
  */
 export function CartMain({layout, cart: originalCart}) {
-  // The useOptimisticCart hook applies pending actions to the cart
-  // so the user immediately sees feedback when they modify the cart.
-  const cart = useOptimisticCart(originalCart);
+    // The useOptimisticCart hook applies pending actions to the cart
+    // so the user immediately sees feedback when they modify the cart.
+    const cart = useOptimisticCart(originalCart);
 
     const linesCount = cart?.lines?.nodes?.length || 0;
 
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
-  const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
+    const withDiscount =
+        cart &&
+        Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
+    const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
+    const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
 
-  return (
-    <div className={className}>
-        {!linesCount && <CartEmpty layout={layout} />}
-      <div className="cart-details">
-        <div aria-labelledby="cart-lines">
-          <ul>
-            {(cart?.lines?.nodes ?? []).map((line) => (
-              <CartLineItem key={line.id} line={line} layout={layout} />
-            ))}
-          </ul>
+    return (
+        <div className={`${className} px-3 md:px-0`}>
+            {!linesCount && <CartEmpty layout={layout} />}
+            <div className="cart-details">
+                <div aria-labelledby="cart-lines">
+                    <ul className="space-y-3 md:space-y-0">
+                        {(cart?.lines?.nodes ?? []).map((line) => (
+                            <CartLineItem key={line.id} line={line} layout={layout} />
+                        ))}
+                    </ul>
+                </div>
+                {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+            </div>
         </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
-      </div>
-    </div>
-  );
+    );
 }
 
 /**
@@ -48,25 +48,25 @@ export function CartMain({layout, cart: originalCart}) {
  */
 function CartEmpty({hidden = false}) {
     const [locale] = useLocale();
-  const {close} = useAside();
-  return (
-      <div hidden={hidden} className="flex flex-col items-center justify-center text-center py-12 px-6">
-          <p className="text-gray-600 text-lg mb-6 max-w-md">
-              {locale === 'fr'
-                  ? "Il semble que vous n'ayez encore rien ajouté, commençons !"
-                  : "Looks like you haven't added anything yet, let's get you started!"
-              }
-          </p>
-          <Link
-              to="/collections/all"
-              onClick={close}
-              prefetch="viewport"
-              className="inline-flex items-center  px-6 py-3 bg-[#8B4513] text-white font-medium rounded-lg hover:bg-[#A0522D] transition-colors"
-          >
-              {locale === 'fr' ? 'Continuer les achats' : 'Continue shopping'} →
-          </Link>
-      </div>
-  );
+    const {close} = useAside();
+    return (
+        <div hidden={hidden} className="flex flex-col items-center justify-center text-center py-8 md:py-12 px-4 md:px-6">
+            <p className="text-gray-600 text-base md:text-lg mb-4 md:mb-6 max-w-md">
+                {locale === 'fr'
+                    ? "Il semble que vous n'ayez encore rien ajouté, commençons !"
+                    : "Looks like you haven't added anything yet, let's get you started!"
+                }
+            </p>
+            <Link
+                to="/collections/all"
+                onClick={close}
+                prefetch="viewport"
+                className="inline-flex items-center px-4 py-2 md:px-6 md:py-3 bg-[#8B4513] text-white font-medium rounded-lg hover:bg-[#A0522D] transition-colors text-sm md:text-base"
+            >
+                {locale === 'fr' ? 'Continuer les achats' : 'Continue shopping'} →
+            </Link>
+        </div>
+    );
 }
 
 /** @typedef {'page' | 'aside'} CartLayout */

@@ -244,6 +244,7 @@ const ZoomModal = memo(({
 
 export default function Product() {
   const [showZoomModal, setShowZoomModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { product, relatedProducts } = useLoaderData();
   const cart = useOptimisticCart();
   const [locale] = useLocale();
@@ -374,6 +375,19 @@ export default function Product() {
     };
   }, [showZoomModal]);
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Check on resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const { title, descriptionHtml } = product;
 
   return (
@@ -491,14 +505,16 @@ export default function Product() {
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center">
                         <input
+                            id="purchase-one-time"
                             type="radio"
                             name="purchase-option"
+                            value="one-time"
                             className="mr-2 sm:mr-3"
                             defaultChecked
                         />
-                        <span className="font-medium text-sm sm:text-base">
-                        {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}
-                      </span>
+                        <label htmlFor="purchase-one-time" className="font-medium text-sm sm:text-base cursor-pointer">
+                          {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}
+                        </label>
                       </div>
                       <div className="text-base sm:text-lg font-semibold">
                         <Money data={selectedVariant?.price} />
@@ -510,13 +526,15 @@ export default function Product() {
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <div className="flex items-center">
                         <input
+                            id="purchase-subscription"
                             type="radio"
                             name="purchase-option"
+                            value="subscription"
                             className="mr-2 sm:mr-3"
                         />
-                        <span className="font-medium text-sm sm:text-base">
-                        {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}
-                      </span>
+                        <label htmlFor="purchase-subscription" className="font-medium text-sm sm:text-base cursor-pointer">
+                          {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}
+                        </label>
                       </div>
                       <div className="text-base sm:text-lg font-semibold text-green-600">
                         {subscriptionPrice && <Money data={subscriptionPrice} />}
@@ -649,7 +667,7 @@ export default function Product() {
                           {/* Zoom Icon Overlay - Responsive */}
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
                             <div className="bg-white bg-opacity-0 group-hover:bg-opacity-90 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium text-gray-700 transition-all duration-300 opacity-0 group-hover:opacity-100">
-                              🔍 {window.innerWidth < 640 ? 'Tap' : 'Click'} to Zoom
+                              🔍 {isMobile ? 'Tap' : 'Click'} to Zoom
                             </div>
                           </div>
                         </>

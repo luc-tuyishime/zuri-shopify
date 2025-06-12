@@ -15,7 +15,7 @@ export function CustomerTestimonial({ testimonial, productImage }) {
     const currentTestimonial = testimonial || defaultTestimonial;
 
     return (
-        <div className="bg-[#EBEBEB]"   style={{
+        <div className="bg-[#EBEBEB]" style={{
             width: '100vw',
             position: 'relative',
             left: '50%',
@@ -23,39 +23,40 @@ export function CustomerTestimonial({ testimonial, productImage }) {
             marginLeft: '-50vw',
             marginRight: '-50vw'
         }}>
-                <div className="grid grid-cols-1 lg:grid-cols-2" style={{ minHeight: '600px' }}>
-                    <div
-                        className="order-2 lg:order-1 bg-cover bg-center bg-no-repeat min-h-[400px] lg:min-h-full"
-                        style={{
-                            backgroundImage: `url(${productImage || IMAGE})`
-                        }}
-                    >
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2" style={{ minHeight: '600px' }}>
+                <div
+                    className="order-2 lg:order-1 bg-cover bg-center bg-no-repeat min-h-[300px] sm:min-h-[400px] lg:min-h-full"
+                    style={{
+                        backgroundImage: `url(${productImage || IMAGE})`,
 
-                    {/* Right Side - Testimonial */}
-                    <div className="order-1 lg:order-2 flex flex-col justify-center px-8 lg:px-16 py-16">
-                        <div className="max-w-lg">
+                    }}
+                >
+                </div>
 
-                            {/* Quote */}
-                            <blockquote className="mb-8">
-                                <p className="text-[40px] md:text-3xl font-light text-[#0D2936] leading-relaxed font-poppins">
-                                    "{currentTestimonial.quote}"
-                                </p>
-                            </blockquote>
+                {/* Right Side - Testimonial */}
+                <div className="order-1 lg:order-2 flex flex-col justify-center px-4 sm:px-6 lg:px-16 py-8 sm:py-12 lg:py-16">
+                    <div className="max-w-lg">
 
-                            {/* Attribution */}
-                            <div className="border-l-4 border-[#002F45] pl-6">
-                                <div className="font-semibold text-[#0D2936] text-[16px] font-poppins mb-1">
-                                    — {currentTestimonial.author}
-                                </div>
-                                <div className="font-semibold text-[#0D2936] text-[16px] font-poppins">
-                                    {currentTestimonial.product}
-                                </div>
+                        {/* Quote */}
+                        <blockquote className="mb-6 lg:mb-8">
+                            <p className="text-2xl sm:text-3xl lg:text-[40px] md:text-3xl font-light text-[#0D2936] leading-relaxed font-poppins" style={{ lineHeight: '1.2' }}>
+                                "{currentTestimonial.quote}"
+                            </p>
+                        </blockquote>
+
+                        {/* Attribution */}
+                        <div className="border-l-4 border-[#002F45] pl-4 lg:pl-6">
+                            <div className="font-semibold text-[#0D2936] text-sm sm:text-base lg:text-[16px] font-poppins mb-1">
+                                — {currentTestimonial.author}
                             </div>
-
+                            <div className="font-semibold text-[#0D2936] text-sm sm:text-base lg:text-[16px] font-poppins">
+                                {currentTestimonial.product}
+                            </div>
                         </div>
+
                     </div>
                 </div>
+            </div>
         </div>
     );
 }

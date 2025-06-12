@@ -302,6 +302,7 @@ export default function Collection() {
                             >
                               <input
                                   type="checkbox"
+                                  name={'category'}
                                   checked={filters.category.includes(option.value)}
                                   onChange={() => updateFilter('category', option.value)}
                                   className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
@@ -337,6 +338,7 @@ export default function Collection() {
                             >
                               <input
                                   type="checkbox"
+                                  name={'longueur'}
                                   checked={filters.longueur.includes(option.value)}
                                   onChange={() => updateFilter('longueur', option.value)}
                                   className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
@@ -372,6 +374,7 @@ export default function Collection() {
                             >
                               <input
                                   type="checkbox"
+                                  name={'texture'}
                                   checked={filters.texture.includes(option.value)}
                                   onChange={() => updateFilter('texture', option.value)}
                                   className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
@@ -407,6 +410,7 @@ export default function Collection() {
                             >
                               <input
                                   type="checkbox"
+                                  name={'couleur'}
                                   checked={filters.couleur.includes(option.value)}
                                   onChange={() => updateFilter('couleur', option.value)}
                                   className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
@@ -476,6 +480,7 @@ export default function Collection() {
                           </label>
                           <input
                               type="number"
+                              name={"minPrice"}
                               value={filters.minPrice}
                               onChange={(e) => updateFilter('minPrice', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
@@ -488,6 +493,7 @@ export default function Collection() {
                           </label>
                           <input
                               type="number"
+                              name={"maxPrice"}
                               value={filters.maxPrice}
                               onChange={(e) => updateFilter('maxPrice', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
@@ -515,10 +521,9 @@ export default function Collection() {
 
               <PaginatedResourceSection
                   connection={products}
-                  resourcesClassName="grid grid-cols-1 md:grid-cols-2 products-grid lg:grid-cols-3 gap-6"
+                  resourcesClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
               >
                 {({node: product, index}) => {
-
                   return (
                       <div key={product.id} className="bg-white overflow-hidden hover:shadow-lg transition-shadow">
                         <ProductItem
@@ -527,7 +532,7 @@ export default function Collection() {
                             variant="collection"
                         />
                       </div>
-                      )
+                  )
                 }}
               </PaginatedResourceSection>
               {!products?.nodes?.length && (

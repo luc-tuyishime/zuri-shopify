@@ -3,6 +3,8 @@ import { Link, useLocation } from "@remix-run/react";
 import { useEffect, useState } from 'react';
 import Logo from '../assets/Vector3.svg';
 import aboutBg from '~/assets/aboutbg.svg';
+import logosImage from '~/assets/banner.svg';
+import founderImage from '~/assets/ceo.svg';
 
 
 export const meta = () => {
@@ -184,6 +186,7 @@ function AboutHeroSection() {
 
 // Main About Us Page Component
 export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
+    const [locale] = useLocale();
     const location = useLocation();
 
     // Only apply header hiding on the about page
@@ -325,6 +328,86 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
 
             {/* Hero Section */}
             <AboutHeroSection />
+
+            <section className="py-16 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-4xl mx-auto">
+                    {/* Logos */}
+                    <div className="flex justify-center mb-12">
+                        <img
+                            src={logosImage}
+                            alt="Featured in Forbes, BBC News, CNBC and other publications"
+                            className="max-w-full h-auto"
+                        />
+                    </div>
+
+                    {/* Stats Text */}
+                    <div className="text-center mb-12">
+                        <p className="text-[21.48px] font-poppins text-[#000000] max-w-2xl mx-auto" style={{ lineHeight: '1.6' }}>
+                            {locale === 'fr'
+                                ? "20 000 clients, 500 000 abonnés sur les réseaux sociaux, 60 employées femmes et un taux de croissance annuel de 100%."
+                                : "20,000 customers, 500,000 social media followers, 60 female employees, and an annual growth rate of 100%."
+                            }
+                        </p>
+                    </div>
+                    {/* Horizontal Line */}
+                    <div className="border-t border-gray-300 mb-16"></div>
+
+                    {/* Founder Section - Two Column Grid */}
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        {/* Image Column */}
+                        <div className="flex justify-center">
+                            <div className="relative">
+                                <img
+                                    src={founderImage}
+                                    alt="Gisela Van Houcke"
+                                    className=""
+                                />
+                            </div>
+                        </div>
+
+                        {/* Text Column */}
+                        <div className="space-y-6">
+                            {/* Name */}
+                            <h2 className="text-3xl font-light text-gray-900">
+                                {locale === 'fr' ? 'Gisela Van Houcke' : 'Gisela Van Houcke'}
+                            </h2>
+
+                            {/* Title */}
+                            <p className="text-xl font-semibold text-gray-800">
+                                {locale === 'fr' ? 'Fondatrice & PDG' : 'Founder & CEO'}
+                            </p>
+
+                            {/* Description */}
+                            <div className="space-y-4 text-gray-600" style={{ lineHeight: '1.7' }}>
+                                <p>
+                                    {locale === 'fr'
+                                        ? "Zuri a été fondée en 2016 par Gisela Van Houcke. Elle est originaire de l'est de la République démocratique du Congo où elle a vécu jusqu'à son adolescence. Elle a dû fuir vers le Royaume-Uni en 2003 en raison des guerres et de l'instabilité politique dans la région."
+                                        : "Zuri was founded in 2016 by Gisela Van Houcke. She is originally from the eastern Democratic Republic of Congo where she lived until her adolescence. She had to flee to the United Kingdom in 2003 due to wars and political instability in the region."
+                                    }
+                                </p>
+                                <p>
+                                    {locale === 'fr'
+                                        ? "Gisela détient un diplôme de licence en droit anglais et français. Elle a quitté le domaine juridique dans le but d'autonomiser les femmes noires et de créer la première marque de beauté noire au monde."
+                                        : "Gisela holds a Bachelor's degree in English and French Law. She left the legal field with the aim of empowering black women and creating the world's first black beauty brand."
+                                    }
+                                </p>
+                                <p>
+                                    {locale === 'fr'
+                                        ? "Dans le classement \"Forbes Under 30\", qui est principalement dominé par de jeunes entrepreneurs anglophones d'Afrique, elle était la seule femme africaine francophone dans la catégorie \"business\". Une performance remarquable pour cette jeune entrepreneuse, mariée et mère de deux enfants."
+                                        : "In the \"Forbes Under 30\" ranking, which is predominantly dominated by young entrepreneurs from Anglophone Africa, she was the only francophone African woman in the \"business\" category. A remarkable performance for this young entrepreneur, married and mother of two children."
+                                    }
+                                </p>
+                                <p>
+                                    {locale === 'fr'
+                                        ? "« Quand je suis revenue en Afrique, j'ai immédiatement remarqué un écart sur le marché des extensions et cosmétiques, particulièrement pour les personnes à la peau foncée. Les gens autour de moi me demandaient toujours de ramener des extensions et des produits cosmétiques lors de mes voyages. Cet écart était tout simplement inconcevable ; l'Afrique ayant un grand nombre de personnes intéressées par de tels produits. »"
+                                        : "« When I came back to Africa, I immediately noticed a gap in the market for extensions and cosmetics, particularly for people with dark skin. People around me were always asking me to bring back extensions and cosmetic products when I traveled. This gap was simply inconceivable; Africa having a large number of people interested in such products. »"
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     );
 }
