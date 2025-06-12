@@ -1,6 +1,7 @@
 import {useOptimisticCart} from '@shopify/hydrogen';
 import {Link} from '@remix-run/react';
 import {useAside} from '~/components/Aside';
+import { useLocale } from '~/hooks/useLocale';
 import {CartLineItem} from '~/components/CartLineItem';
 import {CartSummary} from './CartSummary';
 
@@ -14,7 +15,8 @@ export function CartMain({layout, cart: originalCart}) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
 
-  const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
+    const linesCount = cart?.lines?.nodes?.length || 0;
+
   const withDiscount =
     cart &&
     Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
@@ -23,7 +25,7 @@ export function CartMain({layout, cart: originalCart}) {
 
   return (
     <div className={className}>
-      <CartEmpty hidden={linesCount} layout={layout} />
+        {!linesCount && <CartEmpty layout={layout} />}
       <div className="cart-details">
         <div aria-labelledby="cart-lines">
           <ul>
@@ -45,19 +47,25 @@ export function CartMain({layout, cart: originalCart}) {
  * }}
  */
 function CartEmpty({hidden = false}) {
+    const [locale] = useLocale();
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
-      </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
-      </Link>
-    </div>
+      <div hidden={hidden} className="flex flex-col items-center justify-center text-center py-12 px-6">
+          <p className="text-gray-600 text-lg mb-6 max-w-md">
+              {locale === 'fr'
+                  ? "Il semble que vous n'ayez encore rien ajouté, commençons !"
+                  : "Looks like you haven't added anything yet, let's get you started!"
+              }
+          </p>
+          <Link
+              to="/collections/all"
+              onClick={close}
+              prefetch="viewport"
+              className="inline-flex items-center  px-6 py-3 bg-[#8B4513] text-white font-medium rounded-lg hover:bg-[#A0522D] transition-colors"
+          >
+              {locale === 'fr' ? 'Continuer les achats' : 'Continue shopping'} →
+          </Link>
+      </div>
   );
 }
 

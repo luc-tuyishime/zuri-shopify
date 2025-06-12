@@ -1,6 +1,7 @@
 import {Suspense} from 'react';
 import {Await, NavLink, useAsyncValue} from '@remix-run/react';
 import {useAnalytics, useOptimisticCart} from '@shopify/hydrogen';
+import { Link, useNavigate } from '@remix-run/react';
 import {useAside} from '~/components/Aside';
 import { LanguageSwitcher } from '~/components/LanguageSwitcher';
 import { useTranslation, getLocale, setLocale } from '~/lib/i18n';
@@ -28,8 +29,8 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
 
   const navigationItems = [
     { id: 'shop-now', title: t.navigation.shopNow, url: '/collections/all' },
-    { id: 'best-sellers', title: t.navigation.bestSellers, url: '#best-sellers' },
-    { id: 'about', title: t.navigation.aboutUs, url: '/pages/about' }
+    { id: 'best-sellers', title: t.navigation.bestSellers, url: '/#best-sellers' },
+    { id: 'about', title: t.navigation.aboutUs, url: '/about' }
   ];
 
   useEffect(() => {
@@ -96,13 +97,13 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               </NavLink>
 
               {/* Search */}
-              <button
+              <Link
+                  to="/search"
                   className="focus:outline-none"
                   aria-label="Search"
-                  onClick={() => open('search')}
               >
                 <img src={SearchIcon} className="w-5 h-5" alt="Search" />
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -275,7 +276,7 @@ const FALLBACK_HEADER_MENU = {
       tags: [],
       title: 'About',
       type: 'PAGE',
-      url: '/pages/about',
+      url: '/about',
       items: [],
     },
   ],

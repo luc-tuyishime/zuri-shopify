@@ -150,8 +150,7 @@ function FeaturedCollection({ collection }) {
                 )}
 
                 {/* Content Overlay - Fully Responsive */}
-                <Link
-                    to={`/collections/${collection.handle}`}
+                <div
                     className="hero-link"
                 >
                     <div className="hero-content">
@@ -165,7 +164,7 @@ function FeaturedCollection({ collection }) {
                             AN ACTION
                         </button>
                     </div>
-                </Link>
+                </div>
             </div>
 
             {/* Move styles to external CSS or use CSS Modules */}
