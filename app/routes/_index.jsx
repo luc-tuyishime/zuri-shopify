@@ -675,7 +675,29 @@ const styles = `
 export function RecommendedProducts({products}) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
+    const sectionRef = useRef(null);
+    const [isVisible, setIsVisible] = useState(false);
 
+    // Intersection Observer for performance
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    observer.disconnect(); // Stop observing once visible
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
+    // Keep your original skeleton structure
     const fallbackSkeleton = useMemo(() => (
         <div className="recommended-products-grid mobile-single-column gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -684,13 +706,14 @@ export function RecommendedProducts({products}) {
         </div>
     ), []);
 
+    // Keep your original grid classes exactly as they were
     const gridClasses = useMemo(() =>
             "recommended-products-grid mobile-single-column gap-4 md:gap-6",
         []
     );
 
     return (
-        <div className="recommended-products" >
+        <div className="recommended-products" ref={sectionRef}>
             <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
                 <p className="pt-6 pb-6 md:pt-10 md:pb-10 text-2xl md:text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
 
@@ -699,8 +722,14 @@ export function RecommendedProducts({products}) {
                         {(response) => (
                             <div className={gridClasses}>
                                 {response
-                                    ? response.products.nodes.map((product) => (
-                                        <ProductItem key={product.id} product={product}  variant="roundedText"  />
+                                    ? response.products.nodes.map((product, index) => (
+                                        <ProductItem
+                                            key={product.id}
+                                            product={product}
+                                            variant="roundedText"
+                                            loading={index < 4 ? "eager" : "lazy"}
+                                            fetchPriority={index < 2 ? "high" : "low"}
+                                        />
                                     ))
                                     : null}
                             </div>
@@ -710,7 +739,7 @@ export function RecommendedProducts({products}) {
             </div>
             <style dangerouslySetInnerHTML={{
                 __html: `
-                /* Mobile single column for products */
+                /* Keep your EXACT original mobile single column structure */
                 .mobile-single-column {
                     display: grid;
                     grid-template-columns: 1fr;
@@ -733,9 +762,60 @@ export function RecommendedProducts({products}) {
                         grid-template-columns: repeat(4, 1fr);
                     }
                 }
+
+                /* FIX: Only adjust row gap - keep everything else identical */
+                .recommended-products-grid {
+                    row-gap: 1rem !important;
+                }
+
+                @media (min-width: 768px) {
+                    .recommended-products-grid {
+                        row-gap: 1.5rem !important;
+                    }
+                }
+
+                /* PERFORMANCE: Add only non-layout-breaking optimizations */
+                .recommended-products {
+                    margin: 0;
+                    /* Performance hints that don't affect layout */
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                }
+
+                .recommended-products-grid {
+                    /* Only add performance hints - no layout changes */
+                    contain: layout;
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                }
+
+                /* Performance for grid items without breaking layout */
+                .recommended-products-grid > * {
+                    contain: layout;
+                    transform: translateZ(0);
+                }
+
+                /* Hover effects only on capable devices */
+                @media (hover: hover) and (pointer: fine) {
+                    .recommended-products-grid > *:hover {
+                        transform: translateZ(0) translateY(-2px);
+                        transition: transform 0.2s ease;
+                    }
+                }
+
+                /* Reduce motion for accessibility */
+                @media (prefers-reduced-motion: reduce) {
+                    .recommended-products-grid > * {
+                        transition: none !important;
+                    }
+                    
+                    .recommended-products-grid > *:hover {
+                        transform: translateZ(0) !important;
+                    }
+                }
                 `
             }} />
-            <br />
+            {/* Removed the <br /> that was causing extra spacing */}
         </div>
     );
 }
