@@ -100,6 +100,10 @@ function FeaturedCollection({ collection }) {
     const containerRef = useRef(null);
     const videoRef = useRef(null);
 
+    // CRITICAL: Use optimized background image
+    const OPTIMIZED_BG = BG + '?format=webp&quality=80&width=1920'; // Add Shopify optimization
+    const OPTIMIZED_MOBILE_VIDEO = MOBILE_VIDEO; // Keep as is for now, but compress the actual file
+
     // Desktop video slideshow array
     const desktopVideos = [VIDEO1, VIDEO2, VIDEO3];
 
@@ -124,6 +128,22 @@ function FeaturedCollection({ collection }) {
 
     if (!collection) return null;
 
+    // CRITICAL: Preload optimized background image
+    useEffect(() => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = OPTIMIZED_BG;
+        link.type = 'image/webp';
+        document.head.appendChild(link);
+
+        return () => {
+            if (document.head.contains(link)) {
+                document.head.removeChild(link);
+            }
+        };
+    }, []);
+
     // Intersection Observer for lazy loading
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -133,16 +153,16 @@ function FeaturedCollection({ collection }) {
 
                     // Auto-load video only for desktop with good connection
                     if (!isMobile && !isSlowConnection) {
-                        // Add small delay to ensure smooth loading
+                        // CRITICAL: Increased delay for better performance
                         setTimeout(() => {
                             setShouldLoadVideo(true);
-                        }, 100);
+                        }, 500); // Increased from 100ms to 500ms
                     }
                 }
             },
             {
-                threshold: 0.2, // Load when 20% visible
-                rootMargin: '50px' // Start loading 50px before visible
+                threshold: 0.1, // CRITICAL: Reduced from 0.2 to 0.1
+                rootMargin: '100px' // CRITICAL: Increased from 50px to 100px
             }
         );
 
@@ -215,7 +235,7 @@ function FeaturedCollection({ collection }) {
                     <div
                         className="hero-background-image"
                         style={{
-                            backgroundImage: `url(${BG})`,
+                            backgroundImage: `url(${OPTIMIZED_BG})`, // CRITICAL: Use optimized image
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat'
@@ -238,7 +258,7 @@ function FeaturedCollection({ collection }) {
                     </div>
                 </div>
                 <style dangerouslySetInnerHTML={{
-                    __html: styles
+                    __html: optimizedStyles // CRITICAL: Use optimized styles
                 }} />
             </>
         );
@@ -251,7 +271,7 @@ function FeaturedCollection({ collection }) {
                 <div
                     className="hero-background-image"
                     style={{
-                        backgroundImage: `url(${BG})`,
+                        backgroundImage: `url(${OPTIMIZED_BG})`, // CRITICAL: Use optimized image
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat'
@@ -279,8 +299,11 @@ function FeaturedCollection({ collection }) {
                                     transition: 'opacity 1s ease',
                                     willChange: 'opacity'
                                 }}
+                                // CRITICAL: Add performance attributes
+                                decoding="async"
+                                disablePictureInPicture
                             >
-                                <source src={MOBILE_VIDEO} type="video/webm" />
+                                <source src={OPTIMIZED_MOBILE_VIDEO} type="video/webm" />
                             </video>
                         ) : (
                             /* Desktop Video Slideshow */
@@ -297,6 +320,9 @@ function FeaturedCollection({ collection }) {
                                     opacity: videoLoaded ? 1 : 0,
                                     transition: 'opacity 0.8s ease'
                                 }}
+                                // CRITICAL: Add performance attributes
+                                decoding="async"
+                                disablePictureInPicture
                             >
                                 <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
                             </video>
@@ -364,11 +390,339 @@ function FeaturedCollection({ collection }) {
 
             {/* Enhanced styles with performance optimizations */}
             <style dangerouslySetInnerHTML={{
-                __html: styles
+                __html: optimizedStyles // CRITICAL: Use optimized styles
             }} />
         </>
     );
 }
+
+// CRITICAL: Optimized styles for performance
+const optimizedStyles = `
+    .hero-video-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        min-height: 500px;
+        margin: 0;
+        padding: 0;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        overflow: hidden;
+        /* CRITICAL: Performance optimizations */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        content-visibility: auto;
+        contain-intrinsic-size: 800px;
+        contain: layout style paint;
+    }
+
+    .hero-background-image,
+    .hero-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        z-index: 1;
+        /* CRITICAL: Performance */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        image-rendering: optimizeQuality;
+    }
+
+    .hero-background-image {
+        /* CRITICAL: Remove background-attachment for performance */
+        background-attachment: scroll;
+    }
+
+    /* CRITICAL: Optimize video loading on mobile */
+    @media (max-width: 768px) {
+        .hero-video-container {
+            height: 70vh;
+            min-height: 400px;
+        }
+        
+        .hero-video {
+            /* CRITICAL: Mobile video optimizations */
+            object-fit: cover;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+            image-rendering: optimizeSpeed;
+        }
+    }
+
+    .video-play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 5;
+        backdrop-filter: blur(2px);
+        /* CRITICAL: Performance */
+        transform: translateZ(0);
+        contain: layout style;
+    }
+
+    .play-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50px;
+        padding: 20px 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        /* CRITICAL: Performance */
+        transform: translateZ(0);
+        contain: layout style;
+    }
+
+    .play-button:hover {
+        background: rgba(255, 255, 255, 1);
+        transform: translateZ(0) scale(1.05);
+    }
+
+    .play-icon {
+        width: 24px;
+        height: 24px;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .play-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .hero-link {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        text-decoration: none;
+        /* CRITICAL: Performance */
+        contain: layout style;
+    }
+
+    .hero-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 20px;
+        padding-left: 80px;
+        /* CRITICAL: Performance */
+        contain: layout style;
+    }
+
+    .hero-title {
+        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        color: white;
+        font-size: clamp(28px, 5vw, 45px);
+        font-weight: 500;
+        line-height: 1.2;
+        margin: 0 0 20px 0;
+        max-width: min(500px, 80vw);
+        letter-spacing: 0.5px;
+        transition: opacity 0.5s ease;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        /* CRITICAL: Font performance */
+        font-display: swap;
+        text-rendering: optimizeSpeed;
+    }
+
+    .hero-subtitle {
+        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: clamp(16px, 3vw, 22px);
+        font-weight: 300;
+        line-height: 1.4;
+        margin: 0 0 30px 0;
+        max-width: min(400px, 80vw);
+        transition: opacity 0.5s ease;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        /* CRITICAL: Font performance */
+        font-display: swap;
+        text-rendering: optimizeSpeed;
+    }
+
+    .hero-button {
+        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        color: white;
+        background-color: transparent;
+        border: 1px solid white;
+        padding: 12px 30px;
+        font-size: clamp(14px, 2vw, 16px);
+        letter-spacing: 1px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border-radius: 0;
+        text-transform: uppercase;
+        width: fit-content;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        /* CRITICAL: Performance */
+        transform: translateZ(0);
+        contain: layout style;
+    }
+
+    .hero-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateZ(0) translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-button:active {
+        transform: translateZ(0);
+    }
+
+    /* Slideshow indicators */
+    .slideshow-indicators {
+        position: absolute;
+        bottom: 30px;
+        left: 80px;
+        display: flex;
+        gap: 12px;
+        z-index: 3;
+        /* CRITICAL: Performance */
+        contain: layout style;
+    }
+
+    .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        background-color: transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        /* CRITICAL: Performance */
+        transform: translateZ(0);
+    }
+
+    .indicator.active {
+        background-color: white;
+        border-color: white;
+    }
+
+    .indicator:hover {
+        border-color: white;
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    @media (max-width: 768px) {
+        .hero-content {
+            padding: 20px;
+            text-align: center;
+            align-items: center;
+        }
+
+        .hero-title {
+            font-size: 32px;
+            margin-bottom: 16px;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            margin-bottom: 24px;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .hero-button {
+            padding: 14px 24px;
+            font-size: 14px;
+            width: auto;
+            min-width: 160px;
+        }
+
+        .slideshow-indicators {
+            display: none;
+        }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .hero-content {
+            padding-left: 40px;
+        }
+
+        .hero-title {
+            font-size: 38px;
+        }
+
+        .slideshow-indicators {
+            left: 40px;
+        }
+    }
+
+    /* CRITICAL: Reduce motion for performance */
+    @media (prefers-reduced-motion: reduce) {
+        .hero-button,
+        .play-button,
+        .indicator {
+            transition: none !important;
+        }
+        
+        .hero-button:hover,
+        .play-button:hover {
+            transform: translateZ(0) !important;
+        }
+
+        .hero-video {
+            animation-play-state: paused;
+        }
+
+        .hero-title, .hero-subtitle {
+            transition: none;
+        }
+    }
+
+    /* CRITICAL: Data saver mode */
+    @media (prefers-reduced-data: reduce) {
+        .hero-video {
+            display: none !important;
+        }
+        
+        .video-play-overlay {
+            display: none !important;
+        }
+    }
+
+    /* CRITICAL: Performance optimization for older devices */
+    @media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 1) {
+        .hero-video {
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+    }
+`;
 
 const styles = `
     .hero-video-container {
@@ -677,17 +1031,23 @@ export function RecommendedProducts({products}) {
     const t = useTranslation(locale);
     const sectionRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
+    const [shouldPrioritizeImages, setShouldPrioritizeImages] = useState(false);
 
-    // Intersection Observer for performance
+    // PERFORMANCE: Intersection Observer for lazy section loading
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsVisible(true);
+                    // PERFORMANCE: Start prioritizing images when section becomes visible
+                    setShouldPrioritizeImages(true);
                     observer.disconnect(); // Stop observing once visible
                 }
             },
-            { threshold: 0.1, rootMargin: '100px' }
+            {
+                threshold: 0.1,
+                rootMargin: '100px' // Start loading 100px before visible
+            }
         );
 
         if (sectionRef.current) {
@@ -696,6 +1056,38 @@ export function RecommendedProducts({products}) {
 
         return () => observer.disconnect();
     }, []);
+
+    // PERFORMANCE: Preload critical images when section becomes visible
+    useEffect(() => {
+        if (shouldPrioritizeImages && products) {
+            // Preload first 2 product images for faster LCP
+            const preloadImages = async () => {
+                try {
+                    const response = await products;
+                    if (response?.products?.nodes) {
+                        response.products.nodes.slice(0, 2).forEach((product, index) => {
+                            if (product.featuredImage?.url) {
+                                const link = document.createElement('link');
+                                link.rel = 'preload';
+                                link.as = 'image';
+                                // Use optimized URL if possible
+                                const imageUrl = product.featuredImage.url.includes('cdn.shopify.com')
+                                    ? product.featuredImage.url + '?width=400&format=webp&quality=85'
+                                    : product.featuredImage.url;
+                                link.href = imageUrl;
+                                link.type = 'image/webp';
+                                document.head.appendChild(link);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.log('Preload failed:', error);
+                }
+            };
+
+            preloadImages();
+        }
+    }, [shouldPrioritizeImages, products]);
 
     // Keep your original skeleton structure
     const fallbackSkeleton = useMemo(() => (
@@ -727,8 +1119,9 @@ export function RecommendedProducts({products}) {
                                             key={product.id}
                                             product={product}
                                             variant="roundedText"
+                                            // PERFORMANCE: Smart loading strategy
                                             loading={index < 4 ? "eager" : "lazy"}
-                                            fetchPriority={index < 2 ? "high" : "low"}
+                                            fetchpriority={index < 2 ? "high" : "auto"}
                                         />
                                     ))
                                     : null}
@@ -737,6 +1130,7 @@ export function RecommendedProducts({products}) {
                     </Await>
                 </Suspense>
             </div>
+
             <style dangerouslySetInnerHTML={{
                 __html: `
                 /* Keep your EXACT original mobile single column structure */
@@ -763,9 +1157,16 @@ export function RecommendedProducts({products}) {
                     }
                 }
 
-                /* FIX: Only adjust row gap - keep everything else identical */
+                /* FIX: Row gap control */
                 .recommended-products-grid {
                     row-gap: 1rem !important;
+                    /* PERFORMANCE: Advanced CSS containment */
+                    contain: layout style paint;
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                    /* PERFORMANCE: Content visibility for better rendering */
+                    content-visibility: auto;
+                    contain-intrinsic-size: 800px;
                 }
 
                 @media (min-width: 768px) {
@@ -774,48 +1175,95 @@ export function RecommendedProducts({products}) {
                     }
                 }
 
-                /* PERFORMANCE: Add only non-layout-breaking optimizations */
+                /* PERFORMANCE: Section optimizations */
                 .recommended-products {
                     margin: 0;
-                    /* Performance hints that don't affect layout */
+                    /* PERFORMANCE: GPU acceleration */
                     transform: translateZ(0);
                     backface-visibility: hidden;
+                    /* PERFORMANCE: Layout containment */
+                    contain: layout style;
                 }
 
-                .recommended-products-grid {
-                    /* Only add performance hints - no layout changes */
-                    contain: layout;
-                    transform: translateZ(0);
-                    backface-visibility: hidden;
-                }
-
-                /* Performance for grid items without breaking layout */
+                /* PERFORMANCE: Grid item optimizations */
                 .recommended-products-grid > * {
-                    contain: layout;
+                    contain: layout style;
                     transform: translateZ(0);
+                    /* PERFORMANCE: Optimize will-change usage */
+                    will-change: transform;
                 }
 
-                /* Hover effects only on capable devices */
+                /* PERFORMANCE: Hover effects only on capable devices */
                 @media (hover: hover) and (pointer: fine) {
                     .recommended-products-grid > *:hover {
                         transform: translateZ(0) translateY(-2px);
-                        transition: transform 0.2s ease;
+                        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                     }
                 }
 
-                /* Reduce motion for accessibility */
+                /* PERFORMANCE: Reduce motion for accessibility and performance */
                 @media (prefers-reduced-motion: reduce) {
                     .recommended-products-grid > * {
                         transition: none !important;
+                        will-change: auto !important;
                     }
                     
                     .recommended-products-grid > *:hover {
                         transform: translateZ(0) !important;
                     }
                 }
+
+                /* PERFORMANCE: Mobile optimizations */
+                @media (max-width: 767px) {
+                    .recommended-products-grid {
+                        /* Simplify on mobile for better performance */
+                        will-change: scroll-position;
+                        contain: layout;
+                        /* PERFORMANCE: Reduce complexity on mobile */
+                        content-visibility: visible;
+                    }
+                    
+                    .recommended-products-grid > * {
+                        /* Reduce GPU layers on mobile */
+                        will-change: auto;
+                    }
+                }
+
+                /* PERFORMANCE: Data saver mode optimizations */
+                @media (prefers-reduced-data: reduce) {
+                    .recommended-products {
+                        content-visibility: visible;
+                    }
+                    
+                    .recommended-products-grid {
+                        content-visibility: visible;
+                    }
+                    
+                    .recommended-products-grid > * {
+                        will-change: auto;
+                        transform: none;
+                    }
+                }
+
+                /* PERFORMANCE: High contrast mode optimizations */
+                @media (prefers-contrast: high) {
+                    .recommended-products-grid > * {
+                        /* Disable complex effects in high contrast mode */
+                        filter: none !important;
+                        backdrop-filter: none !important;
+                    }
+                }
+
+                /* PERFORMANCE: Print media optimization */
+                @media print {
+                    .recommended-products-grid > * {
+                        transform: none !important;
+                        transition: none !important;
+                        will-change: auto !important;
+                    }
+                }
                 `
             }} />
-            {/* Removed the <br /> that was causing extra spacing */}
         </div>
     );
 }

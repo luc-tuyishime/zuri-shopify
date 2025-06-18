@@ -2,7 +2,7 @@ import {Link} from '@remix-run/react';
 import {Image, Money} from '@shopify/hydrogen';
 import {useVariantUrl} from '~/lib/variants';
 import {useLocale} from "~/hooks/useLocale.js";
-import {memo, useMemo} from "react";
+import {memo, useCallback, useEffect, useMemo, useState} from "react";
 
 /**
  * @param {{
@@ -13,10 +13,30 @@ import {memo, useMemo} from "react";
  *   loading?: 'eager' | 'lazy';
  * }}
  */
-export const ProductItem = memo(function ProductItem({ product, loading = 'lazy', variant = 'rounded' }) {
+export const ProductItem = memo(function ProductItem({
+                                                         product,
+                                                         loading = 'lazy',
+                                                         variant = 'rounded',
+                                                         fetchpriority = 'auto'
+                                                     }) {
     const variantUrl = useVariantUrl(product.handle);
     const image = product.featuredImage;
     const [locale] = useLocale();
+
+    // PERFORMANCE: Optimize image URL (Shopify-safe)
+    const optimizedImageSrc = useMemo(() => {
+        if (!image?.url) return null;
+
+        // Only optimize if it's a Shopify CDN URL
+        if (image.url.includes('cdn.shopify.com') || image.url.includes('shopify.com')) {
+            // Add Shopify image transformations - these are safe and widely supported
+            const separator = image.url.includes('?') ? '&' : '?';
+            return image.url + separator + 'width=400&format=webp&quality=85';
+        }
+
+        // Return original URL if not Shopify CDN
+        return image.url;
+    }, [image?.url]);
 
     // Memoize styles to prevent recalculation on every render
     const styles = useMemo(() => {
@@ -30,12 +50,19 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                 borderRadius: (isRounded || isRoundedText) ? '999px 999px 0 0' : '8px',
                 aspectRatio: (isRounded || isRoundedText) ? '1/1.4' : '1/1',
                 position: 'relative',
-                backgroundColor: '#f8f9fa', // Placeholder color while loading
+                backgroundColor: '#f8f9fa',
+                // PERFORMANCE: CSS containment for better rendering
+                contain: 'layout style paint',
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden'
             },
             container: {
                 display: 'block',
                 textDecoration: 'none',
                 marginBottom: (isRounded || isRoundedText) ? '20px' : '0',
+                // PERFORMANCE: Optimize container rendering
+                contain: 'layout style',
+                transform: 'translateZ(0)'
             },
             image: {
                 width: '100%',
@@ -44,6 +71,10 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                 objectPosition: 'center 10%',
                 display: 'block',
                 transition: 'transform 0.3s ease',
+                // PERFORMANCE: Image rendering optimizations
+                imageRendering: 'optimizeQuality',
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden'
             },
             badge: {
                 position: 'absolute',
@@ -60,6 +91,9 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                 fontWeight: 'bold',
                 fontSize: '12px',
                 zIndex: 2,
+                // PERFORMANCE: Badge optimizations
+                transform: 'translateZ(0)',
+                contain: 'layout style'
             }
         };
     }, [variant]);
@@ -91,15 +125,21 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                 style={styles.imageContainer}
                 className="group-hover:shadow-lg transition-shadow duration-300"
             >
+                {/* PERFORMANCE: Optimized image with proper attributes */}
                 {image && (
                     <img
-                        src={image.url}
+                        src={optimizedImageSrc}
                         alt={image.altText || product.title}
                         loading={loading}
+                        fetchpriority={fetchpriority}
                         style={styles.image}
                         className="group-hover:scale-105"
-                        // Performance: Add sizes for responsive images
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                        // PERFORMANCE: Critical image attributes
+                        decoding="async"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        // PERFORMANCE: Provide width/height hints to prevent layout shift
+                        width="400"
+                        height={variant === 'roundedText' ? "560" : "400"}
                     />
                 )}
 
@@ -132,6 +172,8 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                                         className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-current"
                                         viewBox="0 0 20 20"
                                         aria-hidden="true"
+                                        // PERFORMANCE: SVG optimization
+                                        style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
                                         <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                                     </svg>
@@ -147,7 +189,11 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                     </div>
 
                     {/* Responsive Button */}
-                    <button className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95">
+                    <button
+                        className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95"
+                        // PERFORMANCE: Button optimizations
+                        style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                    >
                         {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
                     </button>
                 </div>
@@ -167,10 +213,54 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                     </div>
                 </div>
             )}
+
+            {/* PERFORMANCE: Optimized styles */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                /* PERFORMANCE: Reduce motion for better performance */
+                @media (prefers-reduced-motion: reduce) {
+                    .product-item * {
+                        animation: none !important;
+                        transition: none !important;
+                    }
+                    
+                    .product-item .group-hover\\:scale-105:hover {
+                        transform: none !important;
+                    }
+                }
+
+                /* PERFORMANCE: Mobile optimizations */
+                @media (max-width: 768px) {
+                    .product-item {
+                        contain: layout style;
+                        transform: translateZ(0);
+                    }
+                    
+                    .product-item img {
+                        image-rendering: optimizeSpeed;
+                    }
+                }
+
+                /* PERFORMANCE: Optimize hover effects for capable devices only */
+                @media (hover: hover) and (pointer: fine) {
+                    .product-item:hover {
+                        /* Only apply expensive effects on devices that can handle them */
+                        will-change: transform;
+                    }
+                }
+
+                /* PERFORMANCE: Data saver mode */
+                @media (prefers-reduced-data: reduce) {
+                    .product-item img {
+                        /* Use original image if user prefers reduced data */
+                        content-visibility: auto;
+                    }
+                }
+                `
+            }} />
         </Link>
     );
 });
-
 /** @typedef {import('storefrontapi.generated').ProductItemFragment} ProductItemFragment */
 /** @typedef {import('storefrontapi.generated').CollectionItemFragment} CollectionItemFragment */
 /** @typedef {import('storefrontapi.generated').RecommendedProductFragment} RecommendedProductFragment */
