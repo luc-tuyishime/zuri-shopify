@@ -1,5 +1,5 @@
 import {Await, useLoaderData, Link} from '@remix-run/react';
-import {Suspense, useEffect, useMemo, useState} from 'react';
+import {Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
@@ -93,19 +93,12 @@ function FeaturedCollection({ collection }) {
     const [isSlowConnection, setIsSlowConnection] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [isIntersecting, setIsIntersecting] = useState(false);
+    const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+    const [userRequestedVideo, setUserRequestedVideo] = useState(false);
 
-    useEffect(() => {
-        // Preload critical videos
-        const videoPreload = document.createElement('link');
-        videoPreload.rel = 'preload';
-        videoPreload.as = 'video';
-        videoPreload.href = isMobile ? MOBILE_VIDEO : desktopVideos[0];
-        document.head.appendChild(videoPreload);
-
-        return () => {
-            document.head.removeChild(videoPreload);
-        };
-    }, [isMobile]);
+    const containerRef = useRef(null);
+    const videoRef = useRef(null);
 
     // Desktop video slideshow array
     const desktopVideos = [VIDEO1, VIDEO2, VIDEO3];
@@ -131,6 +124,39 @@ function FeaturedCollection({ collection }) {
 
     if (!collection) return null;
 
+    // Intersection Observer for lazy loading
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsIntersecting(true);
+
+                    // Auto-load video only for desktop with good connection
+                    if (!isMobile && !isSlowConnection) {
+                        // Add small delay to ensure smooth loading
+                        setTimeout(() => {
+                            setShouldLoadVideo(true);
+                        }, 100);
+                    }
+                }
+            },
+            {
+                threshold: 0.2, // Load when 20% visible
+                rootMargin: '50px' // Start loading 50px before visible
+            }
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => {
+            if (containerRef.current) {
+                observer.unobserve(containerRef.current);
+            }
+        };
+    }, [isMobile, isSlowConnection]);
+
     useEffect(() => {
         // Set client-side flag
         setIsClient(true);
@@ -143,7 +169,11 @@ function FeaturedCollection({ collection }) {
         const checkConnection = () => {
             if ('connection' in navigator) {
                 const conn = navigator.connection;
-                setIsSlowConnection(conn.effectiveType === '2g' || conn.effectiveType === 'slow-2g');
+                setIsSlowConnection(
+                    conn.effectiveType === '2g' ||
+                    conn.effectiveType === 'slow-2g' ||
+                    conn.effectiveType === '3g'
+                );
             }
         };
 
@@ -154,9 +184,9 @@ function FeaturedCollection({ collection }) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Desktop slideshow effect
+    // Desktop slideshow effect - only when video is loaded
     useEffect(() => {
-        if (!isMobile && isClient && desktopVideos.length > 1) {
+        if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
             const interval = setInterval(() => {
                 setCurrentVideoIndex((prevIndex) =>
                     (prevIndex + 1) % desktopVideos.length
@@ -166,15 +196,22 @@ function FeaturedCollection({ collection }) {
 
             return () => clearInterval(interval);
         }
-    }, [isMobile, isClient, desktopVideos.length]);
+    }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
 
-    const shouldUseVideo = !isSlowConnection && isClient;
+    // Handle manual video loading for mobile
+    const handlePlayVideo = () => {
+        setUserRequestedVideo(true);
+        setShouldLoadVideo(true);
+    };
+
+    // Determine if video should be shown
+    const showVideo = shouldLoadVideo && isIntersecting;
 
     // For SSR and initial render, show image until we know the device type
     if (!isClient) {
         return (
             <>
-                <div className="hero-video-container">
+                <div ref={containerRef} className="hero-video-container">
                     <div
                         className="hero-background-image"
                         style={{
@@ -201,7 +238,7 @@ function FeaturedCollection({ collection }) {
                     </div>
                 </div>
                 <style dangerouslySetInnerHTML={{
-                    __html: `/* Your existing styles */`
+                    __html: styles
                 }} />
             </>
         );
@@ -209,49 +246,37 @@ function FeaturedCollection({ collection }) {
 
     return (
         <>
-            <div className="hero-video-container">
-                {/* Optimized Background Media */}
-                {!shouldUseVideo ? (
-                    // Slow connection: Use static image
-                    <div
-                        className="hero-background-image"
-                        style={{
-                            backgroundImage: `url(${BG})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat'
-                        }}
-                    />
-                ) : (
-                    <>
-                        {/* Fallback image while video loads */}
-                        {!videoLoaded && (
-                            <div
-                                className="hero-background-image"
-                                style={{
-                                    backgroundImage: `url(${BG})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    backgroundRepeat: 'no-repeat'
-                                }}
-                            />
-                        )}
+            <div ref={containerRef} className="hero-video-container">
+                {/* Always show background image as base layer */}
+                <div
+                    className="hero-background-image"
+                    style={{
+                        backgroundImage: `url(${BG})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                    }}
+                />
 
-                        {/* Mobile Video - Compressed WebM */}
+                {/* Video layer - only loads when conditions are met */}
+                {showVideo && (
+                    <>
+                        {/* Mobile Video - Highly optimized */}
                         {isMobile ? (
                             <video
+                                ref={videoRef}
                                 key="mobile-video"
                                 autoPlay
                                 loop
                                 muted
                                 playsInline
-                                preload="auto"        // Load entire video ASAP
-                                loading="eager"
+                                preload="none" // Critical: Don't preload on mobile
                                 onLoadedData={() => setVideoLoaded(true)}
+                                onCanPlay={() => setVideoLoaded(true)}
                                 className="hero-video"
                                 style={{
                                     opacity: videoLoaded ? 1 : 0,
-                                    transition: 'opacity 0.5s ease',
+                                    transition: 'opacity 1s ease',
                                     willChange: 'opacity'
                                 }}
                             >
@@ -265,7 +290,7 @@ function FeaturedCollection({ collection }) {
                                 loop
                                 muted
                                 playsInline
-                                preload="metadata"
+                                preload="metadata" // Only metadata for desktop
                                 onLoadedData={() => setVideoLoaded(true)}
                                 className="hero-video"
                                 style={{
@@ -277,6 +302,26 @@ function FeaturedCollection({ collection }) {
                             </video>
                         )}
                     </>
+                )}
+
+                {/* Mobile: Play button overlay when video not loaded */}
+                {isMobile && isIntersecting && !userRequestedVideo && (
+                    <div className="video-play-overlay">
+                        <button
+                            onClick={handlePlayVideo}
+                            className="play-button"
+                            aria-label="Play background video"
+                        >
+                            <svg
+                                className="play-icon"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span className="play-text">Play Video</span>
+                        </button>
+                    </div>
                 )}
 
                 {/* Content Overlay - Dynamic content based on current slide */}
@@ -299,7 +344,7 @@ function FeaturedCollection({ collection }) {
                     </div>
 
                     {/* Desktop: Slideshow indicators */}
-                    {!isMobile && isClient && (
+                    {!isMobile && isClient && showVideo && (
                         <div className="slideshow-indicators">
                             {desktopVideos.map((_, index) => (
                                 <button
@@ -317,231 +362,310 @@ function FeaturedCollection({ collection }) {
                 </div>
             </div>
 
-            {/* Enhanced styles with slideshow support */}
+            {/* Enhanced styles with performance optimizations */}
             <style dangerouslySetInnerHTML={{
-                __html: `
-                .hero-video-container {
-                    position: relative;
-                    width: 100vw;
-                    height: 100vh;
-                    min-height: 500px;
-                    margin: 0;
-                    padding: 0;
-                    left: 50%;
-                    right: 50%;
-                    margin-left: -50vw;
-                    margin-right: -50vw;
-                    overflow: hidden;
-                }
-
-                .hero-background-image,
-                .hero-video {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    object-position: center;
-                    z-index: 1;
-                }
-
-                /* Optimize video loading on mobile */
-                @media (max-width: 768px) {
-                    .hero-video {
-                        object-fit: cover;
-                        transform: translateZ(0);
-                        backface-visibility: hidden;
-                        perspective: 1000;
-                    }
-                }
-
-                .hero-link {
-                    display: block;
-                    width: 100%;
-                    height: 100%;
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    z-index: 2;
-                    text-decoration: none;
-                }
-
-                .hero-content {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    padding: 20px;
-                    padding-left: 80px;
-                }
-
-                .hero-title {
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    color: white;
-                    font-size: clamp(28px, 5vw, 45px);
-                    font-weight: 500;
-                    line-height: 1.2;
-                    margin: 0 0 20px 0;
-                    max-width: min(500px, 80vw);
-                    letter-spacing: 0.5px;
-                    transition: opacity 0.5s ease;
-                }
-
-                .hero-subtitle {
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    color: rgba(255, 255, 255, 0.9);
-                    font-size: clamp(16px, 3vw, 22px);
-                    font-weight: 300;
-                    line-height: 1.4;
-                    margin: 0 0 30px 0;
-                    max-width: min(400px, 80vw);
-                    transition: opacity 0.5s ease;
-                }
-
-                .hero-button {
-                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    color: white;
-                    background-color: transparent;
-                    border: 1px solid white;
-                    padding: 12px 30px;
-                    font-size: clamp(14px, 2vw, 16px);
-                    letter-spacing: 1px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                    border-radius: 0;
-                    text-transform: uppercase;
-                    width: fit-content;
-                }
-
-                .hero-button:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                    transform: translateY(-1px);
-                }
-
-                .hero-button:active {
-                    transform: translateY(0);
-                }
-
-                /* Slideshow indicators */
-                .slideshow-indicators {
-                    position: absolute;
-                    bottom: 30px;
-                    left: 80px;
-                    display: flex;
-                    gap: 12px;
-                    z-index: 3;
-                }
-
-                .indicator {
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                    border: 2px solid rgba(255, 255, 255, 0.5);
-                    background-color: transparent;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .indicator.active {
-                    background-color: white;
-                    border-color: white;
-                }
-
-                .indicator:hover {
-                    border-color: white;
-                    background-color: rgba(255, 255, 255, 0.7);
-                }
-
-                @media (max-width: 768px) {
-                    .hero-video-container {
-                        height: 70vh;
-                        min-height: 400px;
-                    }
-
-                    .hero-content {
-                        padding: 20px;
-                        text-align: center;
-                        align-items: center;
-                    }
-
-                    .hero-title {
-                        font-size: 32px;
-                        margin-bottom: 16px;
-                        max-width: 90vw;
-                        text-align: center;
-                    }
-
-                    .hero-subtitle {
-                        font-size: 18px;
-                        margin-bottom: 24px;
-                        max-width: 90vw;
-                        text-align: center;
-                    }
-
-                    .hero-button {
-                        padding: 14px 24px;
-                        font-size: 14px;
-                        width: auto;
-                        min-width: 160px;
-                    }
-
-                    .slideshow-indicators {
-                        display: none;
-                    }
-                }
-
-                @media (min-width: 769px) and (max-width: 1024px) {
-                    .hero-content {
-                        padding-left: 40px;
-                    }
-
-                    .hero-title {
-                        font-size: 38px;
-                    }
-
-                    .slideshow-indicators {
-                        left: 40px;
-                    }
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    .hero-button {
-                        transition: none;
-                    }
-                    
-                    .hero-button:hover {
-                        transform: none;
-                    }
-
-                    .hero-video {
-                        animation-play-state: paused;
-                    }
-
-                    .hero-title, .hero-subtitle {
-                        transition: none;
-                    }
-                }
-
-                @media (prefers-reduced-data: reduce) {
-                    .hero-video {
-                        display: none;
-                    }
-                    
-                    .hero-background-image {
-                        display: block !important;
-                    }
-                }
-                `
+                __html: styles
             }} />
         </>
     );
 }
+
+const styles = `
+    .hero-video-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        min-height: 500px;
+        margin: 0;
+        padding: 0;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        overflow: hidden;
+        /* GPU acceleration */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+
+    .hero-background-image,
+    .hero-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        z-index: 1;
+    }
+
+    .hero-video {
+        /* Performance optimizations */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+        will-change: opacity;
+    }
+
+    /* Critical: Optimize video loading on mobile */
+    @media (max-width: 768px) {
+        .hero-video-container {
+            height: 70vh;
+            min-height: 400px;
+        }
+        
+        .hero-video {
+            /* Reduce quality on mobile for performance */
+            image-rendering: optimizeSpeed;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+        }
+    }
+
+    .video-play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 5;
+        backdrop-filter: blur(2px);
+    }
+
+    .play-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50px;
+        padding: 20px 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .play-button:hover {
+        background: rgba(255, 255, 255, 1);
+        transform: scale(1.05);
+    }
+
+    .play-icon {
+        width: 24px;
+        height: 24px;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .play-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .hero-link {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        text-decoration: none;
+    }
+
+    .hero-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 20px;
+        padding-left: 80px;
+    }
+
+    .hero-title {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        font-size: clamp(28px, 5vw, 45px);
+        font-weight: 500;
+        line-height: 1.2;
+        margin: 0 0 20px 0;
+        max-width: min(500px, 80vw);
+        letter-spacing: 0.5px;
+        transition: opacity 0.5s ease;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-subtitle {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: clamp(16px, 3vw, 22px);
+        font-weight: 300;
+        line-height: 1.4;
+        margin: 0 0 30px 0;
+        max-width: min(400px, 80vw);
+        transition: opacity 0.5s ease;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-button {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        background-color: transparent;
+        border: 1px solid white;
+        padding: 12px 30px;
+        font-size: clamp(14px, 2vw, 16px);
+        letter-spacing: 1px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border-radius: 0;
+        text-transform: uppercase;
+        width: fit-content;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-button:active {
+        transform: translateY(0);
+    }
+
+    /* Slideshow indicators */
+    .slideshow-indicators {
+        position: absolute;
+        bottom: 30px;
+        left: 80px;
+        display: flex;
+        gap: 12px;
+        z-index: 3;
+    }
+
+    .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        background-color: transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .indicator.active {
+        background-color: white;
+        border-color: white;
+    }
+
+    .indicator:hover {
+        border-color: white;
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    @media (max-width: 768px) {
+        .hero-content {
+            padding: 20px;
+            text-align: center;
+            align-items: center;
+        }
+
+        .hero-title {
+            font-size: 32px;
+            margin-bottom: 16px;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            margin-bottom: 24px;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .hero-button {
+            padding: 14px 24px;
+            font-size: 14px;
+            width: auto;
+            min-width: 160px;
+        }
+
+        .slideshow-indicators {
+            display: none;
+        }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .hero-content {
+            padding-left: 40px;
+        }
+
+        .hero-title {
+            font-size: 38px;
+        }
+
+        .slideshow-indicators {
+            left: 40px;
+        }
+    }
+
+    /* Critical: Reduce motion for performance */
+    @media (prefers-reduced-motion: reduce) {
+        .hero-button,
+        .play-button {
+            transition: none;
+        }
+        
+        .hero-button:hover,
+        .play-button:hover {
+            transform: none;
+        }
+
+        .hero-video {
+            animation-play-state: paused;
+        }
+
+        .hero-title, .hero-subtitle {
+            transition: none;
+        }
+    }
+
+    /* Critical: Data saver mode */
+    @media (prefers-reduced-data: reduce) {
+        .hero-video {
+            display: none !important;
+        }
+        
+        .video-play-overlay {
+            display: none !important;
+        }
+    }
+
+    /* Performance optimization for older devices */
+    @media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 1) {
+        .hero-video {
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+    }
+`;
 
 /**
  * @param {{
