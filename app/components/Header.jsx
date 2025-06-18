@@ -50,120 +50,268 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               isScrolled ? 'bg-zuri-beige/95 backdrop-blur-sm shadow-sm' : 'bg-[#E9CFB6]'
           }`}
       >
-        <div className="container mx-auto px-4 md:px-6 flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <NavLink prefetch="intent" to="/" className="text-2xl font-semibold tracking-wider">
-              <img src={Logo} alt={header?.shop?.name || 'ZURI'} className="h-8 md:h-auto w-auto" />
-            </NavLink>
-          </div>
+        {/* Large Desktop Layout (1440px+ and ultra-wide screens) */}
+        <div className="hidden 2xl:block">
+          <div className="max-w-[1800px] mx-auto px-12 2xl:px-20">
+            <div className="flex items-center justify-between h-24 2xl:h-28">
+              {/* Logo - Left side */}
+              <div className="flex-shrink-0">
+                <NavLink prefetch="intent" to="/" className="block">
+                  <img
+                      src={Logo}
+                      alt={header?.shop?.name || 'ZURI'}
+                      className="h-16 2xl:h-20 w-auto"
+                  />
+                </NavLink>
+              </div>
 
-          {/* Desktop Navigation and Actions */}
-          <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-            {/* Desktop Navigation */}
-            <nav className="flex space-x-6 lg:space-x-8">
-              {navigationItems.map(item => (
-                  <NavLink
-                      key={item.id}
-                      to={item.url}
-                      className="uppercase text-sm lg:text-[15px] tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+              {/* Right side - Navigation and Actions */}
+              <div className="flex items-center space-x-16 2xl:space-x-20">
+                {/* Main Navigation */}
+                <nav className="flex space-x-10 2xl:space-x-12">
+                  {navigationItems.map(item => (
+                      <NavLink
+                          key={item.id}
+                          to={item.url}
+                          className="uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
+                      >
+                        {item.title}
+                      </NavLink>
+                  ))}
+                </nav>
+
+                {/* Actions */}
+                <div className="flex items-center space-x-8 2xl:space-x-10">
+                  <LanguageSwitcher
+                      currentLocale={currentLocale}
+                      onLocaleChange={setCurrentLocale}
+                  />
+
+                  <div className="flex items-center space-x-6 2xl:space-x-7">
+                    <button
+                        className="focus:outline-none relative hover:opacity-80 transition-opacity duration-200 p-2"
+                        aria-label="Cart"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          open('cart');
+                        }}
+                    >
+                      <img src={CartIcon} className="w-7 h-7 2xl:w-6 2xl:h-6" alt="Cart" />
+                    </button>
+
+                    <NavLink
+                        to="/account"
+                        className="focus:outline-none hover:opacity-80 transition-opacity duration-200 p-2"
+                        aria-label="Account"
+                    >
+                      <img src={AccountIcon} className="w-7 h-7 2xl:w-6 2xl:h-6" alt="Account" />
+                    </NavLink>
+
+                    <Link
+                        to="/search"
+                        className="focus:outline-none hover:opacity-80 transition-opacity duration-200 p-2"
+                        aria-label="Search"
+                    >
+                      <img src={SearchIcon} className="w-7 h-7 2xl:w-6 2xl:h-6" alt="Search" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Standard Desktop/Laptop Layout (1024px - 1440px) */}
+        <div className="hidden lg:block 2xl:hidden">
+          <div className="container mx-auto px-6 xl:px-8 flex items-center justify-between h-20 xl:h-22">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <NavLink prefetch="intent" to="/" className="block">
+                <img src={Logo} alt={header?.shop?.name || 'ZURI'} className="h-10 xl:h-12 w-auto" />
+              </NavLink>
+            </div>
+
+            {/* Right side - Navigation and Actions */}
+            <div className="flex items-center space-x-8 xl:space-x-12">
+              {/* Navigation */}
+              <nav className="flex space-x-6 xl:space-x-8">
+                {navigationItems.map(item => (
+                    <NavLink
+                        key={item.id}
+                        to={item.url}
+                        className="uppercase text-sm xl:text-base tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                    >
+                      {item.title}
+                    </NavLink>
+                ))}
+              </nav>
+
+              {/* Actions */}
+              <div className="flex items-center space-x-4 xl:space-x-6">
+                <LanguageSwitcher
+                    currentLocale={currentLocale}
+                    onLocaleChange={setCurrentLocale}
+                />
+
+                <div className="flex items-center space-x-3 xl:space-x-4">
+                  <button
+                      className="focus:outline-none relative hover:opacity-80 transition-opacity duration-200"
+                      aria-label="Cart"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        open('cart');
+                      }}
                   >
-                    {item.title}
+                    <img src={CartIcon} className="w-5 h-5 xl:w-6 xl:h-6" alt="Cart" />
+                  </button>
+
+                  <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
+                    <img src={AccountIcon} className="w-5 h-5 xl:w-6 xl:h-6" alt="Account" />
                   </NavLink>
-              ))}
-            </nav>
 
-            <LanguageSwitcher
-                currentLocale={currentLocale}
-                onLocaleChange={setCurrentLocale}
-            />
-
-            <div className="flex items-center space-x-4 lg:space-x-6">
-              <button
-                  className="focus:outline-none relative hover:opacity-80 transition-opacity duration-200"
-                  aria-label="Cart"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    open('cart');
-                  }}
-              >
-                <img src={CartIcon} className="w-5 h-5" alt="Cart" />
-              </button>
-
-              {/* Account */}
-              <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
-                <img src={AccountIcon} className="w-5 h-5" alt="Account" />
-              </NavLink>
-
-              {/* Search */}
-              <Link
-                  to="/search"
-                  className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
-                  aria-label="Search"
-              >
-                <img src={SearchIcon} className="w-5 h-5" alt="Search" />
-              </Link>
+                  <Link
+                      to="/search"
+                      className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
+                      aria-label="Search"
+                  >
+                    <img src={SearchIcon} className="w-5 h-5 xl:w-6 xl:h-6" alt="Search" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Mobile Actions and Menu Button */}
-          <div className="md:hidden flex items-center space-x-4">
-            {/* Mobile Icons */}
-            <div className="flex items-center space-x-3">
-              <button
-                  className="focus:outline-none relative"
-                  aria-label="Cart"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    open('cart');
-                  }}
-              >
-                <img src={CartIcon} className="w-5 h-5" alt="Cart" />
-              </button>
-
-              <NavLink to="/account" className="focus:outline-none" aria-label="Account">
-                <img src={AccountIcon} className="w-5 h-5" alt="Account" />
+        {/* Tablet Layout */}
+        <div className="hidden md:block lg:hidden">
+          <div className="container mx-auto px-6 flex items-center justify-between h-18">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <NavLink prefetch="intent" to="/" className="text-2xl font-semibold tracking-wider">
+                <img src={Logo} alt={header?.shop?.name || 'ZURI'} className="h-10 w-auto" />
               </NavLink>
-
-              <Link
-                  to="/search"
-                  className="focus:outline-none"
-                  aria-label="Search"
-              >
-                <img src={SearchIcon} className="w-5 h-5" alt="Search" />
-              </Link>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-                className="focus:outline-none p-1"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="Toggle menu"
-            >
-              <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-[#542C17]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            {/* Tablet Navigation and Actions */}
+            <div className="flex items-center justify-between flex-1 ml-8">
+              {/* Navigation */}
+              <nav className="flex space-x-6">
+                {navigationItems.map(item => (
+                    <NavLink
+                        key={item.id}
+                        to={item.url}
+                        className="uppercase text-sm tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                    >
+                      {item.title}
+                    </NavLink>
+                ))}
+              </nav>
+
+              {/* Right side actions */}
+              <div className="flex items-center space-x-4">
+                <LanguageSwitcher
+                    currentLocale={currentLocale}
+                    onLocaleChange={setCurrentLocale}
+                />
+
+                <div className="flex items-center space-x-3">
+                  <button
+                      className="focus:outline-none relative hover:opacity-80 transition-opacity duration-200"
+                      aria-label="Cart"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        open('cart');
+                      }}
+                  >
+                    <img src={CartIcon} className="w-5 h-5" alt="Cart" />
+                  </button>
+
+                  <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
+                    <img src={AccountIcon} className="w-5 h-5" alt="Account" />
+                  </NavLink>
+
+                  <Link
+                      to="/search"
+                      className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
+                      aria-label="Search"
+                  >
+                    <img src={SearchIcon} className="w-5 h-5" alt="Search" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden">
+          <div className="container mx-auto px-4 flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <NavLink prefetch="intent" to="/" className="text-2xl font-semibold tracking-wider">
+                <img src={Logo} alt={header?.shop?.name || 'ZURI'} className="h-8 w-auto" />
+              </NavLink>
+            </div>
+
+            {/* Mobile Actions and Menu Button */}
+            <div className="flex items-center space-x-4">
+              {/* Mobile Icons */}
+              <div className="flex items-center space-x-3">
+                <button
+                    className="focus:outline-none relative"
+                    aria-label="Cart"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      open('cart');
+                    }}
+                >
+                  <img src={CartIcon} className="w-5 h-5" alt="Cart" />
+                </button>
+
+                <NavLink to="/account" className="focus:outline-none" aria-label="Account">
+                  <img src={AccountIcon} className="w-5 h-5" alt="Account" />
+                </NavLink>
+
+                <Link
+                    to="/search"
+                    className="focus:outline-none"
+                    aria-label="Search"
+                >
+                  <img src={SearchIcon} className="w-5 h-5" alt="Search" />
+                </Link>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                  className="focus:outline-none p-1"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  aria-label="Toggle menu"
               >
-                {isMobileMenuOpen ? (
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                    />
-                ) : (
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                    />
-                )}
-              </svg>
-            </button>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-[#542C17]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                  {isMobileMenuOpen ? (
+                      <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                      />
+                  ) : (
+                      <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                      />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 

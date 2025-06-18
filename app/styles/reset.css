@@ -82,6 +82,25 @@ body > main {
   margin: 0 1rem 1rem 1rem;
 }
 
+.mobile-single-column {
+  grid-template-columns: 1fr;
+}
+
+/* Small screens: 2 columns */
+@media (min-width: 640px) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Tablets: 3 columns */
+@media (min-width: 768px) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Desktop: 4 columns */
+@media (min-width: 1024px) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

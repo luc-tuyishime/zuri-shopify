@@ -4,8 +4,11 @@ import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
-import BG from '../assets/bg.svg'
-import VIDEO from '../assets/video.mp4'
+import BG from '~/assets/bg.svg'
+import VIDEO1 from '~/assets/video.mp4'
+import VIDEO2 from '~/assets/video.mp4'
+import VIDEO3 from '~/assets/video.mp4'
+import MOBILE_VIDEO from '../assets/aaa.webm'
 import {ProductSkeleton} from "~/components/ProductSkeleton.jsx";
 import {getLocale, useTranslation} from "~/lib/i18n.js";
 import {useLocale} from "~/hooks/useLocale.js";
@@ -14,20 +17,20 @@ import {useLocale} from "~/hooks/useLocale.js";
  * @type {MetaFunction}
  */
 export const meta = () => {
-  return [{title: 'Zuri | Home'}];
+    return [{title: 'Zuri | Home'}];
 };
 
 /**
  * @param {LoaderFunctionArgs} args
  */
 export async function loader(args) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
+    // Start fetching non-critical data without blocking time to first byte
+    const deferredData = loadDeferredData(args);
 
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
+    // Await the critical data required to render initial state of the page
+    const criticalData = await loadCriticalData(args);
 
-  return {...deferredData, ...criticalData};
+    return {...deferredData, ...criticalData};
 }
 
 /**
@@ -36,14 +39,14 @@ export async function loader(args) {
  * @param {LoaderFunctionArgs}
  */
 async function loadCriticalData({context}) {
-  const [{collections}] = await Promise.all([
-    context.storefront.query(FEATURED_COLLECTION_QUERY),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+    const [{collections}] = await Promise.all([
+        context.storefront.query(FEATURED_COLLECTION_QUERY),
+        // Add other queries here, so that they are loaded in parallel
+    ]);
 
-  return {
-    featuredCollection: collections.nodes[0],
-  };
+    return {
+        featuredCollection: collections.nodes[0],
+    };
 }
 
 /**
@@ -53,30 +56,30 @@ async function loadCriticalData({context}) {
  * @param {LoaderFunctionArgs}
  */
 function loadDeferredData({context}) {
-  const recommendedProducts = context.storefront
-    .query(RECOMMENDED_PRODUCTS_QUERY)
-    .catch((error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
+    const recommendedProducts = context.storefront
+        .query(RECOMMENDED_PRODUCTS_QUERY)
+        .catch((error) => {
+            // Log query errors, but don't throw them so the page can still render
+            console.error(error);
+            return null;
+        });
 
-  return {
-    recommendedProducts,
-  };
+    return {
+        recommendedProducts,
+    };
 }
 
 export default function Homepage() {
-  /** @type {LoaderReturnData} */
-  const data = useLoaderData();
-  return (
-    <div className="home">
-      <FeaturedCollection collection={data.featuredCollection} />
-      <RecommendedProducts products={data.recommendedProducts} />
-        <WigGuideSection />
-        <CustomerReviewsSection />
-    </div>
-  );
+    /** @type {LoaderReturnData} */
+    const data = useLoaderData();
+    return (
+        <div className="home">
+            <FeaturedCollection collection={data.featuredCollection} />
+            <RecommendedProducts products={data.recommendedProducts} />
+            <WigGuideSection />
+            <CustomerReviewsSection />
+        </div>
+    );
 }
 
 /**
@@ -87,25 +90,129 @@ export default function Homepage() {
 function FeaturedCollection({ collection }) {
     const [isMobile, setIsMobile] = useState(false);
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const [isSlowConnection, setIsSlowConnection] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+    useEffect(() => {
+        // Preload critical videos
+        const videoPreload = document.createElement('link');
+        videoPreload.rel = 'preload';
+        videoPreload.as = 'video';
+        videoPreload.href = isMobile ? MOBILE_VIDEO : desktopVideos[0];
+        document.head.appendChild(videoPreload);
+
+        return () => {
+            document.head.removeChild(videoPreload);
+        };
+    }, [isMobile]);
+
+    // Desktop video slideshow array
+    const desktopVideos = [VIDEO1, VIDEO2, VIDEO3];
+
+    // Slideshow content for each video
+    const slideContent = [
+        {
+            title: "Discover Your Perfect Look",
+            subtitle: "Premium Quality Wigs",
+            buttonText: "SHOP NOW"
+        },
+        {
+            title: "Natural Beauty Redefined",
+            subtitle: "100% Human Hair Collection",
+            buttonText: "EXPLORE"
+        },
+        {
+            title: "Transform Your Style",
+            subtitle: "Expert Crafted Designs",
+            buttonText: "VIEW ALL"
+        }
+    ];
 
     if (!collection) return null;
 
     useEffect(() => {
+        // Set client-side flag
+        setIsClient(true);
+
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
 
+        // Check for slow connection
+        const checkConnection = () => {
+            if ('connection' in navigator) {
+                const conn = navigator.connection;
+                setIsSlowConnection(conn.effectiveType === '2g' || conn.effectiveType === 'slow-2g');
+            }
+        };
+
         checkMobile();
+        checkConnection();
+
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    // Desktop slideshow effect
+    useEffect(() => {
+        if (!isMobile && isClient && desktopVideos.length > 1) {
+            const interval = setInterval(() => {
+                setCurrentVideoIndex((prevIndex) =>
+                    (prevIndex + 1) % desktopVideos.length
+                );
+                setVideoLoaded(false); // Reset for smooth transition
+            }, 8000); // Change video every 8 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [isMobile, isClient, desktopVideos.length]);
+
+    const shouldUseVideo = !isSlowConnection && isClient;
+
+    // For SSR and initial render, show image until we know the device type
+    if (!isClient) {
+        return (
+            <>
+                <div className="hero-video-container">
+                    <div
+                        className="hero-background-image"
+                        style={{
+                            backgroundImage: `url(${BG})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    />
+
+                    {/* Content Overlay */}
+                    <div className="hero-link">
+                        <div className="hero-content">
+                            <h1 className="hero-title">
+                                {slideContent[0].title}
+                            </h1>
+                            <p className="hero-subtitle">
+                                {slideContent[0].subtitle}
+                            </p>
+                            <button className="hero-button">
+                                {slideContent[0].buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <style dangerouslySetInnerHTML={{
+                    __html: `/* Your existing styles */`
+                }} />
+            </>
+        );
+    }
 
     return (
         <>
             <div className="hero-video-container">
                 {/* Optimized Background Media */}
-                {isMobile ? (
-                    // Mobile: Use image instead of video for better performance
+                {!shouldUseVideo ? (
+                    // Slow connection: Use static image
                     <div
                         className="hero-background-image"
                         style={{
@@ -116,7 +223,6 @@ function FeaturedCollection({ collection }) {
                         }}
                     />
                 ) : (
-                    // Desktop: Use optimized video
                     <>
                         {/* Fallback image while video loads */}
                         {!videoLoaded && (
@@ -131,43 +237,87 @@ function FeaturedCollection({ collection }) {
                             />
                         )}
 
-                        <video
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            preload="metadata"
-                            onLoadedData={() => setVideoLoaded(true)}
-                            className="hero-video"
-                            style={{
-                                opacity: videoLoaded ? 1 : 0,
-                                transition: 'opacity 0.5s ease'
-                            }}
-                        >
-                            <source src={VIDEO} type="video/mp4" />
-                        </video>
+                        {/* Mobile Video - Compressed WebM */}
+                        {isMobile ? (
+                            <video
+                                key="mobile-video"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                preload="auto"        // Load entire video ASAP
+                                loading="eager"
+                                onLoadedData={() => setVideoLoaded(true)}
+                                className="hero-video"
+                                style={{
+                                    opacity: videoLoaded ? 1 : 0,
+                                    transition: 'opacity 0.5s ease',
+                                    willChange: 'opacity'
+                                }}
+                            >
+                                <source src={MOBILE_VIDEO} type="video/webm" />
+                            </video>
+                        ) : (
+                            /* Desktop Video Slideshow */
+                            <video
+                                key={`desktop-video-${currentVideoIndex}`}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                preload="metadata"
+                                onLoadedData={() => setVideoLoaded(true)}
+                                className="hero-video"
+                                style={{
+                                    opacity: videoLoaded ? 1 : 0,
+                                    transition: 'opacity 0.8s ease'
+                                }}
+                            >
+                                <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
+                            </video>
+                        )}
                     </>
                 )}
 
-                {/* Content Overlay - Fully Responsive */}
-                <div
-                    className="hero-link"
-                >
+                {/* Content Overlay - Dynamic content based on current slide */}
+                <div className="hero-link">
                     <div className="hero-content">
-                        {/* Responsive Title */}
+                        {/* Dynamic Title */}
                         <h1 className="hero-title">
-                            A relevant title would go here
+                            {isMobile ? slideContent[0].title : slideContent[currentVideoIndex].title}
                         </h1>
 
-                        {/* Responsive Action Button */}
+                        {/* Dynamic Subtitle */}
+                        <p className="hero-subtitle">
+                            {isMobile ? slideContent[0].subtitle : slideContent[currentVideoIndex].subtitle}
+                        </p>
+
+                        {/* Dynamic Action Button */}
                         <button className="hero-button">
-                            AN ACTION
+                            {isMobile ? slideContent[0].buttonText : slideContent[currentVideoIndex].buttonText}
                         </button>
                     </div>
+
+                    {/* Desktop: Slideshow indicators */}
+                    {!isMobile && isClient && (
+                        <div className="slideshow-indicators">
+                            {desktopVideos.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => {
+                                        setCurrentVideoIndex(index);
+                                        setVideoLoaded(false);
+                                    }}
+                                    className={`indicator ${index === currentVideoIndex ? 'active' : ''}`}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Move styles to external CSS or use CSS Modules */}
+            {/* Enhanced styles with slideshow support */}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .hero-video-container {
@@ -194,6 +344,16 @@ function FeaturedCollection({ collection }) {
                     object-fit: cover;
                     object-position: center;
                     z-index: 1;
+                }
+
+                /* Optimize video loading on mobile */
+                @media (max-width: 768px) {
+                    .hero-video {
+                        object-fit: cover;
+                        transform: translateZ(0);
+                        backface-visibility: hidden;
+                        perspective: 1000;
+                    }
                 }
 
                 .hero-link {
@@ -226,9 +386,21 @@ function FeaturedCollection({ collection }) {
                     font-size: clamp(28px, 5vw, 45px);
                     font-weight: 500;
                     line-height: 1.2;
+                    margin: 0 0 20px 0;
+                    max-width: min(500px, 80vw);
+                    letter-spacing: 0.5px;
+                    transition: opacity 0.5s ease;
+                }
+
+                .hero-subtitle {
+                    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: clamp(16px, 3vw, 22px);
+                    font-weight: 300;
+                    line-height: 1.4;
                     margin: 0 0 30px 0;
                     max-width: min(400px, 80vw);
-                    letter-spacing: 0.5px;
+                    transition: opacity 0.5s ease;
                 }
 
                 .hero-button {
@@ -256,6 +428,36 @@ function FeaturedCollection({ collection }) {
                     transform: translateY(0);
                 }
 
+                /* Slideshow indicators */
+                .slideshow-indicators {
+                    position: absolute;
+                    bottom: 30px;
+                    left: 80px;
+                    display: flex;
+                    gap: 12px;
+                    z-index: 3;
+                }
+
+                .indicator {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    border: 2px solid rgba(255, 255, 255, 0.5);
+                    background-color: transparent;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .indicator.active {
+                    background-color: white;
+                    border-color: white;
+                }
+
+                .indicator:hover {
+                    border-color: white;
+                    background-color: rgba(255, 255, 255, 0.7);
+                }
+
                 @media (max-width: 768px) {
                     .hero-video-container {
                         height: 70vh;
@@ -270,6 +472,13 @@ function FeaturedCollection({ collection }) {
 
                     .hero-title {
                         font-size: 32px;
+                        margin-bottom: 16px;
+                        max-width: 90vw;
+                        text-align: center;
+                    }
+
+                    .hero-subtitle {
+                        font-size: 18px;
                         margin-bottom: 24px;
                         max-width: 90vw;
                         text-align: center;
@@ -281,6 +490,10 @@ function FeaturedCollection({ collection }) {
                         width: auto;
                         min-width: 160px;
                     }
+
+                    .slideshow-indicators {
+                        display: none;
+                    }
                 }
 
                 @media (min-width: 769px) and (max-width: 1024px) {
@@ -290,6 +503,10 @@ function FeaturedCollection({ collection }) {
 
                     .hero-title {
                         font-size: 38px;
+                    }
+
+                    .slideshow-indicators {
+                        left: 40px;
                     }
                 }
 
@@ -301,11 +518,23 @@ function FeaturedCollection({ collection }) {
                     .hero-button:hover {
                         transform: none;
                     }
+
+                    .hero-video {
+                        animation-play-state: paused;
+                    }
+
+                    .hero-title, .hero-subtitle {
+                        transition: none;
+                    }
                 }
 
-                @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+                @media (prefers-reduced-data: reduce) {
+                    .hero-video {
+                        display: none;
+                    }
+                    
                     .hero-background-image {
-                        background-size: cover;
+                        display: block !important;
                     }
                 }
                 `
@@ -313,6 +542,7 @@ function FeaturedCollection({ collection }) {
         </>
     );
 }
+
 /**
  * @param {{
  *   products: Promise<RecommendedProductsQuery | null>;
@@ -323,7 +553,7 @@ export function RecommendedProducts({products}) {
     const t = useTranslation(locale);
 
     const fallbackSkeleton = useMemo(() => (
-        <div className="recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="recommended-products-grid mobile-single-column gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
                 <ProductSkeleton key={index} />
             ))}
@@ -331,14 +561,14 @@ export function RecommendedProducts({products}) {
     ), []);
 
     const gridClasses = useMemo(() =>
-            "recommended-products-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6",
+            "recommended-products-grid mobile-single-column gap-4 md:gap-6",
         []
     );
 
     return (
         <div className="recommended-products" >
-            <div className="container-fluid mx-auto px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                <p className="pt-10 pb-10 text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
+            <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
+                <p className="pt-6 pb-6 md:pt-10 md:pb-10 text-2xl md:text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
 
                 <Suspense fallback={fallbackSkeleton}>
                     <Await resolve={products}>
@@ -346,7 +576,7 @@ export function RecommendedProducts({products}) {
                             <div className={gridClasses}>
                                 {response
                                     ? response.products.nodes.map((product) => (
-                                        <ProductItem key={product.id} product={product}  variant="rounded" />
+                                        <ProductItem key={product.id} product={product}  variant="roundedText"  />
                                     ))
                                     : null}
                             </div>
@@ -354,6 +584,33 @@ export function RecommendedProducts({products}) {
                     </Await>
                 </Suspense>
             </div>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                /* Mobile single column for products */
+                .mobile-single-column {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                }
+
+                @media (min-width: 640px) {
+                    .mobile-single-column {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                @media (min-width: 768px) {
+                    .mobile-single-column {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                }
+
+                @media (min-width: 1024px) {
+                    .mobile-single-column {
+                        grid-template-columns: repeat(4, 1fr);
+                    }
+                }
+                `
+            }} />
             <br />
         </div>
     );

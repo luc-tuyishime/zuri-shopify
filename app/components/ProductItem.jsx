@@ -21,20 +21,21 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
     // Memoize styles to prevent recalculation on every render
     const styles = useMemo(() => {
         const isRounded = variant === 'rounded';
+        const isRoundedText = variant === 'roundedText';
         const isCollection = variant === 'collection';
 
         return {
             imageContainer: {
                 overflow: 'hidden',
-                borderRadius: isRounded ? '999px 999px 0 0' : '8px',
-                aspectRatio: isRounded ? '1/1.4' : '1/1',
+                borderRadius: (isRounded || isRoundedText) ? '999px 999px 0 0' : '8px',
+                aspectRatio: (isRounded || isRoundedText) ? '1/1.4' : '1/1',
                 position: 'relative',
                 backgroundColor: '#f8f9fa', // Placeholder color while loading
             },
             container: {
                 display: 'block',
                 textDecoration: 'none',
-                marginBottom: isRounded ? '20px' : '0',
+                marginBottom: (isRounded || isRoundedText) ? '20px' : '0',
             },
             image: {
                 width: '100%',
@@ -149,6 +150,21 @@ export const ProductItem = memo(function ProductItem({ product, loading = 'lazy'
                     <button className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95">
                         {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
                     </button>
+                </div>
+            )}
+
+            {/* Product Info for RoundedText Variant - Clean & Minimal */}
+            {variant === 'roundedText' && (
+                <div className="product-info p-2 sm:p-3 text-center">
+                    {/* Responsive Title */}
+                    <h3 className="font-light font-poppins text-sm sm:text-base md:text-lg text-[#002F45] mb-1 sm:mb-2 line-clamp-2 leading-tight">
+                        {product.title}
+                    </h3>
+
+                    {/* Responsive Price */}
+                    <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl text-[#0D2936]">
+                        {formattedPrice}
+                    </div>
                 </div>
             )}
         </Link>

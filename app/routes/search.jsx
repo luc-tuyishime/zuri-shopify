@@ -391,7 +391,7 @@ const ProductCard = memo(({ product, expandedTerms, locale }) => {
   }, [expandedTerms]);
 
   return (
-      <div className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
+      <div className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
         {image && (
             <div className="aspect-square bg-gray-100 overflow-hidden">
               <img
@@ -403,7 +403,8 @@ const ProductCard = memo(({ product, expandedTerms, locale }) => {
               />
             </div>
         )}
-        <div className="p-2 sm:p-3 md:p-4">
+        <div>
+          <div className={'sm:p-3 md:p-4'}>
           <h3
               className="font-medium text-sm sm:text-base mb-2 line-clamp-2 leading-tight"
               dangerouslySetInnerHTML={{
@@ -439,14 +440,15 @@ const ProductCard = memo(({ product, expandedTerms, locale }) => {
           )}
 
           {price && (
-              <p className="text-sm sm:text-base font-semibold text-[#8B4513] mb-3">
+              <p className="text-sm sm:text-base font-bold text-[#0D2936] mb-3">
                 {price.currencyCode === 'EUR' ? '€' : '$'}
                 {parseFloat(price.amount).toFixed(2)}
               </p>
           )}
+            </div>
           <Link
               to={`/products/${product.handle}`}
-              className="block w-full text-center px-2 py-2 sm:px-3 sm:py-2 bg-[#8B4513] text-white rounded hover:bg-[#7a3d0f] transition-colors duration-200 text-xs sm:text-sm"
+              className="product-button w-full block px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 text-center"
           >
             {locale === 'fr' ? 'Voir' : 'View'}
           </Link>
