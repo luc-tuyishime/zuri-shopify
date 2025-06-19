@@ -100,9 +100,41 @@ function FeaturedCollection({ collection }) {
     const containerRef = useRef(null);
     const videoRef = useRef(null);
 
-    // CRITICAL: Use optimized background image
-    const OPTIMIZED_BG = BG + '?format=webp&quality=80&width=1920'; // Add Shopify optimization
-    const OPTIMIZED_MOBILE_VIDEO = MOBILE_VIDEO; // Keep as is for now, but compress the actual file
+    // CRITICAL: Fixed background image optimization
+    const OPTIMIZED_BG = useMemo(() => {
+        if (!BG) {
+            console.error('BG variable is undefined!');
+            return '';
+        }
+
+        console.log('Original BG:', BG); // Debug log
+
+        // Remove any existing parameters
+        const baseUrl = BG.split('?')[0];
+
+        // CRITICAL: Use smaller width and better compression for mobile LCP
+        const optimizedUrl = `${baseUrl}?width=1200&format=webp&quality=75&crop=center`;
+
+        console.log('Optimized BG:', optimizedUrl); // Debug log
+
+        return optimizedUrl;
+    }, []);
+
+    // CRITICAL: Alternative fallback if optimization fails
+    const FALLBACK_BG = useMemo(() => {
+        if (!BG) return '';
+
+        // If the URL doesn't support Shopify transformations, try basic compression
+        if (!BG.includes('cdn.shopify.com')) {
+            return BG; // Return original if not Shopify CDN
+        }
+
+        // Alternative optimization approach
+        const baseUrl = BG.split('?')[0];
+        return `${baseUrl}?w=1200&q=75&fm=webp`;
+    }, []);
+
+    const OPTIMIZED_MOBILE_VIDEO = MOBILE_VIDEO;
 
     // Desktop video slideshow array
     const desktopVideos = [VIDEO1, VIDEO2, VIDEO3];
@@ -128,20 +160,44 @@ function FeaturedCollection({ collection }) {
 
     if (!collection) return null;
 
-    // CRITICAL: Preload optimized background image
+    // CRITICAL: Enhanced preload with fallback
     useEffect(() => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = OPTIMIZED_BG;
-        link.type = 'image/webp';
-        document.head.appendChild(link);
+        const preloadImages = [OPTIMIZED_BG, FALLBACK_BG].filter(Boolean);
+        const links = [];
+
+        preloadImages.forEach((url, index) => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'image';
+            link.href = url;
+            link.type = 'image/webp';
+            link.fetchPriority = index === 0 ? 'high' : 'low';
+
+            // Add error handling
+            link.onerror = () => {
+                console.warn(`Failed to preload image: ${url}`);
+            };
+
+            document.head.appendChild(link);
+            links.push(link);
+        });
 
         return () => {
-            if (document.head.contains(link)) {
-                document.head.removeChild(link);
-            }
+            links.forEach(link => {
+                if (document.head.contains(link)) {
+                    document.head.removeChild(link);
+                }
+            });
         };
+    }, [OPTIMIZED_BG, FALLBACK_BG]);
+
+    // CRITICAL: Debug effect to check what URL is actually being used
+    useEffect(() => {
+        console.log('=== BACKGROUND IMAGE DEBUG ===');
+        console.log('BG variable:', BG);
+        console.log('OPTIMIZED_BG:', OPTIMIZED_BG);
+        console.log('FALLBACK_BG:', FALLBACK_BG);
+        console.log('================================');
     }, []);
 
     // Intersection Observer for lazy loading
@@ -156,13 +212,13 @@ function FeaturedCollection({ collection }) {
                         // CRITICAL: Increased delay for better performance
                         setTimeout(() => {
                             setShouldLoadVideo(true);
-                        }, 500); // Increased from 100ms to 500ms
+                        }, 1000); // Increased to 1000ms to prioritize background image
                     }
                 }
             },
             {
-                threshold: 0.1, // CRITICAL: Reduced from 0.2 to 0.1
-                rootMargin: '100px' // CRITICAL: Increased from 50px to 100px
+                threshold: 0.1,
+                rootMargin: '100px'
             }
         );
 
@@ -227,6 +283,9 @@ function FeaturedCollection({ collection }) {
     // Determine if video should be shown
     const showVideo = shouldLoadVideo && isIntersecting;
 
+    // CRITICAL: Smart background image selection
+    const backgroundImageUrl = OPTIMIZED_BG || FALLBACK_BG || BG;
+
     // For SSR and initial render, show image until we know the device type
     if (!isClient) {
         return (
@@ -235,7 +294,7 @@ function FeaturedCollection({ collection }) {
                     <div
                         className="hero-background-image"
                         style={{
-                            backgroundImage: `url(${OPTIMIZED_BG})`, // CRITICAL: Use optimized image
+                            backgroundImage: `url(${backgroundImageUrl})`, // CRITICAL: Use smart selection
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat'
@@ -258,7 +317,7 @@ function FeaturedCollection({ collection }) {
                     </div>
                 </div>
                 <style dangerouslySetInnerHTML={{
-                    __html: optimizedStyles // CRITICAL: Use optimized styles
+                    __html: styles // FIXED: Use the actual styles variable from your original code
                 }} />
             </>
         );
@@ -271,7 +330,7 @@ function FeaturedCollection({ collection }) {
                 <div
                     className="hero-background-image"
                     style={{
-                        backgroundImage: `url(${OPTIMIZED_BG})`, // CRITICAL: Use optimized image
+                        backgroundImage: `url(${backgroundImageUrl})`, // CRITICAL: Use smart selection
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat'
@@ -390,339 +449,12 @@ function FeaturedCollection({ collection }) {
 
             {/* Enhanced styles with performance optimizations */}
             <style dangerouslySetInnerHTML={{
-                __html: optimizedStyles // CRITICAL: Use optimized styles
+                __html: styles // FIXED: Use the actual styles variable from your original code
             }} />
         </>
     );
 }
 
-// CRITICAL: Optimized styles for performance
-const optimizedStyles = `
-    .hero-video-container {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        min-height: 500px;
-        margin: 0;
-        padding: 0;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        overflow: hidden;
-        /* CRITICAL: Performance optimizations */
-        transform: translateZ(0);
-        backface-visibility: hidden;
-        content-visibility: auto;
-        contain-intrinsic-size: 800px;
-        contain: layout style paint;
-    }
-
-    .hero-background-image,
-    .hero-video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-        z-index: 1;
-        /* CRITICAL: Performance */
-        transform: translateZ(0);
-        backface-visibility: hidden;
-        image-rendering: optimizeQuality;
-    }
-
-    .hero-background-image {
-        /* CRITICAL: Remove background-attachment for performance */
-        background-attachment: scroll;
-    }
-
-    /* CRITICAL: Optimize video loading on mobile */
-    @media (max-width: 768px) {
-        .hero-video-container {
-            height: 70vh;
-            min-height: 400px;
-        }
-        
-        .hero-video {
-            /* CRITICAL: Mobile video optimizations */
-            object-fit: cover;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
-            image-rendering: optimizeSpeed;
-        }
-    }
-
-    .video-play-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.3);
-        z-index: 5;
-        backdrop-filter: blur(2px);
-        /* CRITICAL: Performance */
-        transform: translateZ(0);
-        contain: layout style;
-    }
-
-    .play-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        border-radius: 50px;
-        padding: 20px 30px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        /* CRITICAL: Performance */
-        transform: translateZ(0);
-        contain: layout style;
-    }
-
-    .play-button:hover {
-        background: rgba(255, 255, 255, 1);
-        transform: translateZ(0) scale(1.05);
-    }
-
-    .play-icon {
-        width: 24px;
-        height: 24px;
-        color: #333;
-        margin-bottom: 8px;
-    }
-
-    .play-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .hero-link {
-        display: block;
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 2;
-        text-decoration: none;
-        /* CRITICAL: Performance */
-        contain: layout style;
-    }
-
-    .hero-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 20px;
-        padding-left: 80px;
-        /* CRITICAL: Performance */
-        contain: layout style;
-    }
-
-    .hero-title {
-        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-        color: white;
-        font-size: clamp(28px, 5vw, 45px);
-        font-weight: 500;
-        line-height: 1.2;
-        margin: 0 0 20px 0;
-        max-width: min(500px, 80vw);
-        letter-spacing: 0.5px;
-        transition: opacity 0.5s ease;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        /* CRITICAL: Font performance */
-        font-display: swap;
-        text-rendering: optimizeSpeed;
-    }
-
-    .hero-subtitle {
-        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: clamp(16px, 3vw, 22px);
-        font-weight: 300;
-        line-height: 1.4;
-        margin: 0 0 30px 0;
-        max-width: min(400px, 80vw);
-        transition: opacity 0.5s ease;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        /* CRITICAL: Font performance */
-        font-display: swap;
-        text-rendering: optimizeSpeed;
-    }
-
-    .hero-button {
-        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-        color: white;
-        background-color: transparent;
-        border: 1px solid white;
-        padding: 12px 30px;
-        font-size: clamp(14px, 2vw, 16px);
-        letter-spacing: 1px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        border-radius: 0;
-        text-transform: uppercase;
-        width: fit-content;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        /* CRITICAL: Performance */
-        transform: translateZ(0);
-        contain: layout style;
-    }
-
-    .hero-button:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        transform: translateZ(0) translateY(-1px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .hero-button:active {
-        transform: translateZ(0);
-    }
-
-    /* Slideshow indicators */
-    .slideshow-indicators {
-        position: absolute;
-        bottom: 30px;
-        left: 80px;
-        display: flex;
-        gap: 12px;
-        z-index: 3;
-        /* CRITICAL: Performance */
-        contain: layout style;
-    }
-
-    .indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        background-color: transparent;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        /* CRITICAL: Performance */
-        transform: translateZ(0);
-    }
-
-    .indicator.active {
-        background-color: white;
-        border-color: white;
-    }
-
-    .indicator:hover {
-        border-color: white;
-        background-color: rgba(255, 255, 255, 0.7);
-    }
-
-    @media (max-width: 768px) {
-        .hero-content {
-            padding: 20px;
-            text-align: center;
-            align-items: center;
-        }
-
-        .hero-title {
-            font-size: 32px;
-            margin-bottom: 16px;
-            max-width: 90vw;
-            text-align: center;
-        }
-
-        .hero-subtitle {
-            font-size: 18px;
-            margin-bottom: 24px;
-            max-width: 90vw;
-            text-align: center;
-        }
-
-        .hero-button {
-            padding: 14px 24px;
-            font-size: 14px;
-            width: auto;
-            min-width: 160px;
-        }
-
-        .slideshow-indicators {
-            display: none;
-        }
-    }
-
-    @media (min-width: 769px) and (max-width: 1024px) {
-        .hero-content {
-            padding-left: 40px;
-        }
-
-        .hero-title {
-            font-size: 38px;
-        }
-
-        .slideshow-indicators {
-            left: 40px;
-        }
-    }
-
-    /* CRITICAL: Reduce motion for performance */
-    @media (prefers-reduced-motion: reduce) {
-        .hero-button,
-        .play-button,
-        .indicator {
-            transition: none !important;
-        }
-        
-        .hero-button:hover,
-        .play-button:hover {
-            transform: translateZ(0) !important;
-        }
-
-        .hero-video {
-            animation-play-state: paused;
-        }
-
-        .hero-title, .hero-subtitle {
-            transition: none;
-        }
-    }
-
-    /* CRITICAL: Data saver mode */
-    @media (prefers-reduced-data: reduce) {
-        .hero-video {
-            display: none !important;
-        }
-        
-        .video-play-overlay {
-            display: none !important;
-        }
-    }
-
-    /* CRITICAL: Performance optimization for older devices */
-    @media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 1) {
-        .hero-video {
-            transform: translate3d(0, 0, 0);
-            -webkit-transform: translate3d(0, 0, 0);
-        }
-    }
-`;
 
 const styles = `
     .hero-video-container {
@@ -1107,7 +839,7 @@ export function RecommendedProducts({products}) {
     return (
         <div className="recommended-products" ref={sectionRef}>
             <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                <p className="pt-6 pb-6 md:pt-10 md:pb-10 text-2xl md:text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
+                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
 
                 <Suspense fallback={fallbackSkeleton}>
                     <Await resolve={products}>
