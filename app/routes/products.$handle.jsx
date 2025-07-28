@@ -729,15 +729,10 @@ export default function Product() {
             currentProductId={product.id}
         />
         <CustomerReviewsSection />
-        <SilkSmoothDifference />
+        <SilkSmoothDifference product={product} />
         <CustomerTestimonial
-            testimonial={{
-              quote: locale === 'fr'
-                  ? "Ce shampooing est parfait pour mon cuir chevelu sensible. Il nettoie en profondeur tout en gardant mes cheveux doux."
-                  : "This shampoo is perfect for my sensitive scalp. Cleans thoroughly while keeping my hair soft.",
-              author: locale === 'fr' ? "Marie D." : "Jamie P.",
-              product: locale === 'fr' ? "Shampooing Silk Smooth, Cliente" : "Silk Smooth Shampoo, Customer"
-            }}
+            product={product}
+
         />
         <FAQ />
       </div>
@@ -868,7 +863,7 @@ const PRODUCT_FRAGMENT = `#graphql
         }
       }
     }
-     variants(first: 250) {
+    variants(first: 250) {
       nodes {
         ...ProductVariant
       }
@@ -882,6 +877,81 @@ const PRODUCT_FRAGMENT = `#graphql
     seo {
       description
       title
+    }
+    metafields(identifiers: [
+  {namespace: "custom", key: "statistic_1_percentage_fr"},
+  {namespace: "custom", key: "statistic_2_percentage_fr"},
+  {namespace: "custom", key: "statistic_3_percentage_fr"},
+  {namespace: "custom", key: "statistic_1_title_fr"},
+  {namespace: "custom", key: "statistic_2_title_fr"},
+  {namespace: "custom", key: "statistic_3_title_fr"},
+  {namespace: "custom", key: "difference_section_title_fr"}
+  
+  {namespace: "custom", key: "benefits_tab_label_fr"},
+  {namespace: "custom", key: "ingredients_tab_label_fr"},
+  {namespace: "custom", key: "usage_tab_label_fr"},
+  {namespace: "custom", key: "benefit_1_title_fr"},
+  {namespace: "custom", key: "benefit_1_description_fr"},
+  {namespace: "custom", key: "benefit_2_title_fr"},
+  {namespace: "custom", key: "benefit_2_description_fr"},
+  {namespace: "custom", key: "benefit_3_title_fr"},
+  {namespace: "custom", key: "benefit_3_description_fr"},
+  {namespace: "custom", key: "benefit_4_title_fr"},
+  {namespace: "custom", key: "benefit_4_description_fr"},
+  {namespace: "custom", key: "ingredients_title_fr"},
+  {namespace: "custom", key: "ingredients_description_fr"},
+  {namespace: "custom", key: "ingredients_list_fr"},
+  {namespace: "custom", key: "usage_title_fr"},
+  {namespace: "custom", key: "usage_step_1_fr"},
+  {namespace: "custom", key: "usage_step_2_fr"},
+  {namespace: "custom", key: "usage_step_3_fr"},
+  {namespace: "custom", key: "usage_step_4_fr"}
+  
+  {namespace: "custom", key: "testimonial_quote_en"},
+  {namespace: "custom", key: "testimonial_quote_fr"},
+  {namespace: "custom", key: "testimonial_author_en"},
+  {namespace: "custom", key: "testimonial_author_fr"},
+  {namespace: "custom", key: "testimonial_product_en"},
+  {namespace: "custom", key: "testimonial_product_fr"},
+  {namespace: "custom", key: "testimonial_image"}
+  
+  {namespace: "custom", key: "faq_title_en"},
+  {namespace: "custom", key: "faq_title_fr"},
+  {namespace: "custom", key: "faq_1_question_en"},
+  {namespace: "custom", key: "faq_1_question_fr"},
+  {namespace: "custom", key: "faq_1_answer_en"},
+  {namespace: "custom", key: "faq_1_answer_fr"},
+  {namespace: "custom", key: "faq_2_question_en"},
+  {namespace: "custom", key: "faq_2_question_fr"},
+  {namespace: "custom", key: "faq_2_answer_en"},
+  {namespace: "custom", key: "faq_2_answer_fr"},
+  {namespace: "custom", key: "faq_3_question_en"},
+  {namespace: "custom", key: "faq_3_question_fr"},
+  {namespace: "custom", key: "faq_3_answer_en"},
+  {namespace: "custom", key: "faq_3_answer_fr"},
+  {namespace: "custom", key: "faq_4_question_en"},
+  {namespace: "custom", key: "faq_4_question_fr"},
+  {namespace: "custom", key: "faq_4_answer_en"},
+  {namespace: "custom", key: "faq_4_answer_fr"},
+  {namespace: "custom", key: "faq_5_question_en"},
+  {namespace: "custom", key: "faq_5_question_fr"},
+  {namespace: "custom", key: "faq_5_answer_en"},
+  {namespace: "custom", key: "faq_5_answer_fr"}
+    ]) {
+      id
+      namespace
+      key
+      value
+      type
+      reference {
+        ... on MediaImage {
+          id
+          image {
+            url
+            altText
+          }
+        }
+      }
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}

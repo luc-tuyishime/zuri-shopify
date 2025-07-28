@@ -730,13 +730,14 @@ function FeaturedCollection({ collection }) {
                 {/* 🎯 FIXED: Video background rendering with better error handling */}
                 {getCurrentBackgroundMedia.type === 'video' ? (
                     <video
+                        crossOrigin="anonymous"
                         key={`bg-video-${currentVideoIndex}`}
                         autoPlay
                         loop
                         muted
                         playsInline
                         className="hero-background-video"
-                        preload="metadata"
+                        src={getCurrentBackgroundMedia.url}
                         style={{
                             position: 'absolute',
                             top: 0,
@@ -749,9 +750,18 @@ function FeaturedCollection({ collection }) {
                             transition: 'opacity 0.5s ease'
                         }}
                         onError={(e) => {
-                            console.error('❌ Video background failed to load:', getCurrentBackgroundMedia.url);
+                            console.error('❌ Video background failed to load ===>>>:', getCurrentBackgroundMedia.url);
                             console.error('Error details:', e);
-                            // Force fallback to collection image
+
+                            // GET THE EXACT ERROR CODE AND MESSAGE
+                            const videoElement = e.target;
+                            if (videoElement && videoElement.error) {
+                                console.error('🔍 Video Error Code:', videoElement.error.code);
+                                console.error('🔍 Video Error Message:', videoElement.error.message);
+                                console.error('🔍 Full Error Object:', videoElement.error);
+                            }
+
+                            handleVideoError(getCurrentBackgroundMedia.url);
                             console.log('🔄 Falling back to collection image due to video error');
                         }}
                         onLoadStart={() => console.log('🎥 Video background loading started...')}
@@ -803,6 +813,7 @@ function FeaturedCollection({ collection }) {
                     <>
                         {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                             <video
+                                crossOrigin="anonymous"
                                 ref={videoRef}
                                 key="mobile-video"
                                 autoPlay
@@ -826,6 +837,7 @@ function FeaturedCollection({ collection }) {
                             </video>
                         ) : !isMobile && desktopVideos[currentVideoIndex] ? (
                             <video
+                                crossOrigin="anonymous"
                                 key={`desktop-video-${currentVideoIndex}`}
                                 autoPlay
                                 loop
@@ -1538,7 +1550,7 @@ const FEATURED_COLLECTION_QUERY = `#graphql
       {namespace: "custom", key: "hero_background_image_slide_3"},
       {namespace: "custom", key: "hero_title_slide_3"},
       {namespace: "custom", key: "hero_subtitle_slide_3"},
-      {namespace: "custom", key: "hero_button_text_slide_3"}
+      {namespace: "custom", key: "hero_button_text_slide_3"},
       
       # Guide
       {namespace: "custom", key: "guide_title"},
