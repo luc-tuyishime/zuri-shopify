@@ -208,9 +208,17 @@ export const ProductItem = memo(function ProductItem({
                     </h3>
 
                     {/* Responsive Price */}
-                    <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl text-[#0D2936]">
+                    <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl -mb-4 sm:-mb-4 text-[#0D2936]">
                         {formattedPrice}
                     </div>
+
+                    <button
+                        className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95"
+                        // PERFORMANCE: Button optimizations
+                        style={{ transform: 'translateY(-16px) translateZ(0)', contain: 'layout style' }}
+                    >
+                        {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
+                    </button>
                 </div>
             )}
 

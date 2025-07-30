@@ -4,7 +4,7 @@ import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
 import {useLocale} from "~/hooks/useLocale.js";
 import {useTranslation} from "~/lib/i18n.js";
-import {useState} from "react";
+import {useState, useEffect, useMemo} from "react";
 
 /**
  * @type {MetaFunction<typeof loader>}
@@ -39,83 +39,115 @@ async function loadCriticalData({ context, request }) {
     pageBy: 8,
   });
 
-  // Build query string for filtering
-  const queryParts = [];
+  // Check if we're filtering by a specific collection
+  const collectionHandle = searchParams.get('collection');
+  let products;
+  let selectedCollection = null;
+  let allProductsForFilters = null;
 
-  // Handle category filter (can be multiple)
-  if (searchParams.get('category') && searchParams.get('category') !== '') {
-    const categories = searchParams.get('category').split(',');
-    const categoryQueries = categories.map(cat => `product_type:"${cat}"`);
-    if (categoryQueries.length > 0) {
-      queryParts.push(`(${categoryQueries.join(' OR ')})`);
+  if (collectionHandle) {
+    // If filtering by collection, use collection-specific query
+    try {
+      const collectionData = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
+        variables: {
+          handle: collectionHandle,
+          country: 'FR',
+          language: 'FR',
+          ...paginationVariables
+        },
+      });
+
+      selectedCollection = collectionData.collection;
+      products = collectionData.collection?.products || { nodes: [], pageInfo: {} };
+
+      // Also fetch all products from this collection for filter options (without pagination)
+      const allCollectionProducts = await storefront.query(COLLECTION_ALL_PRODUCTS_QUERY, {
+        variables: {
+          handle: collectionHandle,
+          country: 'FR',
+          language: 'FR',
+          first: 250 // Get more products for filter generation
+        },
+      });
+      allProductsForFilters = allCollectionProducts.collection?.products?.nodes || [];
+
+    } catch (error) {
+      console.error('Error fetching collection:', error);
+      // Fallback to regular products query
+      products = { nodes: [], pageInfo: {} };
     }
-  }
+  } else {
+    // Regular products query with other filters
+    const queryParts = [];
 
-  // Handle longueur filter (can be multiple)
-  if (searchParams.get('longueur') && searchParams.get('longueur') !== '') {
-    const longueurs = searchParams.get('longueur').split(',');
-    const longueurQueries = longueurs.map(lng => `tag:"${lng}"`);
-    if (longueurQueries.length > 0) {
-      queryParts.push(`(${longueurQueries.join(' OR ')})`);
+    // Handle category filter (can be multiple)
+    if (searchParams.get('category') && searchParams.get('category') !== '') {
+      const categories = searchParams.get('category').split(',');
+      const categoryQueries = categories.map(cat => `product_type:"${cat}"`);
+      if (categoryQueries.length > 0) {
+        queryParts.push(`(${categoryQueries.join(' OR ')})`);
+      }
     }
-  }
 
-  // Handle texture filter (can be multiple)
-  if (searchParams.get('texture') && searchParams.get('texture') !== '') {
-    const textures = searchParams.get('texture').split(',');
-    const textureQueries = textures.map(txt => `tag:"${txt}"`);
-    if (textureQueries.length > 0) {
-      queryParts.push(`(${textureQueries.join(' OR ')})`);
+    // Handle variant filters dynamically
+    const variantFilters = ['longueur', 'texture', 'couleur', 'capSize'];
+    variantFilters.forEach(filterKey => {
+      if (searchParams.get(filterKey) && searchParams.get(filterKey) !== '') {
+        const values = searchParams.get(filterKey).split(',');
+        const valueQueries = values.map(val => {
+          // For variant-based filters, we need to search in variant titles and option values
+          return `(variants.title:"${val}" OR tag:"${val}")`;
+        });
+        if (valueQueries.length > 0) {
+          queryParts.push(`(${valueQueries.join(' OR ')})`);
+        }
+      }
+    });
+
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+
+    if (minPrice && maxPrice) {
+      queryParts.push(`variants.price:>=${minPrice} AND variants.price:<=${maxPrice}`);
+    } else if (minPrice) {
+      queryParts.push(`variants.price:>=${minPrice}`);
+    } else if (maxPrice) {
+      queryParts.push(`variants.price:<=${maxPrice}`);
     }
+
+    const query = queryParts.length > 0 ? queryParts.join(' AND ') : '';
+    const sortKey = searchParams.get('sortKey') || 'UPDATED_AT';
+    const reverse = searchParams.get('reverse') === 'true';
+
+    // Regular products query
+    const productsData = await storefront.query(CATALOG_QUERY, {
+      variables: {
+        query,
+        sortKey,
+        reverse,
+        country: 'FR',
+        language: 'FR',
+        ...paginationVariables
+      },
+    });
+
+    products = productsData.products;
+
+    // Also fetch all products for filter generation
+    const allProductsData = await storefront.query(ALL_PRODUCTS_FOR_FILTERS_QUERY, {
+      variables: {
+        country: 'FR',
+        language: 'FR',
+        first: 250
+      },
+    });
+    allProductsForFilters = allProductsData.products.nodes;
   }
-
-  // Handle couleur filter (can be multiple)
-  if (searchParams.get('couleur') && searchParams.get('couleur') !== '') {
-    const couleurs = searchParams.get('couleur').split(',');
-    const couleurQueries = couleurs.map(col => `tag:"${col}"`);
-    if (couleurQueries.length > 0) {
-      queryParts.push(`(${couleurQueries.join(' OR ')})`);
-    }
-  }
-
-  // Handle capSize filter (can be multiple)
-  if (searchParams.get('capSize') && searchParams.get('capSize') !== '') {
-    const capSizes = searchParams.get('capSize').split(',');
-    const capSizeQueries = capSizes.map(size => `tag:"${size}"`);
-    if (capSizeQueries.length > 0) {
-      queryParts.push(`(${capSizeQueries.join(' OR ')})`);
-    }
-  }
-
-  const minPrice = searchParams.get('minPrice');
-  const maxPrice = searchParams.get('maxPrice');
-
-  if (minPrice && maxPrice) {
-    queryParts.push(`variants.price:>=${minPrice} AND variants.price:<=${maxPrice}`);
-  } else if (minPrice) {
-    queryParts.push(`variants.price:>=${minPrice}`);
-  } else if (maxPrice) {
-    queryParts.push(`variants.price:<=${maxPrice}`);
-  }
-
-  const query = queryParts.length > 0 ? queryParts.join(' AND ') : '';
-  const sortKey = searchParams.get('sortKey') || 'UPDATED_AT';
-  const reverse = searchParams.get('reverse') === 'true';
-
-  // Updated query with EUR context
-  const { products } = await storefront.query(CATALOG_QUERY, {
-    variables: {
-      query,
-      sortKey,
-      reverse,
-      country: 'FR',
-      language: 'FR',
-      ...paginationVariables
-    },
-  });
 
   return {
     products,
+    selectedCollection,
+    allProductsForFilters
   };
 }
 
@@ -129,11 +161,118 @@ function loadDeferredData({context}) {
   return {};
 }
 
+// Helper function to extract unique variant options
+function extractVariantOptions(products, locale) {
+  const optionSets = {
+    longueur: new Set(),
+    texture: new Set(),
+    couleur: new Set(),
+    capSize: new Set(),
+    category: new Set()
+  };
+
+  products.forEach(product => {
+    // Extract product types as categories
+    if (product.productType) {
+      optionSets.category.add(product.productType);
+    }
+
+    // Extract from variants
+    if (product.variants && product.variants.nodes) {
+      product.variants.nodes.forEach(variant => {
+        // Check variant options
+        if (variant.selectedOptions) {
+          variant.selectedOptions.forEach(option => {
+            const optionName = option.name.toLowerCase();
+            const optionValue = option.value;
+
+            // Map option names to our filter categories
+            if (optionName.includes('longueur') || optionName.includes('length')) {
+              optionSets.longueur.add(optionValue);
+            } else if (optionName.includes('texture')) {
+              optionSets.texture.add(optionValue);
+            } else if (optionName.includes('couleur') || optionName.includes('color') || optionName.includes('colour')) {
+              optionSets.couleur.add(optionValue);
+            } else if (optionName.includes('cap') || optionName.includes('taille') || optionName.includes('size')) {
+              optionSets.capSize.add(optionValue);
+            }
+          });
+        }
+
+        // Also check variant title for common patterns
+        if (variant.title && variant.title !== 'Default Title') {
+          const title = variant.title.toLowerCase();
+
+          // Extract length patterns (e.g., "16\"", "20 inches")
+          const lengthMatch = title.match(/(\d+)["'']|(\d+)\s*inch/i);
+          if (lengthMatch) {
+            const length = lengthMatch[1] || lengthMatch[2];
+            optionSets.longueur.add(`${length}"`);
+          }
+
+          // Extract common texture patterns
+          if (title.includes('straight') || title.includes('lisse')) optionSets.texture.add(locale === 'fr' ? 'Lisse' : 'Straight');
+          if (title.includes('wavy') || title.includes('ondulé')) optionSets.texture.add(locale === 'fr' ? 'Ondulé' : 'Wavy');
+          if (title.includes('curly') || title.includes('bouclé')) optionSets.texture.add(locale === 'fr' ? 'Bouclé' : 'Curly');
+          if (title.includes('kinky') || title.includes('crépu')) optionSets.texture.add(locale === 'fr' ? 'Crépu' : 'Kinky');
+        }
+      });
+    }
+
+    // Extract from tags as fallback
+    if (product.tags) {
+      product.tags.forEach(tag => {
+        const tagLower = tag.toLowerCase();
+
+        // Length tags
+        if (tagLower.match(/\d+["'']/)) {
+          optionSets.longueur.add(tag);
+        }
+
+        // Texture tags
+        if (['straight', 'lisse', 'wavy', 'ondulé', 'curly', 'bouclé', 'kinky', 'crépu'].some(texture =>
+            tagLower.includes(texture))) {
+          optionSets.texture.add(tag);
+        }
+
+        // Color tags
+        if (['black', 'noir', 'brown', 'brun', 'blonde', 'châtain', 'auburn'].some(color =>
+            tagLower.includes(color))) {
+          optionSets.couleur.add(tag);
+        }
+
+        // Size tags
+        if (['small', 'petit', 'medium', 'moyen', 'large', 'grand'].some(size =>
+            tagLower.includes(size))) {
+          optionSets.capSize.add(tag);
+        }
+      });
+    }
+  });
+
+  // Convert sets to sorted arrays with proper formatting
+  return {
+    category: Array.from(optionSets.category).sort(),
+    longueur: Array.from(optionSets.longueur).sort((a, b) => {
+      // Sort by numeric value for lengths
+      const aNum = parseInt(a.replace(/[^0-9]/g, ''));
+      const bNum = parseInt(b.replace(/[^0-9]/g, ''));
+      return aNum - bNum;
+    }),
+    texture: Array.from(optionSets.texture).sort(),
+    couleur: Array.from(optionSets.couleur).sort(),
+    capSize: Array.from(optionSets.capSize).sort()
+  };
+}
+
 export default function Collection() {
-  const { products, collection } = useLoaderData();
+  const { products, selectedCollection, allProductsForFilters } = useLoaderData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [locale] = useLocale();
   const t = useTranslation(locale);
+
+  // Get the current collection filter from URL
+  const currentCollectionFilter = searchParams.get('collection') || '';
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -155,48 +294,44 @@ export default function Collection() {
     price: false,
   });
 
-  // Filter options
-  const filterOptions = {
-    category: [
-      { value: '', label: locale === 'fr' ? 'Tous' : 'All' },
-      { value: 'Units & Wigs', label: locale === 'fr' ? 'Unités & Perruques' : 'Units & Wigs' },
-      { value: 'Hair Products', label: locale === 'fr' ? 'Produits Capillaires' : 'Hair Products' },
-      { value: 'Best Sellers', label: locale === 'fr' ? 'Meilleures Ventes' : 'Best Sellers' },
-    ],
-    longueur: [
-      { value: '', label: locale === 'fr' ? 'Sélectionner une longueur' : 'Select length' },
-      { value: '12"', label: '12"' },
-      { value: '14"', label: '14"' },
-      { value: '16"', label: '16"' },
-      { value: '18"', label: '18"' },
-      { value: '20"', label: '20"' },
-      { value: '22"', label: '22"' },
-      { value: '24"', label: '24"' },
-    ],
-    texture: [
-      { value: '', label: locale === 'fr' ? 'Sélectionner votre texture' : 'Select your texture' },
-      // Add your actual texture values from Shopify here
-      { value: 'Lisse', label: locale === 'fr' ? 'Lisse' : 'Straight' },
-      { value: 'Ondulé', label: locale === 'fr' ? 'Ondulé' : 'Wavy' },
-      { value: 'Bouclé', label: locale === 'fr' ? 'Bouclé' : 'Curly' },
-      { value: 'Crépu', label: locale === 'fr' ? 'Crépu' : 'Kinky' },
-    ],
-    couleur: [
-      { value: '', label: locale === 'fr' ? 'Sélectionner votre couleur' : 'Select your color' },
-      // Update these with your actual French color tags from Shopify
-      { value: 'Noir Naturel', label: locale === 'fr' ? 'Noir Naturel' : 'Natural Black' },
-      { value: 'Brun Foncé', label: locale === 'fr' ? 'Brun Foncé' : 'Dark Brown' },
-      { value: 'Châtain', label: locale === 'fr' ? 'Châtain' : 'Chestnut' },
-      { value: 'Blonde', label: locale === 'fr' ? 'Blonde' : 'Blonde' },
-      { value: 'Auburn', label: locale === 'fr' ? 'Auburn' : 'Auburn' },
-    ],
-    capSize: [
-      { value: '', label: locale === 'fr' ? 'Sélectionner votre tour de tête' : 'Select your head size' },
-      { value: 'Petit', label: locale === 'fr' ? 'Petit (21-21.5")' : 'Small (21-21.5")' },
-      { value: 'Moyen', label: locale === 'fr' ? 'Moyen (22-22.5")' : 'Medium (22-22.5")' },
-      { value: 'Grand', label: locale === 'fr' ? 'Grand (23-23.5")' : 'Large (23-23.5")' },
-    ],
-  };
+  // Generate dynamic filter options from products
+  const filterOptions = useMemo(() => {
+    if (!allProductsForFilters || allProductsForFilters.length === 0) {
+      // Fallback to static options if no products available
+      return {
+        category: [],
+        longueur: [],
+        texture: [],
+        couleur: [],
+        capSize: []
+      };
+    }
+
+    const extractedOptions = extractVariantOptions(allProductsForFilters, locale);
+
+    return {
+      category: extractedOptions.category.map(cat => ({
+        value: cat,
+        label: cat
+      })),
+      longueur: extractedOptions.longueur.map(length => ({
+        value: length,
+        label: length
+      })),
+      texture: extractedOptions.texture.map(texture => ({
+        value: texture,
+        label: texture
+      })),
+      couleur: extractedOptions.couleur.map(color => ({
+        value: color,
+        label: color
+      })),
+      capSize: extractedOptions.capSize.map(size => ({
+        value: size,
+        label: size
+      }))
+    };
+  }, [allProductsForFilters, locale]);
 
   const updateFilter = (key, value) => {
     if (key === 'minPrice' || key === 'maxPrice') {
@@ -260,15 +395,103 @@ export default function Collection() {
       minPrice: '',
       maxPrice: '',
     });
+    // Keep the collection filter when clearing other filters
     const newSearchParams = new URLSearchParams();
+    if (currentCollectionFilter) {
+      newSearchParams.set('collection', currentCollectionFilter);
+    }
     setSearchParams(newSearchParams);
   };
 
-  const collectionTitle = collection?.title || (locale === 'fr' ? 'NOS PRODUITS CAPILLAIRES' : 'OUR HAIRCARE PRODUCTS');
+  // Determine the collection title
+  const getCollectionTitle = () => {
+    if (selectedCollection) {
+      return selectedCollection.title;
+    }
+    if (currentCollectionFilter) {
+      // Fallback title based on handle
+      const formattedHandle = currentCollectionFilter
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      return formattedHandle;
+    }
+    return locale === 'fr' ? 'NOS PRODUITS CAPILLAIRES' : 'OUR HAIRCARE PRODUCTS';
+  };
+
+  const collectionTitle = getCollectionTitle();
+
+  // Component to render filter section
+  const FilterSection = ({ title, filterKey, options }) => (
+      <div className="mb-8">
+        <button
+            onClick={() => toggleSection(filterKey)}
+            className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
+        >
+          <span>{title}</span>
+          <span className="text-lg">{expandedSections[filterKey] ? '−' : '+'}</span>
+        </button>
+        {expandedSections[filterKey] && (
+            <div className="space-y-3 ml-0">
+              {options.map((option) => (
+                  <label
+                      key={option.value}
+                      className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                  >
+                    <input
+                        type="checkbox"
+                        checked={filters[filterKey].includes(option.value)}
+                        onChange={() => updateFilter(filterKey, option.value)}
+                        className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                    />
+                    <span className={`text-[14px] font-poppins font-regular ${
+                        filters[filterKey].includes(option.value)
+                            ? 'text-[#FF7575] font-medium'
+                            : 'text-[#00000066]'
+                    }`}>
+                {option.label}
+              </span>
+                  </label>
+              ))}
+              {options.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">
+                    {locale === 'fr' ? 'Aucune option disponible' : 'No options available'}
+                  </p>
+              )}
+            </div>
+        )}
+      </div>
+  );
 
   return (
       <div className="collection-page min-h-screen bg-white pt-24">
         <div className="container mx-auto px-4 py-8">
+          {/* Collection Filter Display */}
+          {currentCollectionFilter && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-600">
+                      {locale === 'fr' ? 'Collection filtrée:' : 'Filtered by collection:'}
+                    </span>
+                    <span className="bg-[#542C17] text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {selectedCollection?.title || currentCollectionFilter}
+                    </span>
+                  </div>
+                  <button
+                      onClick={() => {
+                        const newSearchParams = new URLSearchParams(searchParams);
+                        newSearchParams.delete('collection');
+                        setSearchParams(newSearchParams);
+                      }}
+                      className="text-gray-500 hover:text-gray-700 text-sm"
+                  >
+                    {locale === 'fr' ? 'Supprimer le filtre' : 'Remove filter'}
+                  </button>
+                </div>
+              </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Filters Sidebar */}
             <div className="lg:col-span-1">
@@ -285,185 +508,38 @@ export default function Collection() {
                   </button>
                 </div>
 
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('category')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Catégorie' : 'Category'}</span>
-                    <span className="text-lg">{expandedSections.category ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.category && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.category.filter(option => option.value !== '').map((option) => (
-                            <label
-                                key={option.value}
-                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                            >
-                              <input
-                                  type="checkbox"
-                                  name={'category'}
-                                  checked={filters.category.includes(option.value)}
-                                  onChange={() => updateFilter('category', option.value)}
-                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                              />
-                              <span className={`text-[14px] font-poppins font-regular ${
-                                  filters.category.includes(option.value)
-                                      ? 'text-[#FF7575] font-medium'
-                                      : 'text-[#00000066]'
-                              }`}>
-                {option.label}
-              </span>
-                            </label>
-                        ))}
-                      </div>
-                  )}
-                </div>
+                {/* Dynamic Filter Sections */}
+                <FilterSection
+                    title={locale === 'fr' ? 'Catégorie' : 'Category'}
+                    filterKey="category"
+                    options={filterOptions.category}
+                />
 
-                {/* Longueur Filter with Checkboxes */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('longueur')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Longueur' : 'Length'}</span>
-                    <span className="text-lg">{expandedSections.longueur ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.longueur && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.longueur.filter(option => option.value !== '').map((option) => (
-                            <label
-                                key={option.value}
-                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                            >
-                              <input
-                                  type="checkbox"
-                                  name={'longueur'}
-                                  checked={filters.longueur.includes(option.value)}
-                                  onChange={() => updateFilter('longueur', option.value)}
-                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                              />
-                              <span className={`text-[14px] font-poppins font-regular ${
-                                  filters.longueur.includes(option.value)
-                                      ? 'text-[#FF7575] font-medium'
-                                      : 'text-[#00000066]'
-                              }`}>
-                {option.label}
-              </span>
-                            </label>
-                        ))}
-                      </div>
-                  )}
-                </div>
+                <FilterSection
+                    title={locale === 'fr' ? 'Longueur' : 'Length'}
+                    filterKey="longueur"
+                    options={filterOptions.longueur}
+                />
 
-                {/* Texture Filter with Checkboxes */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('texture')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Texture' : 'Texture'}</span>
-                    <span className="text-lg">{expandedSections.texture ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.texture && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.texture.filter(option => option.value !== '').map((option) => (
-                            <label
-                                key={option.value}
-                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                            >
-                              <input
-                                  type="checkbox"
-                                  name={'texture'}
-                                  checked={filters.texture.includes(option.value)}
-                                  onChange={() => updateFilter('texture', option.value)}
-                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                              />
-                              <span className={`text-[14px] font-poppins font-regular ${
-                                  filters.texture.includes(option.value)
-                                      ? 'text-[#FF7575] font-medium'
-                                      : 'text-[#00000066]'
-                              }`}>
-                {option.label}
-              </span>
-                            </label>
-                        ))}
-                      </div>
-                  )}
-                </div>
+                <FilterSection
+                    title={locale === 'fr' ? 'Texture' : 'Texture'}
+                    filterKey="texture"
+                    options={filterOptions.texture}
+                />
 
-                {/* Couleur Filter with Checkboxes */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('couleur')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Couleur' : 'Color'}</span>
-                    <span className="text-lg">{expandedSections.couleur ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.couleur && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.couleur.filter(option => option.value !== '').map((option) => (
-                            <label
-                                key={option.value}
-                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                            >
-                              <input
-                                  type="checkbox"
-                                  name={'couleur'}
-                                  checked={filters.couleur.includes(option.value)}
-                                  onChange={() => updateFilter('couleur', option.value)}
-                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                              />
-                              <span className={`text-[14px] font-poppins font-regular ${
-                                  filters.couleur.includes(option.value)
-                                      ? 'text-[#FF7575] font-medium'
-                                      : 'text-[#00000066]'
-                              }`}>
-                {option.label}
-              </span>
-                            </label>
-                        ))}
-                      </div>
-                  )}
-                </div>
+                <FilterSection
+                    title={locale === 'fr' ? 'Couleur' : 'Color'}
+                    filterKey="couleur"
+                    options={filterOptions.couleur}
+                />
 
-                {/* Cap Size Filter with Checkboxes */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('capSize')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Tour de tête' : 'Cap Size'}</span>
-                    <span className="text-lg">{expandedSections.capSize ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.capSize && (
-                      <div className="space-y-3 ml-0">
-                        {filterOptions.capSize.filter(option => option.value !== '').map((option) => (
-                            <label
-                                key={option.value}
-                                className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                            >
-                              <input
-                                  type="checkbox"
-                                  checked={filters.capSize.includes(option.value)}
-                                  onChange={() => updateFilter('capSize', option.value)}
-                                  className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                              />
-                              <span className={`text-[14px] font-poppins font-regular ${
-                                  filters.capSize.includes(option.value)
-                                      ? 'text-[#FF7575] font-medium'
-                                      : 'text-[#00000066]'
-                              }`}>
-                {option.label}
-              </span>
-                            </label>
-                        ))}
-                      </div>
-                  )}
-                </div>
+                <FilterSection
+                    title={locale === 'fr' ? 'Tour de tête' : 'Cap Size'}
+                    filterKey="capSize"
+                    options={filterOptions.capSize}
+                />
 
-                {/* Price Filter - Keep as is */}
+                {/* Price Filter - Keep static as requested */}
                 <div className="mb-8">
                   <button
                       onClick={() => toggleSection('price')}
@@ -480,7 +556,6 @@ export default function Collection() {
                           </label>
                           <input
                               type="number"
-                              name={"minPrice"}
                               value={filters.minPrice}
                               onChange={(e) => updateFilter('minPrice', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
@@ -493,7 +568,6 @@ export default function Collection() {
                           </label>
                           <input
                               type="number"
-                              name={"maxPrice"}
                               value={filters.maxPrice}
                               onChange={(e) => updateFilter('maxPrice', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
@@ -512,11 +586,16 @@ export default function Collection() {
                 <h1 className="text-[32px] font-medium text-gray-900 font-poppins">
                   {collectionTitle}
                 </h1>
-                {/*<button className="p-2 text-gray-600 hover:text-gray-900">*/}
-                {/*  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
-                {/*    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />*/}
-                {/*  </svg>*/}
-                {/*</button>*/}
+                <div className="text-sm text-gray-500">
+                  {allProductsForFilters && (
+                      <span>
+                      {locale === 'fr'
+                          ? `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} options de filtre disponibles`
+                          : `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} filter options available`
+                      }
+                    </span>
+                  )}
+                </div>
               </div>
 
               <PaginatedResourceSection
@@ -551,6 +630,7 @@ export default function Collection() {
   );
 }
 
+// Updated queries to include variant information
 const COLLECTION_ITEM_FRAGMENT = `#graphql
   fragment MoneyCollectionItem on MoneyV2 {
     amount
@@ -575,17 +655,97 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
         ...MoneyCollectionItem
       }
     }
-    variants(first: 1) {
+    variants(first: 10) {
       nodes {
+        id
+        title
         price {
           amount
           currencyCode
+        }
+        selectedOptions {
+          name
+          value
         }
       }
     }
     tags
     productType
   }
+`;
+
+// Collection query to get collection details with products
+const COLLECTION_WITH_PRODUCTS_QUERY = `#graphql
+  query CollectionWithProducts(
+    $handle: String!
+    $country: CountryCode
+    $language: LanguageCode
+    $first: Int
+    $last: Int
+    $startCursor: String
+    $endCursor: String
+  ) @inContext(country: $country, language: $language) {
+    collection(handle: $handle) {
+      id
+      title
+      handle
+      description
+      products(
+        first: $first
+        last: $last
+        before: $startCursor
+        after: $endCursor
+      ) {
+        nodes {
+          ...CollectionItem
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor
+        }
+      }
+    }
+  }
+  ${COLLECTION_ITEM_FRAGMENT}
+`;
+
+// Query to get all products from a collection for filter generation
+const COLLECTION_ALL_PRODUCTS_QUERY = `#graphql
+  query CollectionAllProducts(
+    $handle: String!
+    $country: CountryCode
+    $language: LanguageCode
+    $first: Int
+  ) @inContext(country: $country, language: $language) {
+    collection(handle: $handle) {
+      id
+      title
+      products(first: $first) {
+        nodes {
+          ...CollectionItem
+        }
+      }
+    }
+  }
+  ${COLLECTION_ITEM_FRAGMENT}
+`;
+
+// Query to get all products for filter generation
+const ALL_PRODUCTS_FOR_FILTERS_QUERY = `#graphql
+  query AllProductsForFilters(
+    $country: CountryCode
+    $language: LanguageCode
+    $first: Int
+  ) @inContext(country: $country, language: $language) {
+    products(first: $first) {
+      nodes {
+        ...CollectionItem
+      }
+    }
+  }
+  ${COLLECTION_ITEM_FRAGMENT}
 `;
 
 // FIXED: Use the working query approach with 'query' parameter instead of 'filters'

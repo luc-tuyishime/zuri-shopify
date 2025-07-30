@@ -17,16 +17,28 @@ import Logo from '../assets/Logo.svg';
  */
 import {useState, useEffect} from 'react';
 
-export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
+export function Header({header, isLoggedIn, cart, publicStoreDomain, collections}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCollectionsDropdownOpen, setIsCollectionsDropdownOpen] = useState(false);
   const {open} = useAside();
 
   const [currentLocale, setCurrentLocale] = useLocale();
   const t = useTranslation(currentLocale);
 
+  // Filter collections that have products (count > 0)
+  const collectionsWithProducts = collections?.filter(collection =>
+      collection.products && collection.products.nodes && collection.products.nodes.length > 0
+  ) || [];
+
   const navigationItems = [
-    { id: 'shop-now', title: t.navigation.shopNow, url: '/collections/all' },
+    {
+      id: 'shop-now',
+      title: t.navigation.shopNow,
+      url: '/collections/all',
+      hasDropdown: true,
+      collections: collectionsWithProducts
+    },
     { id: 'best-sellers', title: t.navigation.bestSellers, url: '/#best-sellers' },
     { id: 'about', title: t.navigation.aboutUs, url: '/about' }
   ];
@@ -43,6 +55,27 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setIsCollectionsDropdownOpen(false);
+    };
+
+    if (isCollectionsDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isCollectionsDropdownOpen]);
+
+  const handleCollectionsClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCollectionsDropdownOpen(!isCollectionsDropdownOpen);
+  };
 
   return (
       <header
@@ -70,13 +103,64 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
                 {/* Main Navigation */}
                 <nav className="flex space-x-10 2xl:space-x-12">
                   {navigationItems.map(item => (
-                      <NavLink
-                          key={item.id}
-                          to={item.url}
-                          className="uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
-                      >
-                        {item.title}
-                      </NavLink>
+                      <div key={item.id} className="relative">
+                        {item.hasDropdown ? (
+                            <div className="relative">
+                              <button
+                                  onClick={handleCollectionsClick}
+                                  className="flex items-center uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
+                              >
+                                {item.title}
+                                <svg
+                                    className={`ml-1 h-4 w-4 transition-transform duration-200 ${isCollectionsDropdownOpen ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+
+                              {/* Dropdown Menu */}
+                              {isCollectionsDropdownOpen && (
+                                  <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                                    <div className="py-2">
+                                      {/* All Collections Link */}
+                                      <Link
+                                          to="/collections/all"
+                                          className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                          onClick={() => setIsCollectionsDropdownOpen(false)}
+                                      >
+                                        {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                      </Link>
+
+                                      {/* Separator */}
+                                      <div className="border-t border-gray-100 my-1"></div>
+
+                                      {/* Individual Collections */}
+                                      {collectionsWithProducts.map((collection) => (
+                                          <Link
+                                              key={collection.id}
+                                              to={`/collections/all?collection=${collection.handle}`}
+                                              className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                              onClick={() => setIsCollectionsDropdownOpen(false)}
+                                          >
+                                            {collection.title}
+                                          </Link>
+                                      ))}
+                                    </div>
+                                  </div>
+                              )}
+                            </div>
+                        ) : (
+                            <NavLink
+                                to={item.url}
+                                className="uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
+                            >
+                              {item.title}
+                            </NavLink>
+                        )}
+                      </div>
                   ))}
                 </nav>
 
@@ -136,13 +220,64 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               {/* Navigation */}
               <nav className="flex space-x-6 xl:space-x-8">
                 {navigationItems.map(item => (
-                    <NavLink
-                        key={item.id}
-                        to={item.url}
-                        className="uppercase text-sm xl:text-base tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
-                    >
-                      {item.title}
-                    </NavLink>
+                    <div key={item.id} className="relative">
+                      {item.hasDropdown ? (
+                          <div className="relative">
+                            <button
+                                onClick={handleCollectionsClick}
+                                className="flex items-center uppercase text-sm xl:text-base tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                            >
+                              {item.title}
+                              <svg
+                                  className={`ml-1 h-3 w-3 transition-transform duration-200 ${isCollectionsDropdownOpen ? 'rotate-180' : ''}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isCollectionsDropdownOpen && (
+                                <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                                  <div className="py-2">
+                                    {/* All Collections Link */}
+                                    <Link
+                                        to="/collections/all"
+                                        className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                        onClick={() => setIsCollectionsDropdownOpen(false)}
+                                    >
+                                      {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                    </Link>
+
+                                    {/* Separator */}
+                                    <div className="border-t border-gray-100 my-1"></div>
+
+                                    {/* Individual Collections */}
+                                    {collectionsWithProducts.map((collection) => (
+                                        <Link
+                                            key={collection.id}
+                                            to={`/collections/all?collection=${collection.handle}`}
+                                            className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                            onClick={() => setIsCollectionsDropdownOpen(false)}
+                                        >
+                                          {collection.title}
+                                        </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                            )}
+                          </div>
+                      ) : (
+                          <NavLink
+                              to={item.url}
+                              className="uppercase text-sm xl:text-base tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                          >
+                            {item.title}
+                          </NavLink>
+                      )}
+                    </div>
                 ))}
               </nav>
 
@@ -197,13 +332,64 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
               {/* Navigation */}
               <nav className="flex space-x-6">
                 {navigationItems.map(item => (
-                    <NavLink
-                        key={item.id}
-                        to={item.url}
-                        className="uppercase text-sm tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
-                    >
-                      {item.title}
-                    </NavLink>
+                    <div key={item.id} className="relative">
+                      {item.hasDropdown ? (
+                          <div className="relative">
+                            <button
+                                onClick={handleCollectionsClick}
+                                className="flex items-center uppercase text-sm tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                            >
+                              {item.title}
+                              <svg
+                                  className={`ml-1 h-3 w-3 transition-transform duration-200 ${isCollectionsDropdownOpen ? 'rotate-180' : ''}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isCollectionsDropdownOpen && (
+                                <div className="absolute left-0 mt-2 w-52 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                                  <div className="py-2">
+                                    {/* All Collections Link */}
+                                    <Link
+                                        to="/collections/all"
+                                        className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                        onClick={() => setIsCollectionsDropdownOpen(false)}
+                                    >
+                                      {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                    </Link>
+
+                                    {/* Separator */}
+                                    <div className="border-t border-gray-100 my-1"></div>
+
+                                    {/* Individual Collections */}
+                                    {collectionsWithProducts.map((collection) => (
+                                        <Link
+                                            key={collection.id}
+                                            to={`/collections/all?collection=${collection.handle}`}
+                                            className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
+                                            onClick={() => setIsCollectionsDropdownOpen(false)}
+                                        >
+                                          {collection.title}
+                                        </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                            )}
+                          </div>
+                      ) : (
+                          <NavLink
+                              to={item.url}
+                              className="uppercase text-sm tracking-wider font-regular text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                          >
+                            {item.title}
+                          </NavLink>
+                      )}
+                    </div>
                 ))}
               </nav>
 
@@ -320,7 +506,55 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
             <div className="md:hidden bg-[#E9CFB6] border-t border-[#542C17]/10">
               <div className="container mx-auto px-4">
                 <nav className="flex flex-col py-4">
-                  {navigationItems.map((item) => (
+                  {/* Collections with mobile dropdown */}
+                  <div className="py-3 border-b border-[#542C17]/10">
+                    <button
+                        onClick={() => setIsCollectionsDropdownOpen(!isCollectionsDropdownOpen)}
+                        className="flex items-center justify-between w-full text-left uppercase text-sm tracking-wider text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200"
+                    >
+                      {t.navigation.shopNow}
+                      <svg
+                          className={`h-4 w-4 transition-transform duration-200 ${isCollectionsDropdownOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Mobile Collections Dropdown */}
+                    {isCollectionsDropdownOpen && (
+                        <div className="mt-3 pl-4 space-y-2">
+                          <Link
+                              to="/collections/all"
+                              className="block py-2 text-sm text-[#542C17]/80 hover:text-[#542C17] transition-colors"
+                              onClick={() => {
+                                setIsCollectionsDropdownOpen(false);
+                                setIsMobileMenuOpen(false);
+                              }}
+                          >
+                            {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                          </Link>
+                          {collectionsWithProducts.map((collection) => (
+                              <Link
+                                  key={collection.id}
+                                  to={`/collections/all?collection=${collection.handle}`}
+                                  className="block py-2 text-sm text-[#542C17]/80 hover:text-[#542C17] transition-colors"
+                                  onClick={() => {
+                                    setIsCollectionsDropdownOpen(false);
+                                    setIsMobileMenuOpen(false);
+                                  }}
+                              >
+                                {collection.title}
+                              </Link>
+                          ))}
+                        </div>
+                    )}
+                  </div>
+
+                  {/* Other navigation items */}
+                  {navigationItems.slice(1).map((item) => (
                       <NavLink
                           key={item.id}
                           to={item.url}
@@ -346,9 +580,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
   );
 }
 
-/**
- * @param {Pick<HeaderProps, 'isLoggedIn' | 'cart'>}
- */
+// Keep all the existing functions unchanged
 function HeaderCtas({isLoggedIn, cart}) {
   return (
       <nav className="header-ctas" role="navigation">
@@ -387,9 +619,6 @@ function SearchToggle() {
   );
 }
 
-/**
- * @param {{count: number | null}}
- */
 function CartBadge({count}) {
   const {open} = useAside();
   const {publish, shop, cart, prevCart} = useAnalytics();
@@ -413,9 +642,6 @@ function CartBadge({count}) {
   );
 }
 
-/**
- * @param {Pick<HeaderProps, 'cart'>}
- */
 function CartToggle({cart}) {
   return (
       <Suspense fallback={<CartBadge count={null} />}>
@@ -474,12 +700,6 @@ const FALLBACK_HEADER_MENU = {
   ],
 };
 
-/**
- * @param {{
- *   isActive: boolean;
- *   isPending: boolean;
- * }}
- */
 function activeLinkStyle({isActive, isPending}) {
   return {
     fontWeight: isActive ? 'bold' : undefined,
@@ -494,6 +714,7 @@ function activeLinkStyle({isActive, isPending}) {
  * @property {Promise<CartApiQueryFragment|null>} cart
  * @property {Promise<boolean>} isLoggedIn
  * @property {string} publicStoreDomain
+ * @property {Array} collections
  */
 
 /** @typedef {import('@shopify/hydrogen').CartViewPayload} CartViewPayload */

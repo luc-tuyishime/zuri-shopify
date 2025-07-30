@@ -3,7 +3,7 @@ import {Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
-import {CustomerReviewsSection} from '~/components/CustomerReviewsSection';
+import {CUSTOMER_REVIEWS_QUERY, CustomerReviewsSection} from '~/components/CustomerReviewsSection';
 import BG from '~/assets/bg.svg'
 import VIDEO1 from '~/assets/video.mp4'
 import VIDEO2 from '~/assets/video.mp4'
@@ -56,6 +56,21 @@ async function loadCriticalData({context}) {
  * @param {LoaderFunctionArgs}
  */
 function loadDeferredData({context}) {
+
+    const bestSellersCollection = context.storefront
+        .query(BEST_SELLERS_COLLECTION_QUERY)
+        .catch((error) => {
+            console.error('Best Sellers collection error:', error);
+            return null;
+        });
+
+    const reviewsData = context.storefront
+        .query(CUSTOMER_REVIEWS_QUERY)
+        .catch((error) => {
+            console.error('Reviews error:', error);
+            return null;
+        });
+
     const recommendedProducts = context.storefront
         .query(RECOMMENDED_PRODUCTS_QUERY)
         .catch((error) => {
@@ -65,7 +80,9 @@ function loadDeferredData({context}) {
         });
 
     return {
+        bestSellersCollection,
         recommendedProducts,
+        reviewsData
     };
 }
 
@@ -75,12 +92,268 @@ export default function Homepage() {
     return (
         <div className="home">
             <FeaturedCollection collection={data.featuredCollection} />
-            <RecommendedProducts products={data.recommendedProducts} />
+            {/*<RecommendedProducts products={data.recommendedProducts} />*/}
+            <BestSellersProducts
+                bestSellersCollection={data.bestSellersCollection}
+                fallbackProducts={data.recommendedProducts}
+            />
             <WigGuideSection collection={data.featuredCollection} />
-            <CustomerReviewsSection />
+            <Suspense fallback={<div>Loading reviews...</div>}>
+                <Await resolve={data.reviewsData}>
+                    {(reviewsResponse) => (
+                        <CustomerReviewsSection reviewsData={reviewsResponse} />
+                    )}
+                </Await>
+            </Suspense>
+
         </div>
     );
 }
+
+/**
+ * Updated component to handle Best Sellers collection dynamically
+ * @param {{
+ *   bestSellersCollection: Promise<BestSellersCollectionQuery | null>;
+ *   fallbackProducts: Promise<RecommendedProductsQuery | null>;
+ * }}
+ */
+export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
+    const [locale] = useLocale();
+    const t = useTranslation(locale);
+    const sectionRef = useRef(null);
+    const [isVisible, setIsVisible] = useState(false);
+    const [shouldPrioritizeImages, setShouldPrioritizeImages] = useState(false);
+
+    // PERFORMANCE: Intersection Observer for lazy section loading
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    setShouldPrioritizeImages(true);
+                    observer.disconnect();
+                }
+            },
+            {
+                threshold: 0.1,
+                rootMargin: '100px'
+            }
+        );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
+    // PERFORMANCE: Preload critical images when section becomes visible
+    useEffect(() => {
+        if (shouldPrioritizeImages && bestSellersCollection) {
+            const preloadImages = async () => {
+                try {
+                    const response = await bestSellersCollection;
+                    if (response?.collection?.products?.nodes) {
+                        response.collection.products.nodes.slice(0, 2).forEach((product) => {
+                            if (product.featuredImage?.url) {
+                                const link = document.createElement('link');
+                                link.rel = 'preload';
+                                link.as = 'image';
+                                const imageUrl = product.featuredImage.url.includes('cdn.shopify.com')
+                                    ? product.featuredImage.url + '?width=400&format=webp&quality=85'
+                                    : product.featuredImage.url;
+                                link.href = imageUrl;
+                                link.type = 'image/webp';
+                                document.head.appendChild(link);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.log('Preload failed:', error);
+                }
+            };
+
+            preloadImages();
+        }
+    }, [shouldPrioritizeImages, bestSellersCollection]);
+
+    const fallbackSkeleton = useMemo(() => (
+        <div className="recommended-products-grid mobile-single-column gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+                <ProductSkeleton key={index} />
+            ))}
+        </div>
+    ), []);
+
+    const gridClasses = useMemo(() =>
+            "recommended-products-grid mobile-single-column gap-4 md:gap-6",
+        []
+    );
+
+    return (
+        <div className="recommended-products" ref={sectionRef}>
+            <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
+                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular">
+                    {t.homepage.ourBestSellers}
+                </p>
+
+                <Suspense fallback={fallbackSkeleton}>
+                    <Await resolve={bestSellersCollection}>
+                        {(bestSellersResponse) => (
+                            <>
+                                {/* Show Best Sellers Collection if it exists and has products */}
+                                {bestSellersResponse?.collection?.products?.nodes?.length > 0 ? (
+                                    <div className={gridClasses}>
+                                        {bestSellersResponse.collection.products.nodes.map((product, index) => (
+                                            <ProductItem
+                                                key={product.id}
+                                                product={product}
+                                                variant="roundedText"
+                                                loading={index < 4 ? "eager" : "lazy"}
+                                                fetchpriority={index < 2 ? "high" : "auto"}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    /* Fallback to recommended products if Best Sellers collection is empty */
+                                    <Suspense fallback={fallbackSkeleton}>
+                                        <Await resolve={fallbackProducts}>
+                                            {(fallbackResponse) => (
+                                                <>
+                                                    {fallbackResponse?.products?.nodes ? (
+                                                        <>
+                                                            {/* Show message that Best Sellers collection is being set up */}
+                                                            {/*<div className="mb-6 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">*/}
+                                                            {/*    <p className="text-sm text-gray-600">*/}
+                                                            {/*        {locale === 'fr'*/}
+                                                            {/*            ? 'Collection "Meilleures Ventes" en cours de configuration. Affichage des produits recommandés.'*/}
+                                                            {/*            : 'Best Sellers collection is being set up. Showing recommended products.'*/}
+                                                            {/*        }*/}
+                                                            {/*    </p>*/}
+                                                            {/*</div>*/}
+
+                                                            <div className={gridClasses}>
+                                                                {fallbackResponse.products.nodes.map((product, index) => (
+                                                                    <ProductItem
+                                                                        key={product.id}
+                                                                        product={product}
+                                                                        variant="roundedText"
+                                                                        loading={index < 4 ? "eager" : "lazy"}
+                                                                        fetchpriority={index < 2 ? "high" : "auto"}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-center py-12">
+                                                            <p className="text-gray-500">
+                                                                {locale === 'fr'
+                                                                    ? 'Configuration de la collection en cours...'
+                                                                    : 'Setting up collection...'
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </Await>
+                                    </Suspense>
+                                )}
+                            </>
+                        )}
+                    </Await>
+                </Suspense>
+            </div>
+
+            {/* Keep your existing styles */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+        .mobile-single-column {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 640px) {
+          .mobile-single-column {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 768px) {
+          .mobile-single-column {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .mobile-single-column {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        .recommended-products-grid {
+          row-gap: 1rem !important;
+          contain: layout style paint;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          content-visibility: auto;
+          contain-intrinsic-size: 800px;
+        }
+
+        @media (min-width: 768px) {
+          .recommended-products-grid {
+            row-gap: 1.5rem !important;
+          }
+        }
+
+        .recommended-products {
+          margin: 0;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          contain: layout style;
+        }
+
+        .recommended-products-grid > * {
+          contain: layout style;
+          transform: translateZ(0);
+          will-change: transform;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .recommended-products-grid > *:hover {
+            transform: translateZ(0) translateY(-2px);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .recommended-products-grid > * {
+            transition: none !important;
+            will-change: auto !important;
+          }
+          
+          .recommended-products-grid > *:hover {
+            transform: translateZ(0) !important;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .recommended-products-grid {
+            will-change: scroll-position;
+            contain: layout;
+            content-visibility: visible;
+          }
+          
+          .recommended-products-grid > * {
+            will-change: auto;
+          }
+        }
+        `
+            }} />
+        </div>
+    );
+}
+
 
 /**
  * @param {{
@@ -103,7 +376,6 @@ function FeaturedCollection({ collection }) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
 
-    // 🛡️ Helper function with null safety
     const getMetafield = (key, namespace = 'custom') => {
         try {
             if (!collection?.metafields || !Array.isArray(collection.metafields)) {
@@ -121,12 +393,10 @@ function FeaturedCollection({ collection }) {
         }
     };
 
-    // 🎯 UNIFIED: Single background media function that handles both video and image
     const getCurrentBackgroundMedia = useMemo(() => {
         try {
             let customBg = null;
 
-            // Get background media based on current slide
             switch (currentVideoIndex) {
                 case 0:
                     customBg = getMetafield('hero_background_image');
@@ -141,15 +411,12 @@ function FeaturedCollection({ collection }) {
                     customBg = getMetafield('hero_background_image');
             }
 
-            console.log(`\n🎯 PROCESSING SLIDE ${currentVideoIndex + 1}:`);
 
             if (customBg && customBg.reference) {
-                // Check for Video reference with sources array
                 if (customBg.reference.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
                     const videoSource = customBg.reference.sources[0];
                     let videoUrl = videoSource.url;
 
-                    // Check if this video URL has previously failed
                     if (videoErrors.has(videoUrl)) {
                         console.log('⚠️ Video previously failed, using fallback immediately');
                     } else {
@@ -162,7 +429,6 @@ function FeaturedCollection({ collection }) {
                     }
                 }
 
-                // Fallback to image
                 if (customBg.reference.image && customBg.reference.image.url) {
                     const imageUrl = customBg.reference.image.url;
                     console.log('🔄 Using image fallback:', imageUrl);
@@ -174,10 +440,8 @@ function FeaturedCollection({ collection }) {
                 }
             }
 
-            // Final fallback to collection image
             if (collection?.image?.url) {
                 const baseUrl = collection.image.url.split('?')[0];
-                console.log(`🔄 Using collection image fallback`);
                 return {
                     type: 'image',
                     url: `${baseUrl}?width=1920&format=webp&quality=80&crop=center`
@@ -201,15 +465,9 @@ function FeaturedCollection({ collection }) {
     const handleVideoError = (videoUrl) => {
         console.error('❌ Video failed to load:', videoUrl);
         console.log('🔄 Adding to failed videos list and switching to fallback');
-
-        // Add this URL to the failed videos set
         setVideoErrors(prev => new Set([...prev, videoUrl]));
-
-        // Force a re-render to trigger fallback
-        // The useMemo will detect the error and switch to image mode
     };
 
-// 🔍 ALSO ADD: Enhanced metafield inspection useEffect
     useEffect(() => {
         console.log('\n🔍🔍🔍 METAFIELD DEEP INSPECTION 🔍🔍🔍');
 
@@ -230,7 +488,6 @@ function FeaturedCollection({ collection }) {
                 if (metafield.reference) {
                     console.log('Reference keys:', Object.keys(metafield.reference));
 
-                    // Check if this is supposed to be a video
                     if (metafield.value?.includes('Video/')) {
                         console.log('🎥 THIS IS A VIDEO METAFIELD');
                         console.log('But reference structure:', metafield.reference);
@@ -242,12 +499,10 @@ function FeaturedCollection({ collection }) {
         console.log('🔍🔍🔍 END METAFIELD INSPECTION 🔍🔍🔍\n');
     }, [collection?.metafields]);
 
-    // 🔗 Collection URL
     const collectionUrl = useMemo(() => {
         return collection?.handle ? `/collections/${collection.handle}` : '/collections/all';
     }, [collection?.handle]);
 
-    // Define video variables with safe fallbacks
     const OPTIMIZED_MOBILE_VIDEO = typeof MOBILE_VIDEO !== 'undefined' ? MOBILE_VIDEO : null;
     const desktopVideos = [
         typeof VIDEO1 !== 'undefined' ? VIDEO1 : null,
@@ -255,12 +510,10 @@ function FeaturedCollection({ collection }) {
         typeof VIDEO3 !== 'undefined' ? VIDEO3 : null
     ].filter(Boolean);
 
-    // 🎬 Create slide content with individual metafields
     const slideContent = useMemo(() => {
         try {
             const slides = [];
 
-            // Slide 1
             const slide1Title = getMetafield('hero_title');
             const slide1Subtitle = getMetafield('hero_subtitle');
             const slide1Button = getMetafield('hero_button_text');
@@ -272,7 +525,6 @@ function FeaturedCollection({ collection }) {
                 url: collectionUrl
             });
 
-            // Slide 2
             const slide2Title = getMetafield('hero_title_slide_2');
             const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
             const slide2Button = getMetafield('hero_button_text_slide_2');
@@ -284,7 +536,6 @@ function FeaturedCollection({ collection }) {
                 url: collectionUrl
             });
 
-            // Slide 3
             const slide3Title = getMetafield('hero_title_slide_3');
             const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
             const slide3Button = getMetafield('hero_button_text_slide_3');
@@ -311,7 +562,6 @@ function FeaturedCollection({ collection }) {
         }
     }, [collection?.title, collection?.handle, collection?.metafields, t, locale, collectionUrl]);
 
-    // Get current slide content
     const getCurrentSlideContent = () => {
         if (slideContent.length === 0) {
             return {
@@ -326,16 +576,11 @@ function FeaturedCollection({ collection }) {
         return slideContent[slideIndex];
     };
 
-    // 🔍 Debug logging
     useEffect(() => {
-        console.log('=== UNIFIED BACKGROUND MEDIA DEBUG ===');
-        console.log('Collection:', collection?.title);
-        console.log('Current slide index:', currentVideoIndex);
 
         if (collection?.metafields?.length > 0) {
             console.log('📋 ALL METAFIELDS COUNT:', collection.metafields.length);
 
-            // Check background metafields
             const bg1 = getMetafield('hero_background_image');
             const bg2 = getMetafield('hero_background_image_slide_2');
             const bg3 = getMetafield('hero_background_image_slide_3');
@@ -345,7 +590,6 @@ function FeaturedCollection({ collection }) {
             console.log('Slide 2 background:', bg2 ? 'Found' : 'Not found');
             console.log('Slide 3 background:', bg3 ? 'Found' : 'Not found');
 
-            // Content metafields
             console.log('🎬 CONTENT METAFIELDS:');
             console.log('Slide 1:', {
                 title: getMetafield('hero_title')?.value || 'Not set',
@@ -367,13 +611,9 @@ function FeaturedCollection({ collection }) {
             console.log('❌ No metafields found');
         }
 
-        console.log('Current background media:', getCurrentBackgroundMedia);
-        console.log('Final slide content:', slideContent);
-        console.log('Current slide content:', getCurrentSlideContent());
-        console.log('=====================================');
+
     }, [collection, slideContent, currentVideoIndex, getCurrentBackgroundMedia]);
 
-    // Loading state
     if (!collection) {
         return (
             <div className="hero-video-container" style={{
@@ -399,19 +639,19 @@ function FeaturedCollection({ collection }) {
         );
     }
 
-    // Preload current background media
     useEffect(() => {
-        if (getCurrentBackgroundMedia.url && getCurrentBackgroundMedia.url.startsWith('http')) {
+        if (getCurrentBackgroundMedia.url &&
+            getCurrentBackgroundMedia.url.startsWith('http') &&
+            getCurrentBackgroundMedia.type === 'image') {
+
             const link = document.createElement('link');
             link.rel = 'preload';
-            link.as = getCurrentBackgroundMedia.type === 'video' ? 'video' : 'image';
+            link.as = 'image';
             link.href = getCurrentBackgroundMedia.url;
-            if (getCurrentBackgroundMedia.type === 'image') {
-                link.type = 'image/webp';
-            }
+            link.type = 'image/webp';
             link.fetchPriority = 'high';
-            link.onerror = () => console.warn('Failed to preload background media:', getCurrentBackgroundMedia.url);
-            link.onload = () => console.log('✅ Background media preloaded successfully');
+            link.onerror = () => console.warn('Failed to preload background image:', getCurrentBackgroundMedia.url);
+            link.onload = () => console.log('✅ Background image preloaded successfully');
 
             document.head.appendChild(link);
 
@@ -427,7 +667,6 @@ function FeaturedCollection({ collection }) {
         }
     }, [getCurrentBackgroundMedia]);
 
-    // Intersection Observer for video loading
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -458,7 +697,6 @@ function FeaturedCollection({ collection }) {
         };
     }, [isMobile, isSlowConnection, desktopVideos.length]);
 
-    // Device and connection detection
     useEffect(() => {
         setIsClient(true);
 
@@ -484,7 +722,6 @@ function FeaturedCollection({ collection }) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Video slideshow auto-advance
     useEffect(() => {
         if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
             const interval = setInterval(() => {
@@ -505,7 +742,6 @@ function FeaturedCollection({ collection }) {
 
     const showVideo = shouldLoadVideo && isIntersecting;
 
-    // SSR render
     if (!isClient) {
         const currentContent = slideContent[0] || {
             title: 'Our Collection',
@@ -517,10 +753,8 @@ function FeaturedCollection({ collection }) {
         return (
             <>
                 <div ref={containerRef} className="hero-video-container">
-                    {/* 🎯 SMART: Video with instant fallback on error */}
                     {getCurrentBackgroundMedia.type === 'video' && !videoErrors.has(getCurrentBackgroundMedia.url) ? (
                         <>
-                            {/* Background image that shows immediately */}
                             <div
                                 className="hero-background-image"
                                 style={{
@@ -539,7 +773,6 @@ function FeaturedCollection({ collection }) {
                                 }}
                             />
 
-                            {/* Video overlay that fades in when loaded */}
                             <video
                                 key={`bg-video-${currentVideoIndex}`}
                                 autoPlay
@@ -572,7 +805,6 @@ function FeaturedCollection({ collection }) {
                             </video>
                         </>
                     ) : (
-                        /* Fallback to image background */
                         <div
                             className="hero-background-image"
                             style={{
@@ -592,7 +824,6 @@ function FeaturedCollection({ collection }) {
                         />
                     )}
 
-                    {/* Your existing overlay videos and content stay the same */}
                     {showVideo && desktopVideos.length > 0 && (
                         <>
                             {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
@@ -642,7 +873,6 @@ function FeaturedCollection({ collection }) {
                         </>
                     )}
 
-                    {/* Mobile play button */}
                     {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
                         <div className="video-play-overlay">
                             <button
@@ -658,7 +888,6 @@ function FeaturedCollection({ collection }) {
                         </div>
                     )}
 
-                    {/* Hero content */}
                     <div className="hero-link">
                         <div className="hero-content">
                             <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
@@ -676,7 +905,6 @@ function FeaturedCollection({ collection }) {
                             </Link>
                         </div>
 
-                        {/* Desktop slideshow indicators */}
                         {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
                             <div className="slideshow-indicators">
                                 {desktopVideos.map((_, index) => (
@@ -697,7 +925,6 @@ function FeaturedCollection({ collection }) {
 
                 <style dangerouslySetInnerHTML={{
                     __html: styles + `
-                /* Video background styles */
                 .hero-background-video {
                     transform: translateZ(0);
                     backface-visibility: hidden;
@@ -705,12 +932,10 @@ function FeaturedCollection({ collection }) {
                     will-change: opacity;
                 }
                 
-                /* Smooth layered backgrounds */
                 .hero-background-image {
                     transition: opacity 0.5s ease !important;
                 }
                 
-                /* Performance optimizations */
                 @media (prefers-reduced-motion: reduce) {
                     .hero-background-video {
                         transition: none !important;
@@ -720,17 +945,13 @@ function FeaturedCollection({ collection }) {
                 }} />
             </>
         );
-
     }
 
-    // Main render
     return (
         <>
             <div ref={containerRef} className="hero-video-container">
-                {/* 🎯 FIXED: Video background rendering with better error handling */}
                 {getCurrentBackgroundMedia.type === 'video' ? (
                     <video
-                        crossOrigin="anonymous"
                         key={`bg-video-${currentVideoIndex}`}
                         autoPlay
                         loop
@@ -750,10 +971,9 @@ function FeaturedCollection({ collection }) {
                             transition: 'opacity 0.5s ease'
                         }}
                         onError={(e) => {
-                            console.error('❌ Video background failed to load ===>>>:', getCurrentBackgroundMedia.url);
+                            console.error('❌ Video background failed to load:', getCurrentBackgroundMedia.url);
                             console.error('Error details:', e);
 
-                            // GET THE EXACT ERROR CODE AND MESSAGE
                             const videoElement = e.target;
                             if (videoElement && videoElement.error) {
                                 console.error('🔍 Video Error Code:', videoElement.error.code);
@@ -769,11 +989,9 @@ function FeaturedCollection({ collection }) {
                         onLoadedData={() => console.log('✅ Video background data loaded')}
                         onLoadedMetadata={() => console.log('✅ Video background metadata loaded')}
                     >
-                        {/* Try multiple source formats for better compatibility */}
                         <source src={getCurrentBackgroundMedia.url} type="video/mp4" />
                         <source src={getCurrentBackgroundMedia.url.replace('.mp4', '.webm')} type="video/webm" />
 
-                        {/* Fallback content if video fails */}
                         <div
                             style={{
                                 position: 'absolute',
@@ -808,12 +1026,10 @@ function FeaturedCollection({ collection }) {
                     />
                 )}
 
-                {/* Your existing overlay videos (keep as is) */}
                 {showVideo && desktopVideos.length > 0 && (
                     <>
                         {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                             <video
-                                crossOrigin="anonymous"
                                 ref={videoRef}
                                 key="mobile-video"
                                 autoPlay
@@ -837,7 +1053,6 @@ function FeaturedCollection({ collection }) {
                             </video>
                         ) : !isMobile && desktopVideos[currentVideoIndex] ? (
                             <video
-                                crossOrigin="anonymous"
                                 key={`desktop-video-${currentVideoIndex}`}
                                 autoPlay
                                 loop
@@ -860,7 +1075,6 @@ function FeaturedCollection({ collection }) {
                     </>
                 )}
 
-                {/* Mobile play button */}
                 {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
                     <div className="video-play-overlay">
                         <button
@@ -876,7 +1090,6 @@ function FeaturedCollection({ collection }) {
                     </div>
                 )}
 
-                {/* Hero content */}
                 <div className="hero-link">
                     <div className="hero-content">
                         <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
@@ -894,7 +1107,6 @@ function FeaturedCollection({ collection }) {
                         </Link>
                     </div>
 
-                    {/* Desktop slideshow indicators */}
                     {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
                         <div className="slideshow-indicators">
                             {desktopVideos.map((_, index) => (
@@ -913,24 +1125,19 @@ function FeaturedCollection({ collection }) {
                 </div>
             </div>
 
-            {/* Enhanced CSS with video background support */}
             <style dangerouslySetInnerHTML={{
                 __html: styles + `
-                /* Video background styles */
                 .hero-background-video {
-                    /* Performance optimizations */
                     transform: translateZ(0);
                     backface-visibility: hidden;
                     perspective: 1000px;
                     will-change: opacity;
                 }
                 
-                /* Smooth transitions for carousel */
                 .hero-title, .hero-subtitle, .hero-button {
                     transition: opacity 0.5s ease, transform 0.5s ease;
                 }
                 
-                /* Animation when content changes */
                 .hero-content > * {
                     animation: fadeInUp 0.8s ease-out;
                 }
@@ -946,12 +1153,10 @@ function FeaturedCollection({ collection }) {
                     }
                 }
                 
-                /* Background transition */
                 .hero-background-image {
                     transition: opacity 0.5s ease !important;
                 }
                 
-                /* Performance: Reduce motion for accessibility */
                 @media (prefers-reduced-motion: reduce) {
                     .hero-title, .hero-subtitle, .hero-button, .hero-background-image, .hero-background-video {
                         transition: none !important;
@@ -959,10 +1164,8 @@ function FeaturedCollection({ collection }) {
                     }
                 }
                 
-                /* Mobile optimizations for video */
                 @media (max-width: 768px) {
                     .hero-background-video {
-                        /* Reduce video quality on mobile */
                         image-rendering: optimizeSpeed;
                         image-rendering: -webkit-optimize-contrast;
                         image-rendering: optimize-contrast;
@@ -1365,7 +1568,8 @@ export function RecommendedProducts({products}) {
                         {(response) => (
                             <div className={gridClasses}>
                                 {response
-                                    ? response.products.nodes.map((product, index) => (
+                                    ? response.products.nodes.map((product, index) => {
+                                        return (
                                         <ProductItem
                                             key={product.id}
                                             product={product}
@@ -1374,7 +1578,8 @@ export function RecommendedProducts({products}) {
                                             loading={index < 4 ? "eager" : "lazy"}
                                             fetchpriority={index < 2 ? "high" : "auto"}
                                         />
-                                    ))
+                                        )
+                                    })
                                     : null}
                             </div>
                         )}
@@ -1620,6 +1825,40 @@ const FEATURED_COLLECTION_QUERY = `#graphql
     collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...FeaturedCollection
+      }
+    }
+  }
+`;
+
+const BEST_SELLERS_COLLECTION_QUERY = `#graphql
+  fragment BestSellersProduct on Product {
+    id
+    title
+    handle
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    featuredImage {
+      id
+      url
+      altText
+      width
+      height
+    }
+  }
+  query BestSellersCollection($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    collection(handle: "best-sellers") {
+      id
+      title
+      handle
+      products(first: 8) {
+        nodes {
+          ...BestSellersProduct
+        }
       }
     }
   }

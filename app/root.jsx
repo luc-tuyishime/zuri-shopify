@@ -21,8 +21,31 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import {PageLayout} from './components/PageLayout';
 import { LanguageProvider } from '~/components/LanguageProvider';
+import { FOOTER_METAFIELDS_QUERY } from '~/components/Footer';
 import BG from './assets/bg.svg'
 import VIDEO from './assets/video.mp4'
+
+
+
+
+
+// Add the Collections Query
+const COLLECTIONS_QUERY = `#graphql
+  query Collections($first: Int!) {
+    collections(first: $first) {
+      nodes {
+        id
+        title
+        handle
+        products(first: 1) {
+          nodes {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -108,17 +131,27 @@ export async function loader(args) {
 async function loadCriticalData({context}) {
   const {storefront} = context;
 
-  const [header] = await Promise.all([
+  // Updated to fetch both header and collections in parallel
+  const [header, collections] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'main-menu', // Adjust to your header menu handle
       },
     }),
-    // Add other queries here, so that they are loaded in parallel
+    // Add collections query
+    storefront.query(COLLECTIONS_QUERY, {
+      cache: storefront.CacheLong(),
+      variables: {
+        first: 20, // Fetch up to 20 collections - adjust as needed
+      },
+    }),
   ]);
 
-  return {header};
+  return {
+    header,
+    collections: collections?.collections?.nodes || [], // Add collections to return data
+  };
 }
 
 /**
@@ -132,21 +165,34 @@ function loadDeferredData({context}) {
 
   // defer the footer query (below the fold)
   const footer = storefront
-    .query(FOOTER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        footerMenuHandle: 'footer', // Adjust to your footer menu handle
-      },
-    })
-    .catch((error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
+      .query(FOOTER_QUERY, {
+        cache: storefront.CacheLong(),
+        variables: {
+          footerMenuHandle: 'footer', // Adjust to your footer menu handle
+        },
+      })
+      .catch((error) => {
+        // Log query errors, but don't throw them so the page can still render
+        console.error(error);
+        return null;
+      });
+
+  const footerData = storefront
+      .query(FOOTER_METAFIELDS_QUERY, {
+        cache: storefront.CacheLong(),
+      })
+      .catch((error) => {
+        // Log query errors, but don't throw them so the page can still render
+        console.error('Footer metafields query error:', error);
+        return null;
+      });
+
+
   return {
     cart: cart.get(),
     isLoggedIn: customerAccount.isLoggedIn(),
     footer,
+    footerData
   };
 }
 
@@ -159,7 +205,7 @@ export function Layout({children}) {
   const data = useRouteLoaderData('root');
 
   return (
-    <html lang="en">
+      <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -179,21 +225,21 @@ export function Layout({children}) {
       <body>
       <LanguageProvider>
         {data ? (
-          <Analytics.Provider
-            cart={data.cart}
-            shop={data.shop}
-            consent={data.consent}
-          >
-            <PageLayout {...data}>{children}</PageLayout>
-          </Analytics.Provider>
+            <Analytics.Provider
+                cart={data.cart}
+                shop={data.shop}
+                consent={data.consent}
+            >
+              <PageLayout {...data}>{children}</PageLayout>
+            </Analytics.Provider>
         ) : (
-          children
+            children
         )}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </LanguageProvider>
       </body>
-    </html>
+      </html>
   );
 }
 
@@ -214,15 +260,15 @@ export function ErrorBoundary() {
   }
 
   return (
-    <div className="route-error">
-      <h1>Oops</h1>
-      <h2>{errorStatus}</h2>
-      {errorMessage && (
-        <fieldset>
-          <pre>{errorMessage}</pre>
-        </fieldset>
-      )}
-    </div>
+      <div className="route-error">
+        <h1>Oops</h1>
+        <h2>{errorStatus}</h2>
+        {errorMessage && (
+            <fieldset>
+              <pre>{errorMessage}</pre>
+            </fieldset>
+        )}
+      </div>
   );
 }
 

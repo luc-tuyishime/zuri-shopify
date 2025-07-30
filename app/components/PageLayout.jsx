@@ -36,7 +36,7 @@ const useLazyComponent = (threshold = 0.1, rootMargin = '200px') => {
 };
 
 // Lazy Footer Component with Intersection Observer
-function LazyFooter({ footer, header, publicStoreDomain }) {
+function LazyFooter({ footer, header, publicStoreDomain, footerData }) {
     const [elementRef, shouldLoad] = useLazyComponent(0.1, '300px');
 
     const FooterSkeleton = () => (
@@ -66,6 +66,7 @@ function LazyFooter({ footer, header, publicStoreDomain }) {
                         footer={footer}
                         header={header}
                         publicStoreDomain={publicStoreDomain}
+                        footerData={footerData}
                     />
                 </Suspense>
             ) : (
@@ -146,7 +147,11 @@ export function PageLayout({
                                header,
                                isLoggedIn,
                                publicStoreDomain,
+                               footerData,
+                               collections = [], // Add collections prop with default empty array
                            }) {
+
+
     return (
         <Aside.Provider>
             <LazyCartAside cart={cart} />
@@ -161,6 +166,7 @@ export function PageLayout({
                     cart={cart}
                     isLoggedIn={isLoggedIn}
                     publicStoreDomain={publicStoreDomain}
+                    collections={collections} // Pass collections to Header
                 />
             )}
 
@@ -170,6 +176,7 @@ export function PageLayout({
                 footer={footer}
                 header={header}
                 publicStoreDomain={publicStoreDomain}
+                footerData={footerData}
             />
         </Aside.Provider>
     );
@@ -280,6 +287,7 @@ function MobileMenuAside({header, publicStoreDomain}) {
  * @property {HeaderQuery} header
  * @property {Promise<boolean>} isLoggedIn
  * @property {string} publicStoreDomain
+ * @property {Array} collections
  * @property {React.ReactNode} [children]
  */
 

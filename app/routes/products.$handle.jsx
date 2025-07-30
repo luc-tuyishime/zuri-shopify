@@ -404,17 +404,17 @@ export default function Product() {
                 </h1>
 
                 {/* Plant-based badge - Responsive */}
-                <div className="mb-3 sm:mb-4">
-                <span className="font-semibold font-poppins text-sm sm:text-base text-[#7D390F] tracking-wide">
-                  {locale === 'fr' ? '100% INGRÉDIENTS D\'ORIGINE VÉGÉTALE' : '100% PLANT-BASED INGREDIENTS'}
-                </span>
-                </div>
+                {/*<div className="mb-3 sm:mb-4">*/}
+                {/*<span className="font-semibold font-poppins text-sm sm:text-base text-[#7D390F] tracking-wide">*/}
+                {/*  {locale === 'fr' ? '100% INGRÉDIENTS D\'ORIGINE VÉGÉTALE' : '100% PLANT-BASED INGREDIENTS'}*/}
+                {/*</span>*/}
+                {/*</div>*/}
 
                 {/* Rating - Responsive */}
                 <div className="flex items-center mb-4 sm:mb-6 flex-wrap">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
-                        <svg key={i} className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                        <svg key={i} className="w-3 h-3 sm:w-4 sm:h-4 text-[#8B4513] fill-current" viewBox="0 0 20 20">
                           <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                         </svg>
                     ))}
@@ -502,19 +502,19 @@ export default function Product() {
                 {/* Purchase Options - Responsive */}
                 <div className="mb-4 sm:mb-6">
                   <div className="border border-gray-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flexflex-wrap gap-2">
                       <div className="flex items-center">
-                        <input
-                            id="purchase-one-time"
-                            type="radio"
-                            name="purchase-option"
-                            value="one-time"
-                            className="mr-2 sm:mr-3"
-                            defaultChecked
-                        />
-                        <label htmlFor="purchase-one-time" className="font-medium text-sm sm:text-base cursor-pointer">
-                          {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}
-                        </label>
+                        {/*<input*/}
+                        {/*    id="purchase-one-time"*/}
+                        {/*    type="radio"*/}
+                        {/*    name="purchase-option"*/}
+                        {/*    value="one-time"*/}
+                        {/*    className="mr-2 sm:mr-3"*/}
+                        {/*    defaultChecked*/}
+                        {/*/>*/}
+                        {/*<label htmlFor="purchase-one-time" className="font-medium text-sm sm:text-base cursor-pointer">*/}
+                        {/*  {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}*/}
+                        {/*</label>*/}
                       </div>
                       <div className="text-base sm:text-lg font-semibold">
                         <Money data={selectedVariant?.price} />
@@ -522,28 +522,28 @@ export default function Product() {
                     </div>
                   </div>
 
-                  <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                      <div className="flex items-center">
-                        <input
-                            id="purchase-subscription"
-                            type="radio"
-                            name="purchase-option"
-                            value="subscription"
-                            className="mr-2 sm:mr-3"
-                        />
-                        <label htmlFor="purchase-subscription" className="font-medium text-sm sm:text-base cursor-pointer">
-                          {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}
-                        </label>
-                      </div>
-                      <div className="text-base sm:text-lg font-semibold text-green-600">
-                        {subscriptionPrice && <Money data={subscriptionPrice} />}
-                      </div>
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600 ml-5 sm:ml-6">
-                      {locale === 'fr' ? 'Livraison chaque mois' : 'Delivery every 1 month'}
-                    </div>
-                  </div>
+                  {/*<div className="border border-gray-200 rounded-lg p-3 sm:p-4">*/}
+                  {/*  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">*/}
+                  {/*    <div className="flex items-center">*/}
+                  {/*      <input*/}
+                  {/*          id="purchase-subscription"*/}
+                  {/*          type="radio"*/}
+                  {/*          name="purchase-option"*/}
+                  {/*          value="subscription"*/}
+                  {/*          className="mr-2 sm:mr-3"*/}
+                  {/*      />*/}
+                  {/*      <label htmlFor="purchase-subscription" className="font-medium text-sm sm:text-base cursor-pointer">*/}
+                  {/*        {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}*/}
+                  {/*      </label>*/}
+                  {/*    </div>*/}
+                  {/*    <div className="text-base sm:text-lg font-semibold text-green-600">*/}
+                  {/*      {subscriptionPrice && <Money data={subscriptionPrice} />}*/}
+                  {/*    </div>*/}
+                  {/*  </div>*/}
+                  {/*  <div className="text-xs sm:text-sm text-gray-600 ml-5 sm:ml-6">*/}
+                  {/*    {locale === 'fr' ? 'Livraison chaque mois' : 'Delivery every 1 month'}*/}
+                  {/*  </div>*/}
+                  {/*</div>*/}
                 </div>
 
                 {/* ProductForm */}
@@ -723,7 +723,7 @@ export default function Product() {
         />
 
         {/* Other Components (as requested, these are left unchanged) */}
-        <ProductBenefitsSection product={product} />
+        {/*<ProductBenefitsSection product={product} />*/}
         <YouMayAlsoLike
             products={relatedProducts}
             currentProductId={product.id}

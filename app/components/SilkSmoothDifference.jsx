@@ -1,6 +1,7 @@
 import { useLocale } from '~/hooks/useLocale';
 
 export function SilkSmoothDifference({ product }) {
+    console.log('SilkSmoothDifference', product);
     const [locale] = useLocale();
     // Helper function to get metafield with null safety
     const getMetafield = (key, namespace = 'custom') => {
