@@ -100,15 +100,15 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
 
               {/* Right side - Navigation and Actions */}
               <div className="flex items-center space-x-16 2xl:space-x-20">
-                {/* Main Navigation */}
-                <nav className="flex space-x-10 2xl:space-x-12">
+                {/* Main Navigation - FIXED ALIGNMENT */}
+                <nav className="flex items-center space-x-10 2xl:space-x-12">
                   {navigationItems.map(item => (
-                      <div key={item.id} className="relative">
+                      <div key={item.id} className="relative flex items-center">
                         {item.hasDropdown ? (
                             <div className="relative">
                               <button
                                   onClick={handleCollectionsClick}
-                                  className="flex items-center uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
+                                  className="flex items-center uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2 h-auto leading-none"
                               >
                                 {item.title}
                                 <svg
@@ -155,7 +155,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                         ) : (
                             <NavLink
                                 to={item.url}
-                                className="uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2"
+                                className="uppercase text-lg 2xl:text-l tracking-wider font-medium text-[#542C17] font-inter hover:text-[#542C17]/80 transition-colors duration-200 py-2 h-auto leading-none"
                             >
                               {item.title}
                             </NavLink>
