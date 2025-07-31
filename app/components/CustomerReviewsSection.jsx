@@ -100,8 +100,6 @@ export function CustomerReviewsSection({ reviewsData }) {
 
     // Check for specific review image
     const review1Image = metafields?.find(m => m?.key === 'review_1_image');
-    console.log('🔍 Review 1 image metafield:', review1Image);
-    console.log('🔍 Review 1 image structure:', JSON.stringify(review1Image, null, 2));
 
     // Get dynamic content with fallbacks
     const sectionTitle = getMetafieldValue(
@@ -152,15 +150,11 @@ export function CustomerReviewsSection({ reviewsData }) {
                 verified: reviewVerified === 'true' || reviewVerified === true // Convert to boolean
             };
 
-            console.log(`✅ Adding review ${i} to array:`, reviewData);
             reviews.push(reviewData);
         } else {
             console.log(`⚠️ Skipping review ${i} - no content found`);
         }
     }
-
-    console.log('🔍 Final reviews array:', reviews);
-    console.log('🔍 Total reviews to display:', reviews.length);
 
     // If no dynamic reviews, use fallback data
     const fallbackReviews = [
@@ -207,11 +201,6 @@ export function CustomerReviewsSection({ reviewsData }) {
     ];
 
     const displayReviews = reviews.length > 0 ? reviews : fallbackReviews;
-
-    console.log('🔍 Display reviews decision:');
-    console.log('- Dynamic reviews count:', reviews.length);
-    console.log('- Using fallback reviews:', reviews.length === 0);
-    console.log('- Final displayReviews:', displayReviews);
 
     // Star rating component
     const StarRating = ({ rating }) => {

@@ -4,10 +4,10 @@ import { useLocale } from '~/hooks/useLocale';
 export function YouMayAlsoLike({ products, currentProductId }) {
     const [locale] = useLocale();
 
-    // Filter out current product and limit to 4 items
     const relatedProducts = products?.nodes
-        ?.filter(product => product.id !== currentProductId)
+        ?.filter(product => product && product.id && product.id !== currentProductId) // Added null check
         ?.slice(0, 4) || [];
+
 
     if (relatedProducts.length === 0) {
         return null;
@@ -25,18 +25,26 @@ export function YouMayAlsoLike({ products, currentProductId }) {
 
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                    {relatedProducts.map((product, index) => (
-                        <div
-                            key={product.id}
-                            className="bg-white overflow-hidden hover:shadow-lg transition-shadow duration-300"
-                        >
-                            <ProductItem
-                                product={product}
-                                loading={index < 4 ? 'eager' : undefined}
-                                variant="collection"
-                            />
-                        </div>
-                    ))}
+                    {relatedProducts.map((product, index) => {
+                        // EXTRA SAFETY: Double-check product exists before rendering
+                        if (!product || !product.id) {
+                            console.warn('⚠️ Skipping null/invalid product at index:', index);
+                            return null;
+                        }
+
+                        return (
+                            <div
+                                key={product.id}
+                                className="bg-white overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                            >
+                                <ProductItem
+                                    product={product}
+                                    loading={index < 4 ? 'eager' : undefined}
+                                    variant="collection"
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

@@ -72,10 +72,10 @@ export function WigGuideSection({ collection }) {
                         {/* Step 1 */}
                         <div className="step-card relative">
                             <div
-                                className="w-full h-90 bg-cover bg-center flex items-center justify-center relative"
+                                className="w-full h-80 bg-cover bg-center flex items-center justify-center relative"
                                 style={{
-                                    backgroundImage: step1.image ? `url(${step1.image})` : "url('')",
-                                    backgroundPosition: 'center 20%',
+                                    backgroundImage: step2.image ? `url(${step1.image})` : "url('')",
+                                    backgroundPosition: 'center 30%',
                                 }}
                             >
                                 <div className="absolute inset-0 bg-black bg-opacity-20"></div>

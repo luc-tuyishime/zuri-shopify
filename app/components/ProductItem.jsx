@@ -4,6 +4,25 @@ import {useVariantUrl} from '~/lib/variants';
 import {useLocale} from "~/hooks/useLocale.js";
 import {memo, useCallback, useEffect, useMemo, useState} from "react";
 
+
+
+function getReviewData(product) {
+    if (!product || !product.metafields || !Array.isArray(product.metafields)) {
+        return {
+            rating: 0,
+            count: 0
+        };
+    }
+
+    const ratingMetafield = product.metafields.find(m => m && m.key === 'product_rating');
+    const countMetafield = product.metafields.find(m => m && m.key === 'review_count');
+
+    return {
+        rating: ratingMetafield && ratingMetafield.value ? parseFloat(ratingMetafield.value) || 0 : 0,
+        count: countMetafield && countMetafield.value ? parseInt(countMetafield.value) || 0 : 0
+    };
+}
+
 /**
  * @param {{
  *   product:
@@ -19,6 +38,7 @@ export const ProductItem = memo(function ProductItem({
                                                          variant = 'rounded',
                                                          fetchpriority = 'auto'
                                                      }) {
+    const { rating, count } = getReviewData(product);
     const variantUrl = useVariantUrl(product.handle);
     const image = product.featuredImage;
     const [locale] = useLocale();
@@ -169,17 +189,31 @@ export const ProductItem = memo(function ProductItem({
                                 {[...Array(5)].map((_, i) => (
                                     <svg
                                         key={i}
-                                        className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-current"
+                                        className={`w-3 h-3 sm:w-4 sm:h-4 fill-current transition-colors ${
+                                            i < Math.floor(rating)
+                                                ? 'text-yellow-400'
+                                                : i < rating
+                                                    ? 'text-yellow-300' // For half stars
+                                                    : 'text-gray-300'
+                                        }`}
                                         viewBox="0 0 20 20"
                                         aria-hidden="true"
-                                        // PERFORMANCE: SVG optimization
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
                                         <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                                     </svg>
                                 ))}
                             </div>
-                            <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">123 reviews</span>
+                            <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">
+                       {count > 0
+                           ? (locale === 'fr'
+                               ? `${count} avis${count !== 1 ? '' : ''}`  // French: "avis" is same for singular/plural
+                               : `${count} review${count !== 1 ? 's' : ''}`)  // English: review/reviews
+                           : (locale === 'fr'
+                               ? 'Aucun avis pour le moment'
+                               : 'No reviews yet')
+                       }
+                        </span>
                         </div>
 
                         {/* Responsive Price */}
@@ -207,6 +241,45 @@ export const ProductItem = memo(function ProductItem({
                         {product.title}
                     </h3>
 
+                    <div className="flex items-center justify-center mb-2 flex-wrap">
+                        <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                                <svg
+                                    key={i}
+                                    className={`w-3 h-3 sm:w-4 sm:h-4 fill-current transition-colors ${
+                                        i < Math.floor(rating)
+                                            ? 'text-yellow-400'
+                                            : i < rating
+                                                ? 'text-yellow-300' // For half stars
+                                                : 'text-gray-300'
+                                    }`}
+                                    viewBox="0 0 20 20"
+                                    aria-hidden="true"
+                                    style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                                >
+                                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                                </svg>
+                            ))}
+                        </div>
+                        <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">
+                       {count > 0
+                           ? (locale === 'fr'
+                               ? `${count} avis${count !== 1 ? '' : ''}`  // French: "avis" is same for singular/plural
+                               : `${count} review${count !== 1 ? 's' : ''}`)  // English: review/reviews
+                           : (locale === 'fr'
+                               ? 'Aucun avis pour le moment'
+                               : 'No reviews yet')
+                       }
+                        </span>
+                    </div>
+
+                    {/* Show rating number if you want */}
+                    {/*{rating > 0 && (*/}
+                    {/*    <div className="text-xs text-gray-500 mb-1">*/}
+                    {/*        {rating.toFixed(1)} / 5.0*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
+
                     {/* Responsive Price */}
                     <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl -mb-4 sm:-mb-4 text-[#0D2936]">
                         {formattedPrice}
@@ -217,7 +290,7 @@ export const ProductItem = memo(function ProductItem({
                         // PERFORMANCE: Button optimizations
                         style={{ transform: 'translateY(-16px) translateZ(0)', contain: 'layout style' }}
                     >
-                        {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
+                        {locale === 'fr' ? 'VOIR LE PRODUIT' : 'VIEW PRODUCT'}
                     </button>
                 </div>
             )}

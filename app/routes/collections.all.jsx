@@ -669,6 +669,14 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
         }
       }
     }
+    # FIXED: Added metafields at the end with proper closing brace
+    metafields(identifiers: [
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"}
+    ]) {
+      key
+      value
+    }
     tags
     productType
   }

@@ -39,6 +39,42 @@ export const meta = ({data}) => {
   ];
 };
 
+function getRelatedProductIdsFromMetafields(product) {
+  if (!product?.metafields) return [];
+
+  const relatedProductsMetafield = product.metafields.find(
+      m => m?.key === 'related_products' && m?.namespace === 'shopify--discovery--product_recommendation'
+  );
+
+  if (!relatedProductsMetafield?.value) return [];
+
+  try {
+    const productIds = JSON.parse(relatedProductsMetafield.value);
+    return Array.isArray(productIds) ? productIds : [];
+  } catch (error) {
+    console.error('Error parsing related products metafield:', error);
+    return [];
+  }
+}
+
+function getRelatedProductsFromMetafields(product) {
+  if (!product?.metafields) return [];
+
+  const relatedProductsMetafield = product.metafields.find(
+      m => m?.key === 'related_products'
+  );
+
+  if (!relatedProductsMetafield) return [];
+
+  // Use references first (this is now working according to your debug!)
+  if (relatedProductsMetafield.references?.nodes?.length > 0) {
+    console.log('✅ Using references:', relatedProductsMetafield.references.nodes);
+    return relatedProductsMetafield.references.nodes.filter(product => product && product.id);
+  }
+
+  return [];
+}
+
 /**
  * @param {LoaderFunctionArgs} args
  */
@@ -57,6 +93,7 @@ export async function loader({ params, request, context }) {
     throw new Error('Expected product handle to be defined');
   }
 
+  // Simplified: Just fetch product and fallback related products
   const [productResult, relatedProductsResult] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
       variables: {
@@ -66,10 +103,10 @@ export async function loader({ params, request, context }) {
         language: 'FR',
       },
     }),
-    // Fetch related products (you can customize this query)
+    // Fetch fallback related products
     storefront.query(RELATED_PRODUCTS_QUERY, {
       variables: {
-        first: 8, // Fetch 8 to have options after filtering current product
+        first: 8,
         country: 'FR',
         language: 'FR',
       },
@@ -86,6 +123,7 @@ export async function loader({ params, request, context }) {
   return json({
     product,
     relatedProducts,
+    // Remove relatedProductsFromMetafields since we're using references directly
   });
 }
 
@@ -242,6 +280,24 @@ const ZoomModal = memo(({
   );
 });
 
+function getProductReviewData(product) {
+  // Safe null checking for metafields
+  if (!product || !product.metafields || !Array.isArray(product.metafields)) {
+    return {
+      rating: 0,
+      count: 0
+    };
+  }
+
+  const ratingMetafield = product.metafields.find(m => m && m.key === 'product_rating');
+  const countMetafield = product.metafields.find(m => m && m.key === 'review_count');
+
+  return {
+    rating: ratingMetafield && ratingMetafield.value ? parseFloat(ratingMetafield.value) || 0 : 0,
+    count: countMetafield && countMetafield.value ? parseInt(countMetafield.value) || 0 : 0
+  };
+}
+
 export default function Product() {
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -257,6 +313,9 @@ export default function Product() {
   });
   const navigate = useNavigate();
   const [selectedVariant, setSelectedVariant] = useState(product.selectedOrFirstAvailableVariant);
+  const { rating, count } = getProductReviewData(product);
+
+
 
   // Memoized handlers for better performance
   const toggleSection = useCallback((section) => {
@@ -265,6 +324,52 @@ export default function Product() {
       [section]: !prev[section]
     }));
   }, []);
+
+
+  const finalRelatedProducts = useMemo(() => {
+    // Try to get from metafields first
+    const metafieldProducts = getRelatedProductsFromMetafields(product);
+
+    if (metafieldProducts.length > 0) {
+      console.log('✅ Using metafield products:', metafieldProducts.length);
+      return { nodes: metafieldProducts };
+    }
+
+    // Fallback to general related products
+    console.log('🔄 Using fallback products:', relatedProducts?.nodes?.length || 0);
+    return relatedProducts;
+  }, [product, relatedProducts]);
+
+  useEffect(() => {
+    console.log('🔄 Fallback products:', relatedProducts);
+    console.log('🎯 Final products being used:', finalRelatedProducts);
+  }, [relatedProducts, finalRelatedProducts]);
+
+  useEffect(() => {
+    console.log('🔍 DEBUGGING METAFIELDS:');
+    console.log('📦 All product metafields:', product?.metafields);
+
+    if (product?.metafields) {
+      console.log('🔑 Available metafield keys:', product.metafields.map(m => m?.key));
+
+      // Check specifically for related_products
+      const relatedMeta = product.metafields.find(m => m?.key === 'related_products');
+      console.log('🎯 related_products metafield:', relatedMeta);
+
+      if (relatedMeta) {
+        console.log('📊 Metafield value:', relatedMeta.value);
+        console.log('🔗 Metafield references:', relatedMeta.references);
+        console.log('📝 Metafield type:', relatedMeta.type);
+      } else {
+        console.log('❌ related_products metafield NOT FOUND');
+      }
+    }
+
+    // Test the helper function
+    const metafieldProducts = getRelatedProductsFromMetafields(product);
+    console.log('🧪 Helper function result:', metafieldProducts);
+
+  }, [product]);
 
   const handleZoomModalClose = useCallback(() => {
     setShowZoomModal(false);
@@ -411,15 +516,36 @@ export default function Product() {
                 {/*</div>*/}
 
                 {/* Rating - Responsive */}
-                <div className="flex items-center mb-4 sm:mb-6 flex-wrap">
+                <div className="flex items-left mb-6 flex-wrap">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
-                        <svg key={i} className="w-3 h-3 sm:w-4 sm:h-4 text-[#8B4513] fill-current" viewBox="0 0 20 20">
+                        <svg
+                            key={i}
+                            className={`w-3 h-3 sm:w-4 sm:h-4 fill-current transition-colors ${
+                                i < Math.floor(rating)
+                                    ? 'text-yellow-400'
+                                    : i < rating
+                                        ? 'text-yellow-300' // For half stars
+                                        : 'text-gray-300'
+                            }`}
+                            viewBox="0 0 20 20"
+                            aria-hidden="true"
+                            style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                        >
                           <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                         </svg>
                     ))}
                   </div>
-                  <span className="ml-2 text-xs sm:text-sm text-gray-600">200 Reviews</span>
+                  <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">
+                       {count > 0
+                           ? (locale === 'fr'
+                               ? `${count} avis${count !== 1 ? '' : ''}`  // French: "avis" is same for singular/plural
+                               : `${count} review${count !== 1 ? 's' : ''}`)  // English: review/reviews
+                           : (locale === 'fr'
+                               ? 'Aucun avis pour le moment'
+                               : 'No reviews yet')
+                       }
+                        </span>
                 </div>
 
                 {/* Subtitle - Responsive */}
@@ -725,7 +851,7 @@ export default function Product() {
         {/* Other Components (as requested, these are left unchanged) */}
         {/*<ProductBenefitsSection product={product} />*/}
         <YouMayAlsoLike
-            products={relatedProducts}
+            products={finalRelatedProducts}
             currentProductId={product.id}
         />
         <CustomerReviewsSection />
@@ -879,64 +1005,72 @@ const PRODUCT_FRAGMENT = `#graphql
       title
     }
     metafields(identifiers: [
-  {namespace: "custom", key: "statistic_1_percentage_fr"},
-  {namespace: "custom", key: "statistic_2_percentage_fr"},
-  {namespace: "custom", key: "statistic_3_percentage_fr"},
-  {namespace: "custom", key: "statistic_1_title_fr"},
-  {namespace: "custom", key: "statistic_2_title_fr"},
-  {namespace: "custom", key: "statistic_3_title_fr"},
-  {namespace: "custom", key: "difference_section_title_fr"}
-  
-  {namespace: "custom", key: "benefits_tab_label_fr"},
-  {namespace: "custom", key: "ingredients_tab_label_fr"},
-  {namespace: "custom", key: "usage_tab_label_fr"},
-  {namespace: "custom", key: "benefit_1_title_fr"},
-  {namespace: "custom", key: "benefit_1_description_fr"},
-  {namespace: "custom", key: "benefit_2_title_fr"},
-  {namespace: "custom", key: "benefit_2_description_fr"},
-  {namespace: "custom", key: "benefit_3_title_fr"},
-  {namespace: "custom", key: "benefit_3_description_fr"},
-  {namespace: "custom", key: "benefit_4_title_fr"},
-  {namespace: "custom", key: "benefit_4_description_fr"},
-  {namespace: "custom", key: "ingredients_title_fr"},
-  {namespace: "custom", key: "ingredients_description_fr"},
-  {namespace: "custom", key: "ingredients_list_fr"},
-  {namespace: "custom", key: "usage_title_fr"},
-  {namespace: "custom", key: "usage_step_1_fr"},
-  {namespace: "custom", key: "usage_step_2_fr"},
-  {namespace: "custom", key: "usage_step_3_fr"},
-  {namespace: "custom", key: "usage_step_4_fr"}
-  
-  {namespace: "custom", key: "testimonial_quote_en"},
-  {namespace: "custom", key: "testimonial_quote_fr"},
-  {namespace: "custom", key: "testimonial_author_en"},
-  {namespace: "custom", key: "testimonial_author_fr"},
-  {namespace: "custom", key: "testimonial_product_en"},
-  {namespace: "custom", key: "testimonial_product_fr"},
-  {namespace: "custom", key: "testimonial_image"}
-  
-  {namespace: "custom", key: "faq_title_en"},
-  {namespace: "custom", key: "faq_title_fr"},
-  {namespace: "custom", key: "faq_1_question_en"},
-  {namespace: "custom", key: "faq_1_question_fr"},
-  {namespace: "custom", key: "faq_1_answer_en"},
-  {namespace: "custom", key: "faq_1_answer_fr"},
-  {namespace: "custom", key: "faq_2_question_en"},
-  {namespace: "custom", key: "faq_2_question_fr"},
-  {namespace: "custom", key: "faq_2_answer_en"},
-  {namespace: "custom", key: "faq_2_answer_fr"},
-  {namespace: "custom", key: "faq_3_question_en"},
-  {namespace: "custom", key: "faq_3_question_fr"},
-  {namespace: "custom", key: "faq_3_answer_en"},
-  {namespace: "custom", key: "faq_3_answer_fr"},
-  {namespace: "custom", key: "faq_4_question_en"},
-  {namespace: "custom", key: "faq_4_question_fr"},
-  {namespace: "custom", key: "faq_4_answer_en"},
-  {namespace: "custom", key: "faq_4_answer_fr"},
-  {namespace: "custom", key: "faq_5_question_en"},
-  {namespace: "custom", key: "faq_5_question_fr"},
-  {namespace: "custom", key: "faq_5_answer_en"},
-  {namespace: "custom", key: "faq_5_answer_fr"}
+      # FIXED: Use the correct namespace from Shopify
+     {namespace: "shopify--discovery--product_recommendation", key: "related_products"},
+     {namespace: "custom", key: "product_rating"},
+     {namespace: "custom", key: "review_count"},
+      
+      # Your existing metafields
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"},
+      {namespace: "custom", key: "statistic_1_percentage_fr"},
+      {namespace: "custom", key: "statistic_2_percentage_fr"},
+      {namespace: "custom", key: "statistic_3_percentage_fr"},
+      {namespace: "custom", key: "statistic_1_title_fr"},
+      {namespace: "custom", key: "statistic_2_title_fr"},
+      {namespace: "custom", key: "statistic_3_title_fr"},
+      {namespace: "custom", key: "difference_section_title_fr"}
+      
+      {namespace: "custom", key: "benefits_tab_label_fr"},
+      {namespace: "custom", key: "ingredients_tab_label_fr"},
+      {namespace: "custom", key: "usage_tab_label_fr"},
+      {namespace: "custom", key: "benefit_1_title_fr"},
+      {namespace: "custom", key: "benefit_1_description_fr"},
+      {namespace: "custom", key: "benefit_2_title_fr"},
+      {namespace: "custom", key: "benefit_2_description_fr"},
+      {namespace: "custom", key: "benefit_3_title_fr"},
+      {namespace: "custom", key: "benefit_3_description_fr"},
+      {namespace: "custom", key: "benefit_4_title_fr"},
+      {namespace: "custom", key: "benefit_4_description_fr"},
+      {namespace: "custom", key: "ingredients_title_fr"},
+      {namespace: "custom", key: "ingredients_description_fr"},
+      {namespace: "custom", key: "ingredients_list_fr"},
+      {namespace: "custom", key: "usage_title_fr"},
+      {namespace: "custom", key: "usage_step_1_fr"},
+      {namespace: "custom", key: "usage_step_2_fr"},
+      {namespace: "custom", key: "usage_step_3_fr"},
+      {namespace: "custom", key: "usage_step_4_fr"}
+      
+      {namespace: "custom", key: "testimonial_quote_en"},
+      {namespace: "custom", key: "testimonial_quote_fr"},
+      {namespace: "custom", key: "testimonial_author_en"},
+      {namespace: "custom", key: "testimonial_author_fr"},
+      {namespace: "custom", key: "testimonial_product_en"},
+      {namespace: "custom", key: "testimonial_product_fr"},
+      {namespace: "custom", key: "testimonial_image"}
+      
+      {namespace: "custom", key: "faq_title_en"},
+      {namespace: "custom", key: "faq_title_fr"},
+      {namespace: "custom", key: "faq_1_question_en"},
+      {namespace: "custom", key: "faq_1_question_fr"},
+      {namespace: "custom", key: "faq_1_answer_en"},
+      {namespace: "custom", key: "faq_1_answer_fr"},
+      {namespace: "custom", key: "faq_2_question_en"},
+      {namespace: "custom", key: "faq_2_question_fr"},
+      {namespace: "custom", key: "faq_2_answer_en"},
+      {namespace: "custom", key: "faq_2_answer_fr"},
+      {namespace: "custom", key: "faq_3_question_en"},
+      {namespace: "custom", key: "faq_3_question_fr"},
+      {namespace: "custom", key: "faq_3_answer_en"},
+      {namespace: "custom", key: "faq_3_answer_fr"},
+      {namespace: "custom", key: "faq_4_question_en"},
+      {namespace: "custom", key: "faq_4_question_fr"},
+      {namespace: "custom", key: "faq_4_answer_en"},
+      {namespace: "custom", key: "faq_4_answer_fr"},
+      {namespace: "custom", key: "faq_5_question_en"},
+      {namespace: "custom", key: "faq_5_question_fr"},
+      {namespace: "custom", key: "faq_5_answer_en"},
+      {namespace: "custom", key: "faq_5_answer_fr"}
     ]) {
       id
       namespace
@@ -952,11 +1086,39 @@ const PRODUCT_FRAGMENT = `#graphql
           }
         }
       }
+      # Product references for related products
+      references(first: 20) {
+        nodes {
+          ... on Product {
+            id
+            handle
+            title
+            featuredImage {
+              id
+              url
+              altText
+            }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            # Include ratings for related products too
+            metafields(identifiers: [
+              {namespace: "custom", key: "product_rating"},
+              {namespace: "custom", key: "review_count"}
+            ]) {
+              key
+              value
+            }
+          }
+        }
+      }
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}
 `;
-
 const PRODUCT_QUERY = `#graphql
   query Product(
     $country: CountryCode
@@ -969,6 +1131,45 @@ const PRODUCT_QUERY = `#graphql
     }
   }
   ${PRODUCT_FRAGMENT}
+`;
+
+const PRODUCTS_BY_IDS_QUERY = `#graphql
+  query ProductsByIds($ids: [ID!]!, $country: CountryCode, $language: LanguageCode) 
+    @inContext(country: $country, language: $language) {
+    nodes(ids: $ids) {
+      ... on Product {
+        id
+        handle
+        title
+        featuredImage {
+          id
+          altText
+          url
+          width
+          height
+        }
+        priceRange {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+          maxVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+        metafields(identifiers: [
+          {namespace: "custom", key: "product_rating"},
+          {namespace: "custom", key: "review_count"}
+        ]) {
+          key
+          value
+        }
+        tags
+        productType
+      }
+    }
+  }
 `;
 
 /** @typedef {import('@shopify/remix-oxygen').LoaderFunctionArgs} LoaderFunctionArgs */

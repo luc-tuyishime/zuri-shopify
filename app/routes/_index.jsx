@@ -514,37 +514,43 @@ function FeaturedCollection({ collection }) {
         try {
             const slides = [];
 
+            // Slide 1
             const slide1Title = getMetafield('hero_title');
             const slide1Subtitle = getMetafield('hero_subtitle');
             const slide1Button = getMetafield('hero_button_text');
+            const slide1Url = getMetafield('hero_button_url');  // ✅ GET URL
 
             slides.push({
                 title: slide1Title?.value || t.hero?.defaultTitle || `Discover ${collection?.title || 'Our Collection'}`,
                 subtitle: slide1Subtitle?.value || t.hero?.defaultSubtitle || 'Premium Quality Collection',
                 buttonText: slide1Button?.value || t.hero?.defaultButton || 'SHOP COLLECTION',
-                url: collectionUrl
+                url: slide1Url?.value || collectionUrl  // ✅ USE DYNAMIC URL OR FALLBACK
             });
 
+            // Slide 2
             const slide2Title = getMetafield('hero_title_slide_2');
             const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
             const slide2Button = getMetafield('hero_button_text_slide_2');
+            const slide2Url = getMetafield('hero_button_url_slide_2');  // ✅ GET URL
 
             slides.push({
                 title: slide2Title?.value || t.hero?.slide2Title || 'Natural Beauty Redefined',
                 subtitle: slide2Subtitle?.value || t.hero?.slide2Subtitle || '100% Human Hair Collection',
                 buttonText: slide2Button?.value || t.hero?.slide2Button || 'EXPLORE STYLES',
-                url: collectionUrl
+                url: slide2Url?.value || collectionUrl  // ✅ USE DYNAMIC URL OR FALLBACK
             });
 
+            // Slide 3
             const slide3Title = getMetafield('hero_title_slide_3');
             const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
             const slide3Button = getMetafield('hero_button_text_slide_3');
+            const slide3Url = getMetafield('hero_button_url_slide_3');  // ✅ GET URL
 
             slides.push({
                 title: slide3Title?.value || t.hero?.slide3Title || 'Transform Your Style',
                 subtitle: slide3Subtitle?.value || t.hero?.slide3Subtitle || 'Expert Crafted Designs',
                 buttonText: slide3Button?.value || t.hero?.slide3Button || 'VIEW ALL',
-                url: collectionUrl
+                url: slide3Url?.value || collectionUrl  // ✅ USE DYNAMIC URL OR FALLBACK
             });
 
             return slides;
@@ -1744,18 +1750,21 @@ const FEATURED_COLLECTION_QUERY = `#graphql
       {namespace: "custom", key: "hero_title"},
       {namespace: "custom", key: "hero_subtitle"},
       {namespace: "custom", key: "hero_button_text"},
+      {namespace: "custom", key: "hero_button_url_slide_1"},  # ✅ ADD THIS
       
       # Slide 2
       {namespace: "custom", key: "hero_background_image_slide_2"},
       {namespace: "custom", key: "hero_title_slide_2"},
       {namespace: "custom", key: "hero_subtitle_slide_2"},
       {namespace: "custom", key: "hero_button_text_slide_2"},
+      {namespace: "custom", key: "hero_button_url_slide_2"},  # ✅ ADD THIS
       
       # Slide 3
       {namespace: "custom", key: "hero_background_image_slide_3"},
       {namespace: "custom", key: "hero_title_slide_3"},
       {namespace: "custom", key: "hero_subtitle_slide_3"},
       {namespace: "custom", key: "hero_button_text_slide_3"},
+      {namespace: "custom", key: "hero_button_url_slide_3"},  # ✅ ADD THIS
       
       # Guide
       {namespace: "custom", key: "guide_title"},
@@ -1848,6 +1857,14 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
       width
       height
     }
+    # Add metafields for ratings
+    metafields(identifiers: [
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"}
+    ]) {
+      key
+      value
+    }
   }
   query BestSellersCollection($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
@@ -1881,6 +1898,14 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       altText
       width
       height
+    }
+    # Add metafields for ratings
+    metafields(identifiers: [
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"}
+    ]) {
+      key
+      value
     }
   }
   query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
