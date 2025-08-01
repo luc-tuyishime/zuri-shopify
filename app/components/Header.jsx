@@ -131,7 +131,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                                           className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
                                           onClick={() => setIsCollectionsDropdownOpen(false)}
                                       >
-                                        {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                        {currentLocale === 'fr' ? 'Tous les Produits' : 'All Products'}
                                       </Link>
 
                                       {/* Separator */}
@@ -248,7 +248,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                                         className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
                                         onClick={() => setIsCollectionsDropdownOpen(false)}
                                     >
-                                      {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                      {currentLocale === 'fr' ? 'Tous les produits' : 'All Products'}
                                     </Link>
 
                                     {/* Separator */}
@@ -360,7 +360,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                                         className="block px-4 py-2 text-sm text-[#542C17] hover:bg-gray-50 transition-colors"
                                         onClick={() => setIsCollectionsDropdownOpen(false)}
                                     >
-                                      {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                                      {currentLocale === 'fr' ? 'Tous les produits' : 'All Products'}
                                     </Link>
 
                                     {/* Separator */}
@@ -534,7 +534,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                                 setIsMobileMenuOpen(false);
                               }}
                           >
-                            {currentLocale === 'fr' ? 'Toutes les Collections' : 'All Collections'}
+                            {currentLocale === 'fr' ? 'Tous les produits' : 'All Products'}
                           </Link>
                           {collectionsWithProducts.map((collection) => (
                               <Link

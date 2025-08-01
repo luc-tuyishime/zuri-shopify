@@ -53,6 +53,8 @@ async function loadCriticalData({ context, request }) {
           handle: collectionHandle,
           country: 'FR',
           language: 'FR',
+          sortKey: 'TITLE',
+          reverse: false,
           ...paginationVariables
         },
       });
@@ -116,7 +118,7 @@ async function loadCriticalData({ context, request }) {
     }
 
     const query = queryParts.length > 0 ? queryParts.join(' AND ') : '';
-    const sortKey = searchParams.get('sortKey') || 'UPDATED_AT';
+    const sortKey = searchParams.get('sortKey') || 'TITLE';
     const reverse = searchParams.get('reverse') === 'true';
 
     // Regular products query
@@ -691,6 +693,8 @@ const COLLECTION_WITH_PRODUCTS_QUERY = `#graphql
     $first: Int
     $last: Int
     $startCursor: String
+    $sortKey: ProductCollectionSortKeys  
+    $reverse: Boolean   
     $endCursor: String
   ) @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
@@ -703,6 +707,8 @@ const COLLECTION_WITH_PRODUCTS_QUERY = `#graphql
         last: $last
         before: $startCursor
         after: $endCursor
+        sortKey: $sortKey     
+        reverse: $reverse 
       ) {
         nodes {
           ...CollectionItem
@@ -726,11 +732,15 @@ const COLLECTION_ALL_PRODUCTS_QUERY = `#graphql
     $country: CountryCode
     $language: LanguageCode
     $first: Int
+    $sortKey: ProductCollectionSortKeys 
+    $reverse: Boolean   
   ) @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
       id
       title
-      products(first: $first) {
+      products(first: $first 
+               sortKey: $sortKey     
+                reverse: $reverse) {
         nodes {
           ...CollectionItem
         }

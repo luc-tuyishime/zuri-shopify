@@ -179,7 +179,7 @@ export const ProductItem = memo(function ProductItem({
                 <div className="product-info p-3 sm:p-4">
                     <div className="product-content">
                         {/* Responsive Title */}
-                        <h3 className="font-regular font-poppins text-base sm:text-lg lg:text-xl text-[#002F45] mb-2 line-clamp-1 leading-tight text-ellipsis">
+                        <h3 className="font-regular font-poppins text-base sm:text-lg lg:text-xl text-[#002F45] mb-2 leading-tight overflow-hidden whitespace-nowrap text-ellipsis">
                             {product.title}
                         </h3>
 
@@ -218,7 +218,7 @@ export const ProductItem = memo(function ProductItem({
 
                         {/* Responsive Price */}
                         <div className="font-semibold font-poppins text-lg sm:text-xl lg:text-2xl text-[#002F45] mb-3 sm:mb-4">
-                            {formattedPrice}
+                            {locale === 'fr' ? `A partir de ${formattedPrice}` : `From ${formattedPrice}`}
                         </div>
                     </div>
 
@@ -237,7 +237,7 @@ export const ProductItem = memo(function ProductItem({
             {variant === 'roundedText' && (
                 <div className="product-info p-2 sm:p-3 text-center">
                     {/* Responsive Title */}
-                    <h3 className="font-light font-poppins text-sm sm:text-base md:text-lg text-[#002F45] mb-1 sm:mb-2 line-clamp-2 leading-tight">
+                    <h3 className="font-light font-poppins text-sm sm:text-base md:text-lg text-[#002F45] mb-1 sm:mb-2 leading-tight overflow-hidden whitespace-nowrap text-ellipsis">
                         {product.title}
                     </h3>
 
@@ -282,7 +282,7 @@ export const ProductItem = memo(function ProductItem({
 
                     {/* Responsive Price */}
                     <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl -mb-4 sm:-mb-4 text-[#0D2936]">
-                        {formattedPrice}
+                        {locale === 'fr' ? `A partir de ${formattedPrice}` : `From ${formattedPrice}`}
                     </div>
 
                     <button
