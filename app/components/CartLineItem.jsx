@@ -14,7 +14,6 @@ import { useLocale } from '~/hooks/useLocale';
  * }}
  */
 export function CartLineItem({layout, line}) {
-
     const {id, merchandise} = line;
     const {product, title, image, selectedOptions} = merchandise;
     const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
@@ -22,7 +21,8 @@ export function CartLineItem({layout, line}) {
     const [locale] = useLocale();
 
     return (
-        <li key={id} className="flex items-start space-x-4 py-6 border-b border-gray-200 last:border-b-0">
+        // ✅ Changed from <li> to <div>
+        <div className="flex items-start space-x-4 py-6 border-b border-gray-200 last:border-b-0">
             {/* Product Image */}
             {image && (
                 <div className="flex-shrink-0">
@@ -86,7 +86,7 @@ export function CartLineItem({layout, line}) {
                     />
                 </div>
             </div>
-        </li>
+        </div>
     );
 }
 

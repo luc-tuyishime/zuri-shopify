@@ -1,6 +1,6 @@
-import {json, useLoaderData, useNavigate} from '@remix-run/react';
+import {Await, json, useLoaderData, useNavigate} from '@remix-run/react';
 
-import {memo, useCallback, useEffect, useMemo, useState} from 'react';
+import {memo, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
 import { Money } from '@shopify/hydrogen';
 import { useLocale } from '~/hooks/useLocale';
 import { useTranslation } from '~/lib/i18n';
@@ -21,7 +21,7 @@ import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductBenefitsSection} from "~/components/ProductBenefitsSection.jsx";
 import {YouMayAlsoLike} from "~/components/YouMayAlsoLike.jsx";
-import {CustomerReviewsSection} from "~/components/CustomerReviewsSection.jsx";
+import {CustomerReviewsSection} from "~/components/CustomerReviewsSection";
 import {SilkSmoothDifference} from "~/components/SilkSmoothDifference.jsx";
 import {CustomerTestimonial} from "~/components/CustomerTestimonial.jsx";
 import {FAQ} from "~/components/Faq.jsx";
@@ -166,8 +166,8 @@ async function loadCriticalData({context, params, request}) {
  * @param {LoaderFunctionArgs}
  */
 function loadDeferredData({context, params}) {
-  // Put any API calls that is not critical to be available on first page render
-  // For example: product reviews, product recommendations, social feeds.
+
+
 
   return {};
 }
@@ -299,6 +299,7 @@ function getProductReviewData(product) {
 }
 
 export default function Product() {
+  const data = useLoaderData();
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { product, relatedProducts } = useLoaderData();
@@ -854,7 +855,13 @@ export default function Product() {
             products={finalRelatedProducts}
             currentProductId={product.id}
         />
-        <CustomerReviewsSection />
+        {/*<Suspense fallback={<div>Loading reviews...</div>}>*/}
+        {/*  <Await resolve={data.reviewsData}>*/}
+        {/*    {(reviewsResponse) => (*/}
+        {/*        <CustomerReviewsSection reviewsData={reviewsResponse} />*/}
+        {/*    )}*/}
+        {/*  </Await>*/}
+        {/*</Suspense>*/}
         <SilkSmoothDifference product={product} />
         <CustomerTestimonial
             product={product}

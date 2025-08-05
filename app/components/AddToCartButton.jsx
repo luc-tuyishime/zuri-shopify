@@ -20,6 +20,22 @@ export function AddToCartButton({
 
                                   ...props
 }) {
+
+  const handleClick = (e) => {
+    console.log('🛒 Adding to cart:', {
+      lines: lines.map(line => ({
+        merchandiseId: line.merchandiseId,
+        quantity: line.quantity,
+        productTitle: line.selectedVariant?.product?.title,
+        variantTitle: line.selectedVariant?.title
+      }))
+    });
+
+    if (onClick) {
+      onClick(e);
+    }
+  };
+
   return (
     <CartForm route="/cart" inputs={{lines}} action={CartForm.ACTIONS.LinesAdd}>
       {(fetcher) => (
@@ -27,7 +43,8 @@ export function AddToCartButton({
 
           <button
             type="submit"
-            onClick={onClick}
+            // onClick={onClick}
+            onClick={handleClick}
             className={className}
             style={style}
             disabled={disabled ?? fetcher.state !== 'idle'}

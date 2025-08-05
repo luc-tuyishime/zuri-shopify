@@ -4,7 +4,6 @@ import LogoWhite from '../assets/Vector.svg';
 import {useLocale} from "~/hooks/useLocale.js";
 import {useTranslation} from "~/lib/i18n.js";
 
-// GraphQL query to fetch shop metafields for footer
 const FOOTER_METAFIELDS_QUERY = `#graphql
   query FooterMetafields {
     shop {
@@ -52,13 +51,25 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
         {namespace: "custom", key: "community_text_fr"},
         {namespace: "custom", key: "community_url"},
         
-        # Shop Locations
+        # Shop Locations - 9 LOCATIONS
         {namespace: "custom", key: "shop_1_name"},
         {namespace: "custom", key: "shop_1_url"},
         {namespace: "custom", key: "shop_2_name"},
         {namespace: "custom", key: "shop_2_url"},
         {namespace: "custom", key: "shop_3_name"},
         {namespace: "custom", key: "shop_3_url"},
+        {namespace: "custom", key: "shop_4_name"},
+        {namespace: "custom", key: "shop_4_url"},
+        {namespace: "custom", key: "shop_5_name"},
+        {namespace: "custom", key: "shop_5_url"},
+        {namespace: "custom", key: "shop_6_name"},
+        {namespace: "custom", key: "shop_6_url"},
+        {namespace: "custom", key: "shop_7_name"},
+        {namespace: "custom", key: "shop_7_url"},
+        {namespace: "custom", key: "shop_8_name"},
+        {namespace: "custom", key: "shop_8_url"},
+        {namespace: "custom", key: "shop_9_name"},
+        {namespace: "custom", key: "shop_9_url"},
         
         # Contact Info
         {namespace: "custom", key: "contact_email"},
@@ -67,18 +78,26 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
         # Social Media
         {namespace: "custom", key: "instagram_text"},
         {namespace: "custom", key: "instagram_url"},
-        {namespace: "custom", key: "twitter_text"},
-        {namespace: "custom", key: "twitter_url"},
-        {namespace: "custom", key: "linkedin_text"},
-        {namespace: "custom", key: "linkedin_url"},
+        {namespace: "custom", key: "footer_facebook_text"},
+        {namespace: "custom", key: "footer_facebook_url"},
+        {namespace: "custom", key: "footer_tiktok_text"},
+        {namespace: "custom", key: "footer_tiktok_url"},
+        {namespace: "custom", key: "footer_youtube_text"},
+        {namespace: "custom", key: "footer_youtube_url"},
         
-        # Legal Links
-        {namespace: "custom", key: "terms_text_en"},
-        {namespace: "custom", key: "terms_text_fr"},
-        {namespace: "custom", key: "terms_url"},
-        {namespace: "custom", key: "privacy_text_en"},
-        {namespace: "custom", key: "privacy_text_fr"},
-        {namespace: "custom", key: "privacy_url"}
+        # Legal Links - EXTENDED TO 4 LINKS
+        {namespace: "custom", key: "legal_1_text_en"},
+        {namespace: "custom", key: "legal_1_text_fr"},
+        {namespace: "custom", key: "legal_1_url"},
+        {namespace: "custom", key: "legal_2_text_en"},
+        {namespace: "custom", key: "legal_2_text_fr"},
+        {namespace: "custom", key: "legal_2_url"},
+        {namespace: "custom", key: "legal_3_text_en"},
+        {namespace: "custom", key: "legal_3_text_fr"},
+        {namespace: "custom", key: "legal_3_url"},
+        {namespace: "custom", key: "legal_4_text_en"},
+        {namespace: "custom", key: "legal_4_text_fr"},
+        {namespace: "custom", key: "legal_4_url"}
       ]) {
         key
         value
@@ -229,7 +248,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
 
   // Build shop locations dynamically
   const shopLocations = [];
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 9; i++) {
     const name = getFooterMetafieldValue(metafields, `footer_shop_${i}_name`);
     const url = getFooterMetafieldValue(metafields, `footer_shop_${i}_url`);
 
@@ -244,9 +263,15 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   // Fallback shop locations if none are configured
   if (shopLocations.length === 0) {
     shopLocations.push(
-        { name: 'Kigali', url: '#' },
+        { name: 'Rwanda', url: '#' },
         { name: 'Uganda', url: '#' },
-        { name: 'DRC', url: '#' }
+        { name: 'DRC', url: '#' },
+        { name: 'Belgium', url: '#' },
+        { name: 'France', url: '#' },
+        { name: 'Germany', url: '#' },
+        { name: 'Netherlands', url: '#' },
+        { name: 'United Kingdom', url: '#' },
+        { name: 'Canada', url: '#' }
     );
   }
 
@@ -257,34 +282,60 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
       url: getFooterMetafieldValue(metafields, 'footer_social_instagram_url', 'https://www.instagram.com/zuribelgique')
     },
     {
-      text: getFooterMetafieldValue(metafields, 'footer_social_twitter_text', 'Twitter'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_twitter_url', 'https://twitter.com/zuri')
+      text: getFooterMetafieldValue(metafields, 'footer_social_tiktok_text', 'TikTok'),
+      url: getFooterMetafieldValue(metafields, 'footer_social_tiktok_url', 'https://tiktok.com/@zuri')
+    },
+    {
+      text: getFooterMetafieldValue(metafields, 'footer_social_facebook_text', 'Facebook'),
+      url: getFooterMetafieldValue(metafields, 'footer_social_facebook_url', 'https://facebook.com/zuri')
     },
     {
       text: getFooterMetafieldValue(metafields, 'footer_social_linkedin_text', 'LinkedIn'),
       url: getFooterMetafieldValue(metafields, 'footer_social_linkedin_url', 'https://linkedin.com/company/zuri')
+    },
+    {
+      text: getFooterMetafieldValue(metafields, 'footer_social_youtube_text', 'YouTube'),
+      url: getFooterMetafieldValue(metafields, 'footer_social_youtube_url', 'https://youtube.com/@zuri')
     }
   ].filter(link => link.text && link.url); // Only include links with both text and URL
 
   // Build legal links dynamically
-  const legalLinks = [
-    {
-      text: getFooterMetafieldValue(
-          metafields,
-          locale === 'fr' ? 'footer_legal_terms_text_fr' : 'footer_legal_terms_text_en',
-          t.footer.terms
-      ),
-      url: getFooterMetafieldValue(metafields, 'footer_legal_terms_url', '/policies/terms-of-service')
-    },
-    {
-      text: getFooterMetafieldValue(
-          metafields,
-          locale === 'fr' ? 'footer_legal_privacy_text_fr' : 'footer_legal_privacy_text_en',
-          t.footer.privacy
-      ),
-      url: getFooterMetafieldValue(metafields, 'footer_legal_privacy_url', '/policies/privacy-policy')
+  const legalLinks = [];
+  for (let i = 1; i <= 4; i++) {
+    const text = getFooterMetafieldValue(
+        metafields,
+        locale === 'fr' ? `footer_legal_${i}_text_fr` : `footer_legal_${i}_text_en`
+    );
+    const url = getFooterMetafieldValue(metafields, `footer_legal_${i}_url`);
+
+    if (text && url) { // Only add if both text and URL exist
+      legalLinks.push({
+        text,
+        url
+      });
     }
-  ];
+  }
+
+  if (legalLinks.length === 0) {
+    legalLinks.push(
+        {
+          text: locale === 'fr' ? 'Conditions générales' : 'Terms of Service',
+          url: '/policies/terms-of-service'
+        },
+        {
+          text: locale === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy',
+          url: '/policies/privacy-policy'
+        },
+        {
+          text: locale === 'fr' ? 'Politique de remboursement' : 'Refund Policy',
+          url: '/policies/refund-policy'
+        },
+        {
+          text: locale === 'fr' ? 'Politique de livraison' : 'Shipping Policy',
+          url: '/policies/shipping-policy'
+        }
+    );
+  }
 
   return (
       <Suspense>
