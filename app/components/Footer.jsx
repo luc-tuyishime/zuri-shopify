@@ -167,7 +167,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
     contactTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_contact_title_fr' : 'footer_contact_title_en',
+        locale === 'fr' ? 'contact_title_fr' : 'contact_title_en',
         t.footer.contact
     ),
     followTitle: getFooterMetafieldValue(
