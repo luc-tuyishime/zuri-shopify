@@ -140,24 +140,24 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     // Company Info
     companyDescription: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_company_description_fr' : 'footer_company_description_en',
+        locale === 'fr' ? 'company_description_fr' : 'company_description_en',
         t.footer.companyDescription
     ),
     beBoldText: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_be_bold_text_fr' : 'footer_be_bold_text_en',
+        locale === 'fr' ? 'be_bold_text_fr' : 'be_bold_text_en',
         t.footer.beBold
     ),
     copyright: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_copyright_fr' : 'footer_copyright_en',
+        locale === 'fr' ? 'copyright_fr' : 'copyright_en',
         t.footer.copyright
     ),
 
     // Section Titles
     exploreTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_explore_title_fr' : 'footer_explore_title_en',
+        locale === 'fr' ? 'explore_title_fr' : 'explore_title_en',
         t.footer.explore
     ),
     shopsTitle: getFooterMetafieldValue(
@@ -172,7 +172,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
     followTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_follow_title_fr' : 'footer_follow_title_en',
+        locale === 'fr' ? 'follow_title_fr' : 'follow_title_en',
         t.footer.follow
     ),
     legalTitle: getFooterMetafieldValue(
@@ -182,8 +182,8 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
 
     // Contact Info
-    contactEmail: getFooterMetafieldValue(metafields, 'footer_contact_email', 'info@myzuri.com'),
-    contactPhone: getFooterMetafieldValue(metafields, 'footer_contact_phone', '+2351567262'),
+    contactEmail: getFooterMetafieldValue(metafields, 'contact_email', 'info@myzuri.com'),
+    contactPhone: getFooterMetafieldValue(metafields, 'contact_phone', '+2351567262'),
   };
 
   // Build explore links dynamically
