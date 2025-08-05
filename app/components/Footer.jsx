@@ -362,11 +362,11 @@ function FooterContent({footer, footerData, locale, t}) {
   return (
       <footer className="bg-[#5C2E1C] text-white py-8 md:py-16 relative">
         {/* Debug info in development */}
-        {process.env.NODE_ENV === 'development' && metafields.length > 0 && (
-            <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-50">
-              Dynamic: {metafields.length} metafields
-            </div>
-        )}
+        {/*{process.env.NODE_ENV === 'development' && metafields.length > 0 && (*/}
+        {/*    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-50">*/}
+        {/*      Dynamic: {metafields.length} metafields*/}
+        {/*    </div>*/}
+        {/*)}*/}
 
         <div className="hidden md:block absolute top-0 left-0 w-[100px] h-[105px] border-r border-b border-white" style={{
           borderRight: '0.48px solid white',
