@@ -108,7 +108,14 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
 
 // Helper function to get metafield value with fallback
 function getFooterMetafieldValue(metafields, key, fallback = '') {
-  const metafield = metafields?.find(m => m?.key === key);
+  // Try with custom namespace first
+  let metafield = metafields?.find(m => m?.key === `custom.${key}`);
+
+  // If not found, try without namespace (fallback)
+  if (!metafield) {
+    metafield = metafields?.find(m => m?.key === key);
+  }
+
   const value = metafield?.value;
 
   // Only use metafield value if it's not empty/null/undefined
@@ -162,7 +169,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
     shopsTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_shops_title_fr' : 'footer_shops_title_en',
+        locale === 'fr' ? 'shops_title_fr' : 'shops_title_en',
         t.footer.shops
     ),
     contactTitle: getFooterMetafieldValue(
@@ -177,7 +184,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
     legalTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'footer_legal_title_fr' : 'footer_legal_title_en',
+        locale === 'fr' ? 'legal_title_fr' : 'legal_title_en',
         t.footer.legal
     ),
 
@@ -249,13 +256,13 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   // Build shop locations dynamically
   const shopLocations = [];
   for (let i = 1; i <= 9; i++) {
-    const name = getFooterMetafieldValue(metafields, `footer_shop_${i}_name`);
-    const url = getFooterMetafieldValue(metafields, `footer_shop_${i}_url`);
+    const name = getFooterMetafieldValue(metafields, `shop_${i}_name`); // Remove 'footer_' prefix
+    const url = getFooterMetafieldValue(metafields, `shop_${i}_url`);   // Remove 'footer_' prefix
 
-    if (name) { // Only add if name exists
+    if (name) {
       shopLocations.push({
         name,
-        url: url || '#' // Default to # if no URL provided
+        url: url || '#'
       });
     }
   }
@@ -304,11 +311,11 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   for (let i = 1; i <= 4; i++) {
     const text = getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? `footer_legal_${i}_text_fr` : `footer_legal_${i}_text_en`
+        locale === 'fr' ? `legal_${i}_text_fr` : `legal_${i}_text_en` // Remove 'footer_' prefix
     );
-    const url = getFooterMetafieldValue(metafields, `footer_legal_${i}_url`);
+    const url = getFooterMetafieldValue(metafields, `legal_${i}_url`); // Remove 'footer_' prefix
 
-    if (text && url) { // Only add if both text and URL exist
+    if (text && url) {
       legalLinks.push({
         text,
         url
