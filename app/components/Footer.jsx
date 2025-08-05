@@ -4,6 +4,7 @@ import LogoWhite from '../assets/Vector.svg';
 import {useLocale} from "~/hooks/useLocale.js";
 import {useTranslation} from "~/lib/i18n.js";
 
+// GraphQL query to fetch shop metafields for footer
 const FOOTER_METAFIELDS_QUERY = `#graphql
   query FooterMetafields {
     shop {
@@ -26,7 +27,7 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
         {namespace: "custom", key: "follow_title_en"},
         {namespace: "custom", key: "follow_title_fr"},
         {namespace: "custom", key: "legal_title_en"},
-        {namespace: "custom", key: "title_fr"},
+        {namespace: "custom", key: "legal_title_fr"},
         
         # Explore Links (text and URLs)
         {namespace: "custom", key: "home_text_en"},
@@ -108,14 +109,8 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
 
 // Helper function to get metafield value with fallback
 function getFooterMetafieldValue(metafields, key, fallback = '') {
-  // Try with custom namespace first
-  let metafield = metafields?.find(m => m?.key === `custom.${key}`);
-
-  // If not found, try without namespace (fallback)
-  if (!metafield) {
-    metafield = metafields?.find(m => m?.key === key);
-  }
-
+  // Direct key lookup (your metafields don't have custom. prefix)
+  const metafield = metafields?.find(m => m?.key === key);
   const value = metafield?.value;
 
   // Only use metafield value if it's not empty/null/undefined
@@ -133,6 +128,29 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   const [locale] = useLocale();
   const t = useTranslation(locale);
 
+  return (
+      <Suspense>
+        <Await resolve={footerPromise}>
+          {(footer) => (
+              <Suspense>
+                <Await resolve={footerData}>
+                  {(resolvedFooterData) => (
+                      <FooterContent
+                          footer={footer}
+                          footerData={resolvedFooterData}
+                          locale={locale}
+                          t={t}
+                      />
+                  )}
+                </Await>
+              </Suspense>
+          )}
+        </Await>
+      </Suspense>
+  );
+}
+
+function FooterContent({footer, footerData, locale, t}) {
   // Safely access metafields
   const metafields = footerData?.shop?.metafields || [];
 
@@ -152,7 +170,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     ),
     beBoldText: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'be_bold_text_fr' : 'be_bold_text_en',
+        locale === 'fr' ? 'be_bold_text_fr' : 'footer_be_bold_text_en',
         t.footer.beBold
     ),
     copyright: getFooterMetafieldValue(
@@ -198,66 +216,66 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_home_text_fr' : 'footer_explore_home_text_en',
+          locale === 'fr' ? 'home_text_fr' : 'home_text_en',
           t.footer.home
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_home_url', '/')
+      url: getFooterMetafieldValue(metafields, 'home_url', '/')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_about_text_fr' : 'footer_explore_about_text_en',
+          locale === 'fr' ? 'about_text_fr' : 'about_text_en',
           t.footer.about
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_about_url', '/pages/about')
+      url: getFooterMetafieldValue(metafields, 'about_url', '/pages/about')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_bestsellers_text_fr' : 'footer_explore_bestsellers_text_en',
+          locale === 'fr' ? 'best_sellers_text_fr' : 'best_sellers_text_en',
           t.footer.bestSellers
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_bestsellers_url', '/collections/best-sellers')
+      url: getFooterMetafieldValue(metafields, 'best_sellers_url', '/collections/best-sellers')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_wigs_text_fr' : 'footer_explore_wigs_text_en',
+          locale === 'fr' ? 'wigs_text_fr' : 'wigs_text_en',
           t.footer.wigs
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_wigs_url', '/collections/wigs')
+      url: getFooterMetafieldValue(metafields, 'wigs_url', '/collections/wigs')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_wigcare_text_fr' : 'footer_explore_wigcare_text_en',
+          locale === 'fr' ? 'wig_care_text_fr' : 'wig_care_text_en',
           t.footer.wigCare
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_wigcare_url', '/pages/wig-care')
+      url: getFooterMetafieldValue(metafields, 'wig_care_url', '/pages/wig-care')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_haircare_text_fr' : 'footer_explore_haircare_text_en',
+          locale === 'fr' ? 'hair_care_text_fr' : 'hair_care_text_en',
           t.footer.hairCare
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_haircare_url', '/pages/hair-care')
+      url: getFooterMetafieldValue(metafields, 'hair_care_url', '/pages/hair-care')
     },
     {
       text: getFooterMetafieldValue(
           metafields,
-          locale === 'fr' ? 'footer_explore_community_text_fr' : 'footer_explore_community_text_en',
+          locale === 'fr' ? 'community_text_fr' : 'community_text_en',
           t.footer.community
       ),
-      url: getFooterMetafieldValue(metafields, 'footer_explore_community_url', '/pages/community')
+      url: getFooterMetafieldValue(metafields, 'community_url', '/pages/community')
     }
   ];
 
   // Build shop locations dynamically
   const shopLocations = [];
   for (let i = 1; i <= 9; i++) {
-    const name = getFooterMetafieldValue(metafields, `shop_${i}_name`); // Remove 'footer_' prefix
-    const url = getFooterMetafieldValue(metafields, `shop_${i}_url`);   // Remove 'footer_' prefix
+    const name = getFooterMetafieldValue(metafields, `shop_${i}_name`);
+    const url = getFooterMetafieldValue(metafields, `shop_${i}_url`);
 
     if (name) {
       shopLocations.push({
@@ -285,35 +303,31 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   // Build social media links dynamically
   const socialLinks = [
     {
-      text: getFooterMetafieldValue(metafields, 'footer_social_instagram_text', 'Instagram'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_instagram_url', 'https://www.instagram.com/zuribelgique')
+      text: getFooterMetafieldValue(metafields, 'instagram_text', 'Instagram'),
+      url: getFooterMetafieldValue(metafields, 'instagram_url', 'https://www.instagram.com/zuribelgique')
     },
     {
-      text: getFooterMetafieldValue(metafields, 'footer_social_tiktok_text', 'TikTok'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_tiktok_url', 'https://tiktok.com/@zuri')
+      text: getFooterMetafieldValue(metafields, 'footer_facebook_text', 'Facebook'),
+      url: getFooterMetafieldValue(metafields, 'footer_facebook_url', 'https://facebook.com/zuri')
     },
     {
-      text: getFooterMetafieldValue(metafields, 'footer_social_facebook_text', 'Facebook'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_facebook_url', 'https://facebook.com/zuri')
+      text: getFooterMetafieldValue(metafields, 'footer_tiktok_text', 'TikTok'),
+      url: getFooterMetafieldValue(metafields, 'footer_tiktok_url', 'https://tiktok.com/@zuri')
     },
     {
-      text: getFooterMetafieldValue(metafields, 'footer_social_linkedin_text', 'LinkedIn'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_linkedin_url', 'https://linkedin.com/company/zuri')
-    },
-    {
-      text: getFooterMetafieldValue(metafields, 'footer_social_youtube_text', 'YouTube'),
-      url: getFooterMetafieldValue(metafields, 'footer_social_youtube_url', 'https://youtube.com/@zuri')
+      text: getFooterMetafieldValue(metafields, 'footer_youtube_text', 'YouTube'),
+      url: getFooterMetafieldValue(metafields, 'footer_youtube_url', 'https://youtube.com/@zuri')
     }
-  ].filter(link => link.text && link.url); // Only include links with both text and URL
+  ].filter(link => link.text && link.url);
 
   // Build legal links dynamically
   const legalLinks = [];
   for (let i = 1; i <= 4; i++) {
     const text = getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? `legal_${i}_text_fr` : `legal_${i}_text_en` // Remove 'footer_' prefix
+        locale === 'fr' ? `legal_${i}_text_fr` : `legal_${i}_text_en`
     );
-    const url = getFooterMetafieldValue(metafields, `legal_${i}_url`); // Remove 'footer_' prefix
+    const url = getFooterMetafieldValue(metafields, `legal_${i}_url`);
 
     if (text && url) {
       legalLinks.push({
@@ -323,6 +337,7 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
     }
   }
 
+  // Fallback legal links if none are configured
   if (legalLinks.length === 0) {
     legalLinks.push(
         {
@@ -345,143 +360,137 @@ export function Footer({footer: footerPromise, header, publicStoreDomain, footer
   }
 
   return (
-      <Suspense>
-        <Await resolve={footerPromise}>
-          {(footer) => (
-              <footer className="bg-[#5C2E1C] text-white py-8 md:py-16 relative">
-                {/* Debug info in development */}
-                {process.env.NODE_ENV === 'development' && metafields.length > 0 && (
-                    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-50">
-                      Dynamic: {metafields.length} metafields
-                    </div>
-                )}
+      <footer className="bg-[#5C2E1C] text-white py-8 md:py-16 relative">
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && metafields.length > 0 && (
+            <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded z-50">
+              Dynamic: {metafields.length} metafields
+            </div>
+        )}
 
-                <div className="hidden md:block absolute top-0 left-0 w-[100px] h-[105px] border-r border-b border-white" style={{
-                  borderRight: '0.48px solid white',
-                  borderBottom: '0.48px solid white'
-                }}></div>
+        <div className="hidden md:block absolute top-0 left-0 w-[100px] h-[105px] border-r border-b border-white" style={{
+          borderRight: '0.48px solid white',
+          borderBottom: '0.48px solid white'
+        }}></div>
 
-                <div className="container mx-auto px-4">
-                  <div className="md:pl-[60px] md:pl-[80px]">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-x-8 md:gap-x-16 gap-y-8 md:gap-y-10">
-                      {/* Logo and Company Info Column */}
-                      <div className="col-span-1 md:pr-8">
-                        <Link to="/" className="block mb-4 md:mb-6">
-                          <img
-                              src={LogoWhite}
-                              alt="ZURI"
-                          />
-                        </Link>
-                        <p className="text-xs md:text-[11px] font-inter font-medium mb-4 md:mb-6">
-                          {dynamicContent.companyDescription}
-                        </p>
-                        <p className="font-bold text-xs md:text-[11px] mb-6 md:mb-8">
-                          {dynamicContent.beBoldText}
-                        </p>
-                        <p className="text-xs md:text-[11px] mt-8 md:mt-16">
-                          {dynamicContent.copyright}
-                        </p>
-                      </div>
+        <div className="container mx-auto px-4">
+          <div className="md:pl-[60px] md:pl-[80px]">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-x-8 md:gap-x-16 gap-y-8 md:gap-y-10">
+              {/* Logo and Company Info Column */}
+              <div className="col-span-1 md:pr-8">
+                <Link to="/" className="block mb-4 md:mb-6">
+                  <img
+                      src={LogoWhite}
+                      alt="ZURI"
+                  />
+                </Link>
+                <p className="text-xs md:text-[11px] font-inter font-medium mb-4 md:mb-6">
+                  {dynamicContent.companyDescription}
+                </p>
+                <p className="font-bold text-xs md:text-[11px] mb-6 md:mb-8">
+                  {dynamicContent.beBoldText}
+                </p>
+                <p className="text-xs md:text-[11px] mt-8 md:mt-16">
+                  {dynamicContent.copyright}
+                </p>
+              </div>
 
-                      {/* Explore Column */}
-                      <div className="col-span-1">
-                        <p className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
-                          {dynamicContent.exploreTitle}
-                        </p>
-                        <nav className="flex flex-col space-y-2 md:space-y-3">
-                          {exploreLinks.map((link, index) => (
-                              <NavLink
-                                  key={index}
-                                  to={link.url}
-                                  className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
-                              >
-                                {link.text}
-                              </NavLink>
-                          ))}
-                        </nav>
-                      </div>
+              {/* Explore Column */}
+              <div className="col-span-1">
+                <p className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
+                  {dynamicContent.exploreTitle}
+                </p>
+                <nav className="flex flex-col space-y-2 md:space-y-3">
+                  {exploreLinks.map((link, index) => (
+                      <NavLink
+                          key={index}
+                          to={link.url}
+                          className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
+                      >
+                        {link.text}
+                      </NavLink>
+                  ))}
+                </nav>
+              </div>
 
-                      {/* Shops Column */}
-                      <div className="col-span-1">
-                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
-                          {dynamicContent.shopsTitle}
-                        </h3>
-                        <nav className="flex flex-col space-y-2 md:space-y-3">
-                          {shopLocations.map((shop, index) => (
-                              <a
-                                  key={index}
-                                  href={shop.url}
-                                  className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
-                              >
-                                {shop.name}
-                              </a>
-                          ))}
-                        </nav>
+              {/* Shops Column */}
+              <div className="col-span-1">
+                <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
+                  {dynamicContent.shopsTitle}
+                </h3>
+                <nav className="flex flex-col space-y-2 md:space-y-3">
+                  {shopLocations.map((shop, index) => (
+                      <a
+                          key={index}
+                          href={shop.url}
+                          className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
+                      >
+                        {shop.name}
+                      </a>
+                  ))}
+                </nav>
 
-                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-3 md:mb-4 mt-6 md:mt-8">
-                          {dynamicContent.contactTitle}
-                        </h3>
-                        <p className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D] mb-2">
-                          {dynamicContent.contactEmail}
-                        </p>
-                        <a
-                            href={`tel:${dynamicContent.contactPhone}`}
+                <h3 className="font-medium font-inter text-sm md:text-[16px] mb-3 md:mb-4 mt-6 md:mt-8">
+                  {dynamicContent.contactTitle}
+                </h3>
+                <p className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D] mb-2">
+                  {dynamicContent.contactEmail}
+                </p>
+                <a
+                    href={`tel:${dynamicContent.contactPhone}`}
+                    className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
+                >
+                  {dynamicContent.contactPhone}
+                </a>
+              </div>
+
+              {/* Follow Column */}
+              <div className="col-span-1">
+                <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
+                  {dynamicContent.followTitle}
+                </h3>
+                <nav className="flex flex-col space-y-2 md:space-y-3">
+                  {socialLinks.map((social, index) => (
+                      <a
+                          key={index}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
+                      >
+                        {social.text}
+                      </a>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Legal Column */}
+              <div className="col-span-1 flex flex-col">
+                <div>
+                  <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
+                    {dynamicContent.legalTitle}
+                  </h3>
+                  <nav className="flex flex-col space-y-2 md:space-y-3">
+                    {legalLinks.map((legal, index) => (
+                        <NavLink
+                            key={index}
+                            to={legal.url}
                             className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
                         >
-                          {dynamicContent.contactPhone}
-                        </a>
-                      </div>
-
-                      {/* Follow Column */}
-                      <div className="col-span-1">
-                        <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
-                          {dynamicContent.followTitle}
-                        </h3>
-                        <nav className="flex flex-col space-y-2 md:space-y-3">
-                          {socialLinks.map((social, index) => (
-                              <a
-                                  key={index}
-                                  href={social.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
-                              >
-                                {social.text}
-                              </a>
-                          ))}
-                        </nav>
-                      </div>
-
-                      {/* Legal Column */}
-                      <div className="col-span-1 flex flex-col">
-                        <div>
-                          <h3 className="font-medium font-inter text-sm md:text-[16px] mb-4 md:mb-6">
-                            {dynamicContent.legalTitle}
-                          </h3>
-                          <nav className="flex flex-col space-y-2 md:space-y-3">
-                            {legalLinks.map((legal, index) => (
-                                <NavLink
-                                    key={index}
-                                    to={legal.url}
-                                    className="font-medium font-inter text-xs md:text-[11px] text-[#806D6D]"
-                                >
-                                  {legal.text}
-                                </NavLink>
-                            ))}
-                          </nav>
-                        </div>
-                        {/* Bottom right corner - hidden on mobile, exact original styling on desktop */}
-                        <div className="hidden md:block mt-auto">
-                          <div className="border-t border-l border-r border-white rounded-tl-full rounded-tr-full h-40 w-40 ml-auto absolute bottom-0 right-4 md:right-16"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                          {legal.text}
+                        </NavLink>
+                    ))}
+                  </nav>
                 </div>
-              </footer>
-          )}
-        </Await>
-      </Suspense>
+                {/* Bottom right corner - hidden on mobile, exact original styling on desktop */}
+                <div className="hidden md:block mt-auto">
+                  <div className="border-t border-l border-r border-white rounded-tl-full rounded-tr-full h-40 w-40 ml-auto absolute bottom-0 right-4 md:right-16"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
   );
 }
 
