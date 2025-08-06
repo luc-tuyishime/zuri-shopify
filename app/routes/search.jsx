@@ -147,6 +147,7 @@ const ENHANCED_SEARCH_PRODUCT_FRAGMENT = `#graphql
       nodes {
         id
         title
+        availableForSale  # Keep this
         selectedOptions {
           name
           value

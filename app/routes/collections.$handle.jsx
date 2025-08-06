@@ -572,7 +572,7 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
       nodes {
         id
         title
-        availableForSale  # ADD THIS LINE
+        availableForSale  # Keep this
         price {
           amount
           currencyCode

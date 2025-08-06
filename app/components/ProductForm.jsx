@@ -7,12 +7,21 @@ import { useLocale } from '~/hooks/useLocale';
  * @param {{
  *   productOptions: MappedProductOptions[];
  *   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
+ *   product: ProductFragment; // Add product prop to access tags
  * }}
  */
-export function ProductForm({productOptions, selectedVariant}) {
+export function ProductForm({productOptions, selectedVariant, product}) {
     const navigate = useNavigate();
     const {open} = useAside();
     const [locale] = useLocale();
+
+    // Check if product is sold out via tags
+    const isSoldOut = product?.tags?.includes('sold-out');
+
+    console.log('selectedVariant:', selectedVariant);
+    console.log('selectedVariant.product:', selectedVariant?.product);
+    console.log('selectedVariant.product.tags:', selectedVariant?.product?.tags);
+
 
     return (
         <div className="product-form space-y-6">
@@ -98,19 +107,18 @@ export function ProductForm({productOptions, selectedVariant}) {
 
             {/* Styled Add to Cart Button */}
             <div className={`mt-8 py-3 px-6 rounded-md font-medium text-white transition-colors duration-200
-            ${selectedVariant?.availableForSale
+            ${selectedVariant?.availableForSale && !isSoldOut
                 ? 'bg-[#8B4513] hover:bg-[#7A3A0F] focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2'
                 : 'bg-gray-400 cursor-not-allowed'
             }`}>
                 <AddToCartButton
-                    disabled={!selectedVariant || !selectedVariant.availableForSale}
+                    disabled={!selectedVariant || !selectedVariant.availableForSale || isSoldOut}
                     onClick={() => {
                         open('cart');
                     }}
 
-
                     lines={
-                        selectedVariant
+                        selectedVariant && !isSoldOut
                             ? [
                                 {
                                     merchandiseId: selectedVariant.id,
@@ -120,11 +128,14 @@ export function ProductForm({productOptions, selectedVariant}) {
                             ]
                             : []
                     }
-
                 >
-                    {selectedVariant?.availableForSale
-                        ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')
-                        : (locale === 'fr' ? 'Épuisé' : 'Sold out')
+                    {!selectedVariant
+                        ? (locale === 'fr' ? 'Non disponible' : 'Unavailable')
+                        : isSoldOut
+                            ? (locale === 'fr' ? 'Épuisé' : 'Sold out')
+                            : selectedVariant?.availableForSale
+                                ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')
+                                : (locale === 'fr' ? 'Épuisé' : 'Sold out')
                     }
                 </AddToCartButton>
             </div>

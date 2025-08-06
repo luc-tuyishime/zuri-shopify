@@ -46,11 +46,9 @@ export const ProductItem = memo(function ProductItem({
     const selectedVariant = useMemo(() => {
         const variant = product.variants?.nodes?.[0] || null;
 
-        // Debug logging - remove this after fixing
+        // Debug logging - let's see ALL available fields
         console.log('Product:', product.title);
-        console.log('Variants:', product.variants?.nodes);
-        console.log('Selected variant:', variant);
-        console.log('Available for sale:', variant?.availableForSale);
+        console.log('Selected variant FULL OBJECT:', JSON.stringify(variant, null, 2));
 
         return variant;
     }, [product.variants, product.title]);
@@ -291,16 +289,16 @@ export const ProductItem = memo(function ProductItem({
                                     <button
                                         type="submit"
                                         onClick={handleAddToCart}
-                                        disabled={!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle'}
+                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
                                         className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
-                                            (!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
-                                        {selectedVariant?.availableForSale === false
-                                            ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
-                                            : !selectedVariant
-                                                ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                        {!selectedVariant
+                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                            : product.tags?.includes('sold-out')
+                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
                                                 : fetcher.state !== 'idle'
                                                     ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
                                                     : (locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART')
@@ -354,17 +352,17 @@ export const ProductItem = memo(function ProductItem({
                     </div>
 
                     {/* Responsive Price */}
-                    <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl -mb-4 sm:-mb-4 text-[#0D2936]">
+                    <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl mb-2 sm:mb-3 text-[#0D2936]">
                         {locale === 'fr' ? `A partir de ${formattedPrice}` : `From ${formattedPrice}`}
                     </div>
 
                     {/* Two Buttons Side by Side for RoundedText variant */}
-                    <div className="flex gap-2 sm:gap-3" style={{ transform: 'translateY(-16px)' }}>
+                    <div className="flex gap-2 sm:gap-3">
                         {/* View Product Button */}
                         <Link
                             to={variantUrl}
                             prefetch="intent"
-                            className="flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center"
+                            className="flex-shrink-0 px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center min-w-[60px]"
                             style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                         >
                             {locale === 'fr' ? 'VOIR' : 'VIEW'}
@@ -372,26 +370,35 @@ export const ProductItem = memo(function ProductItem({
 
                         {/* Add to Cart Button using CartForm */}
                         <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
-                            {(fetcher) => (
-                                <button
-                                    type="submit"
-                                    onClick={handleAddToCart}
-                                    disabled={!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle'}
-                                    className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
-                                        (!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
-                                    style={{ transform: 'translateZ(0)', contain: 'layout style' }}
-                                >
-                                    {selectedVariant?.availableForSale === false
-                                        ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
-                                        : !selectedVariant
-                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
-                                            : fetcher.state !== 'idle'
-                                                ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
-                                                : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
+                            {(fetcher) => {
+                                // Open cart when submission is successful
+                                useEffect(() => {
+                                    if (fetcher.state === 'idle' && fetcher.data && open) {
+                                        open('cart');
                                     }
-                                </button>
-                            )}
+                                }, [fetcher.state, fetcher.data]);
+
+                                return (
+                                    <button
+                                        type="submit"
+                                        onClick={handleAddToCart}
+                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
+                                        className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 flex items-center justify-center ${
+                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
+                                        style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                                    >
+                                        {!selectedVariant
+                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                            : product.tags?.includes('sold-out')
+                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                                : fetcher.state !== 'idle'
+                                                    ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
+                                                    : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
+                                        }
+                                    </button>
+                                );
+                            }}
                         </CartForm>
                     </div>
                 </div>

@@ -332,23 +332,16 @@ export default function Product() {
     const metafieldProducts = getRelatedProductsFromMetafields(product);
 
     if (metafieldProducts.length > 0) {
-      console.log('✅ Using metafield products:', metafieldProducts.length);
       return { nodes: metafieldProducts };
     }
 
-    // Fallback to general related products
-    console.log('🔄 Using fallback products:', relatedProducts?.nodes?.length || 0);
     return relatedProducts;
   }, [product, relatedProducts]);
 
   useEffect(() => {
-    console.log('🔄 Fallback products:', relatedProducts);
-    console.log('🎯 Final products being used:', finalRelatedProducts);
   }, [relatedProducts, finalRelatedProducts]);
 
   useEffect(() => {
-    console.log('🔍 DEBUGGING METAFIELDS:');
-    console.log('📦 All product metafields:', product?.metafields);
 
     if (product?.metafields) {
       console.log('🔑 Available metafield keys:', product.metafields.map(m => m?.key));
@@ -549,11 +542,6 @@ export default function Product() {
                         </span>
                 </div>
 
-                {/* Subtitle - Responsive */}
-                <h2 className="font-regular font-poppins text-sm sm:text-base text-[#002F45] mb-3 sm:mb-4">
-                  {locale === 'fr' ? 'Cheveux Lisses, Beauté Sans Effort' : 'Smooth Hair, Effortless Beauty'}
-                </h2>
-
                 {/* Description - Responsive */}
                 <div className="font-regular font-poppins text-sm sm:text-base text-[#002F45] mb-4 sm:mb-6 [&_*]:leading-relaxed">
                   {descriptionHtml ? (
@@ -678,6 +666,7 @@ export default function Product() {
                   <ProductForm
                       productOptions={[]}
                       selectedVariant={selectedVariant}
+                      product={product}
                   />
                 </div>
 
@@ -968,6 +957,7 @@ const PRODUCT_FRAGMENT = `#graphql
     handle
     descriptionHtml
     description
+    tags
     encodedVariantExistence
     encodedVariantAvailability
     images(first: 10) {

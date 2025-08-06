@@ -21,7 +21,7 @@ const FOOTER_METAFIELDS_QUERY = `#graphql
         {namespace: "custom", key: "explore_title_en"},
         {namespace: "custom", key: "explore_title_fr"},
         {namespace: "custom", key: "shops_title_en"},
-        {namespace: "custom", key: "shops_title_fr"},
+        {namespace: "custom", key: "shops_title_fn"},
         {namespace: "custom", key: "contact_title_en"},
         {namespace: "custom", key: "contact_title_fr"},
         {namespace: "custom", key: "follow_title_en"},
