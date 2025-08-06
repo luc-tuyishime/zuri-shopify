@@ -1,10 +1,8 @@
 import {Link} from '@remix-run/react';
-import {Image, Money} from '@shopify/hydrogen';
+import {Image, Money, CartForm} from '@shopify/hydrogen';
 import {useVariantUrl} from '~/lib/variants';
 import {useLocale} from "~/hooks/useLocale.js";
 import {memo, useCallback, useEffect, useMemo, useState} from "react";
-
-
 
 function getReviewData(product) {
     if (!product || !product.metafields || !Array.isArray(product.metafields)) {
@@ -36,12 +34,61 @@ export const ProductItem = memo(function ProductItem({
                                                          product,
                                                          loading = 'lazy',
                                                          variant = 'rounded',
-                                                         fetchpriority = 'auto'
+                                                         fetchpriority = 'auto',
+                                                         open // Add open function as prop
                                                      }) {
     const { rating, count } = getReviewData(product);
     const variantUrl = useVariantUrl(product.handle);
     const image = product.featuredImage;
     const [locale] = useLocale();
+
+    // Get the first available variant for add to cart
+    const selectedVariant = useMemo(() => {
+        const variant = product.variants?.nodes?.[0] || null;
+
+        // Debug logging - remove this after fixing
+        console.log('Product:', product.title);
+        console.log('Variants:', product.variants?.nodes);
+        console.log('Selected variant:', variant);
+        console.log('Available for sale:', variant?.availableForSale);
+
+        return variant;
+    }, [product.variants, product.title]);
+
+    // Add to cart handler using the same logic as your AddToCartButton
+    const handleAddToCart = useCallback((e) => {
+        console.log('🛒 Adding to cart:', {
+            lines: selectedVariant ? [{
+                merchandiseId: selectedVariant.id,
+                quantity: 1,
+                productTitle: product.title,
+                variantTitle: selectedVariant.title
+            }] : []
+        });
+
+        // Don't open cart immediately - let the form submit first
+        // The cart will open after successful submission
+    }, [selectedVariant, product.title]);
+
+    // Prepare lines for CartForm (same as your AddToCartButton)
+    const cartLines = useMemo(() => {
+        if (!selectedVariant) return [];
+
+        return [
+            {
+                merchandiseId: selectedVariant.id,
+                quantity: 1,
+                selectedVariant: {
+                    ...selectedVariant,
+                    product: {
+                        handle: product.handle,
+                        title: product.title,
+                        featuredImage: product.featuredImage
+                    }
+                }
+            }
+        ];
+    }, [selectedVariant, product.handle, product.title, product.featuredImage]);
 
     // PERFORMANCE: Optimize image URL (Shopify-safe)
     const optimizedImageSrc = useMemo(() => {
@@ -133,46 +180,42 @@ export const ProductItem = memo(function ProductItem({
     );
 
     return (
-        <Link
-            className="product-item group"
-            key={product.id}
-            prefetch="intent"
-            to={variantUrl}
-            style={styles.container}
-        >
+        <div className="product-item group" style={styles.container}>
             {/* Image Container with responsive hover effects */}
-            <div
-                style={styles.imageContainer}
-                className="group-hover:shadow-lg transition-shadow duration-300"
-            >
-                {/* PERFORMANCE: Optimized image with proper attributes */}
-                {image && (
-                    <img
-                        src={optimizedImageSrc}
-                        alt={image.altText || product.title}
-                        loading={loading}
-                        fetchpriority={fetchpriority}
-                        style={styles.image}
-                        className="group-hover:scale-105"
-                        // PERFORMANCE: Critical image attributes
-                        decoding="async"
-                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        // PERFORMANCE: Provide width/height hints to prevent layout shift
-                        width="400"
-                        height={variant === 'roundedText' ? "560" : "400"}
-                    />
-                )}
+            <Link to={variantUrl} prefetch="intent">
+                <div
+                    style={styles.imageContainer}
+                    className="group-hover:shadow-lg transition-shadow duration-300"
+                >
+                    {/* PERFORMANCE: Optimized image with proper attributes */}
+                    {image && (
+                        <img
+                            src={optimizedImageSrc}
+                            alt={image.altText || product.title}
+                            loading={loading}
+                            fetchpriority={fetchpriority}
+                            style={styles.image}
+                            className="group-hover:scale-105"
+                            // PERFORMANCE: Critical image attributes
+                            decoding="async"
+                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            // PERFORMANCE: Provide width/height hints to prevent layout shift
+                            width="400"
+                            height={variant === 'roundedText' ? "560" : "400"}
+                        />
+                    )}
 
-                {/* Featured Badge - Responsive sizing */}
-                {isFeatured && (
-                    <div
-                        style={styles.badge}
-                        className="sm:w-8 sm:h-8 sm:text-sm"
-                    >
-                        F
-                    </div>
-                )}
-            </div>
+                    {/* Featured Badge - Responsive sizing */}
+                    {isFeatured && (
+                        <div
+                            style={styles.badge}
+                            className="sm:w-8 sm:h-8 sm:text-sm"
+                        >
+                            F
+                        </div>
+                    )}
+                </div>
+            </Link>
 
             {/* Product Info for Collection Variant - Fully Responsive */}
             {variant === 'collection' && (
@@ -222,14 +265,51 @@ export const ProductItem = memo(function ProductItem({
                         </div>
                     </div>
 
-                    {/* Responsive Button */}
-                    <button
-                        className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95"
-                        // PERFORMANCE: Button optimizations
-                        style={{ transform: 'translateZ(0)', contain: 'layout style' }}
-                    >
-                        {locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART'}
-                    </button>
+                    {/* Two Buttons Side by Side */}
+                    <div className="flex gap-2 sm:gap-3">
+                        {/* View Product Button */}
+                        <Link
+                            to={variantUrl}
+                            prefetch="intent"
+                            className="flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center"
+                            style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                        >
+                            {locale === 'fr' ? 'VOIR' : 'VIEW'}
+                        </Link>
+
+                        {/* Add to Cart Button */}
+                        <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
+                            {(fetcher) => {
+                                // Open cart when submission is successful
+                                useEffect(() => {
+                                    if (fetcher.state === 'idle' && fetcher.data && open) {
+                                        open('cart');
+                                    }
+                                }, [fetcher.state, fetcher.data]);
+
+                                return (
+                                    <button
+                                        type="submit"
+                                        onClick={handleAddToCart}
+                                        disabled={!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle'}
+                                        className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
+                                            (!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
+                                        style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                                    >
+                                        {selectedVariant?.availableForSale === false
+                                            ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                            : !selectedVariant
+                                                ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                                : fetcher.state !== 'idle'
+                                                    ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
+                                                    : (locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART')
+                                        }
+                                    </button>
+                                );
+                            }}
+                        </CartForm>
+                    </div>
                 </div>
             )}
 
@@ -273,25 +353,47 @@ export const ProductItem = memo(function ProductItem({
                         </span>
                     </div>
 
-                    {/* Show rating number if you want */}
-                    {/*{rating > 0 && (*/}
-                    {/*    <div className="text-xs text-gray-500 mb-1">*/}
-                    {/*        {rating.toFixed(1)} / 5.0*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
-
                     {/* Responsive Price */}
                     <div className="font-semibold font-poppins text-base sm:text-lg md:text-xl -mb-4 sm:-mb-4 text-[#0D2936]">
                         {locale === 'fr' ? `A partir de ${formattedPrice}` : `From ${formattedPrice}`}
                     </div>
 
-                    <button
-                        className="product-button w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95"
-                        // PERFORMANCE: Button optimizations
-                        style={{ transform: 'translateY(-16px) translateZ(0)', contain: 'layout style' }}
-                    >
-                        {locale === 'fr' ? 'VOIR LE PRODUIT' : 'VIEW PRODUCT'}
-                    </button>
+                    {/* Two Buttons Side by Side for RoundedText variant */}
+                    <div className="flex gap-2 sm:gap-3" style={{ transform: 'translateY(-16px)' }}>
+                        {/* View Product Button */}
+                        <Link
+                            to={variantUrl}
+                            prefetch="intent"
+                            className="flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center"
+                            style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                        >
+                            {locale === 'fr' ? 'VOIR' : 'VIEW'}
+                        </Link>
+
+                        {/* Add to Cart Button using CartForm */}
+                        <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
+                            {(fetcher) => (
+                                <button
+                                    type="submit"
+                                    onClick={handleAddToCart}
+                                    disabled={!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle'}
+                                    className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
+                                        (!selectedVariant || selectedVariant.availableForSale === false || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
+                                    style={{ transform: 'translateZ(0)', contain: 'layout style' }}
+                                >
+                                    {selectedVariant?.availableForSale === false
+                                        ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                        : !selectedVariant
+                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                            : fetcher.state !== 'idle'
+                                                ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
+                                                : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
+                                    }
+                                </button>
+                            )}
+                        </CartForm>
+                    </div>
                 </div>
             )}
 
@@ -339,9 +441,10 @@ export const ProductItem = memo(function ProductItem({
                 }
                 `
             }} />
-        </Link>
+        </div>
     );
 });
+
 /** @typedef {import('storefrontapi.generated').ProductItemFragment} ProductItemFragment */
 /** @typedef {import('storefrontapi.generated').CollectionItemFragment} CollectionItemFragment */
 /** @typedef {import('storefrontapi.generated').RecommendedProductFragment} RecommendedProductFragment */

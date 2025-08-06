@@ -185,13 +185,6 @@ export function CartMain({layout, cart: originalCart}) {
                         {/* ✅ Products Grid - Responsive */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4 md:gap-6">
                             {(cart?.lines?.nodes ?? []).map((line, index) => {
-                                console.log(`🎨 Rendering line ${index + 1}:`, {
-                                    id: line.id,
-                                    productTitle: line.merchandise?.product?.title,
-                                    quantity: line.quantity,
-                                    variantId: line.merchandise?.id
-                                });
-
                                 return (
                                     <div key={line.id} className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow">
                                         {/* Debug indicator */}

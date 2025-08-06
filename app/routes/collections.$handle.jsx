@@ -1,28 +1,31 @@
 import {redirect} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {useLoaderData, useSearchParams} from '@remix-run/react';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
+import {useState} from 'react';
+import {useLocale} from '~/hooks/useLocale';
+import {useTranslation} from '~/lib/i18n';
 
 /**
  * @type {MetaFunction<typeof loader>}
  */
 export const meta = ({data}) => {
-  return [{title: `Zuri | ${data?.collection.title ?? ''} Collection`}];
+    return [{title: `Zuri | ${data?.collection.title ?? ''} Collection`}];
 };
 
 /**
  * @param {LoaderFunctionArgs} args
  */
 export async function loader(args) {
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
+    // Start fetching non-critical data without blocking time to first byte
+    const deferredData = loadDeferredData(args);
 
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
+    // Await the critical data required to render initial state of the page
+    const criticalData = await loadCriticalData(args);
 
-  return {...deferredData, ...criticalData};
+    return {...deferredData, ...criticalData};
 }
 
 /**
@@ -99,10 +102,9 @@ async function loadCriticalData({ context, params, request }) {
 
     return {
         collection,
-        products: collection.products, // ✅ Add this line - expose products directly
+        products: collection.products,
     };
 }
-
 
 /**
  * Load data for rendering content below the fold. This data is deferred and will be
@@ -111,7 +113,7 @@ async function loadCriticalData({ context, params, request }) {
  * @param {LoaderFunctionArgs}
  */
 function loadDeferredData({context}) {
-  return {};
+    return {};
 }
 
 export default function Collection() {
@@ -141,42 +143,93 @@ export default function Collection() {
         price: false,
     });
 
-    // Filter options
-    const filterOptions = {
-        category: [
-            { value: '', label: locale === 'fr' ? 'Tous' : 'All' },
-            { value: 'Units & Wigs', label: locale === 'fr' ? 'Unités & Perruques' : 'Units & Wigs' },
-            { value: 'Hair Products', label: locale === 'fr' ? 'Produits Capillaires' : 'Hair Products' },
-            { value: 'Best Sellers', label: locale === 'fr' ? 'Meilleures Ventes' : 'Best Sellers' },
-        ],
-        color: [
-            { value: '', label: locale === 'fr' ? 'Toutes les couleurs' : 'All colors' },
-            { value: 'Châtain caramel', label: locale === 'fr' ? 'Châtain caramel' : 'Caramel Brown' },
-            { value: 'Noir', label: locale === 'fr' ? 'Noir' : 'Black' },
-            { value: 'Blonde', label: locale === 'fr' ? 'Blonde' : 'Blonde' },
-            { value: 'Auburn', label: locale === 'fr' ? 'Auburn' : 'Auburn' },
-        ],
-        scent: [
-            { value: '', label: locale === 'fr' ? 'Tous les parfums' : 'All scents' },
-            { value: 'Vanilla', label: locale === 'fr' ? 'Vanille' : 'Vanilla' },
-            { value: 'Coconut', label: locale === 'fr' ? 'Noix de coco' : 'Coconut' },
-            { value: 'Lavender', label: locale === 'fr' ? 'Lavande' : 'Lavender' },
-        ],
-        length: [
-            { value: '', label: locale === 'fr' ? 'Toutes les longueurs' : 'All lengths' },
-            { value: '12"', label: '12"' },
-            { value: '14"', label: '14"' },
-            { value: '16"', label: '16"' },
-            { value: '18"', label: '18"' },
-            { value: '20"', label: '20"' },
-        ],
-        laceSize: [
-            { value: '', label: locale === 'fr' ? 'Toutes les tailles' : 'All sizes' },
-            { value: '4x4', label: '4x4' },
-            { value: '5x5', label: '5x5' },
-            { value: '13x4', label: '13x4' },
-            { value: '13x6', label: '13x6' },
-        ],
+    // ✅ UPDATED: Dynamic filter options based on actual product data
+    const getAvailableFilterOptions = () => {
+        const products = collection?.products?.nodes || [];
+
+        // Extract unique values from products
+        const availableOptions = {
+            category: new Set(),
+            color: new Set(),
+            scent: new Set(),
+            length: new Set(),
+            laceSize: new Set(),
+        };
+
+        products.forEach(product => {
+            // Categories from product types
+            if (product.productType) {
+                availableOptions.category.add(product.productType);
+            }
+
+            // Extract from tags
+            product.tags?.forEach(tag => {
+                // Color tags (adjust these based on your actual tag patterns)
+                if (['Châtain caramel', 'Noir', 'Blonde', 'Auburn', 'Black', 'Caramel Brown'].includes(tag)) {
+                    availableOptions.color.add(tag);
+                }
+
+                // Scent tags
+                if (['Vanilla', 'Coconut', 'Lavender'].includes(tag)) {
+                    availableOptions.scent.add(tag);
+                }
+
+                // Length tags
+                if (['12"', '14"', '16"', '18"', '20"'].includes(tag)) {
+                    availableOptions.length.add(tag);
+                }
+
+                // Lace size tags
+                if (['4x4', '5x5', '13x4', '13x6'].includes(tag)) {
+                    availableOptions.laceSize.add(tag);
+                }
+            });
+        });
+
+        return {
+            category: [
+                { value: '', label: locale === 'fr' ? 'Tous' : 'All' },
+                ...Array.from(availableOptions.category).map(cat => ({
+                    value: cat,
+                    label: cat
+                }))
+            ],
+            color: [
+                { value: '', label: locale === 'fr' ? 'Toutes les couleurs' : 'All colors' },
+                ...Array.from(availableOptions.color).map(color => ({
+                    value: color,
+                    label: color
+                }))
+            ],
+            scent: [
+                { value: '', label: locale === 'fr' ? 'Tous les parfums' : 'All scents' },
+                ...Array.from(availableOptions.scent).map(scent => ({
+                    value: scent,
+                    label: scent
+                }))
+            ],
+            length: [
+                { value: '', label: locale === 'fr' ? 'Toutes les longueurs' : 'All lengths' },
+                ...Array.from(availableOptions.length).map(length => ({
+                    value: length,
+                    label: length
+                }))
+            ],
+            laceSize: [
+                { value: '', label: locale === 'fr' ? 'Toutes les tailles' : 'All sizes' },
+                ...Array.from(availableOptions.laceSize).map(size => ({
+                    value: size,
+                    label: size
+                }))
+            ],
+        };
+    };
+
+    const filterOptions = getAvailableFilterOptions();
+
+    // ✅ Function to check if a filter has options (more than just "All")
+    const hasFilterOptions = (filterKey) => {
+        return filterOptions[filterKey] && filterOptions[filterKey].length > 1;
     };
 
     const updateFilter = (key, value) => {
@@ -236,150 +289,160 @@ export default function Collection() {
                                 </button>
                             </div>
 
-                            {/* Category Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleSection('category')}
-                                    className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
-                                >
-                                    <span>{locale === 'fr' ? 'Catégorie' : 'Category'}</span>
-                                    <span className="text-lg">{expandedSections.category ? '−' : '+'}</span>
-                                </button>
-                                {expandedSections.category && (
-                                    <div className="space-y-2">
-                                        {filterOptions.category.map((option) => (
-                                            <label key={option.value} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name="category"
-                                                    value={option.value}
-                                                    checked={filters.category === option.value}
-                                                    onChange={(e) => updateFilter('category', e.target.value)}
-                                                    className="mr-3 text-red-500"
-                                                />
-                                                <span className="text-sm text-gray-700">{option.label}</span>
-                                                {filters.category === option.value && (
-                                                    <span className="ml-2 text-red-500">✓</span>
-                                                )}
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {/* ✅ Category Filter - Only show if has options */}
+                            {hasFilterOptions('category') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('category')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Catégorie' : 'Category'}</span>
+                                        <span className="text-lg">{expandedSections.category ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.category && (
+                                        <div className="space-y-2">
+                                            {filterOptions.category.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="category"
+                                                        value={option.value}
+                                                        checked={filters.category === option.value}
+                                                        onChange={(e) => updateFilter('category', e.target.value)}
+                                                        className="mr-3 text-red-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                    {filters.category === option.value && (
+                                                        <span className="ml-2 text-red-500">✓</span>
+                                                    )}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* Color Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleSection('color')}
-                                    className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
-                                >
-                                    <span>{locale === 'fr' ? 'Couleur' : 'Color'}</span>
-                                    <span className="text-lg">{expandedSections.color ? '−' : '+'}</span>
-                                </button>
-                                {expandedSections.color && (
-                                    <div className="space-y-2">
-                                        {filterOptions.color.map((option) => (
-                                            <label key={option.value} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name="color"
-                                                    value={option.value}
-                                                    checked={filters.color === option.value}
-                                                    onChange={(e) => updateFilter('color', e.target.value)}
-                                                    className="mr-3"
-                                                />
-                                                <span className="text-sm text-gray-700">{option.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {/* ✅ Color Filter - Only show if has options */}
+                            {hasFilterOptions('color') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('color')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Couleur' : 'Color'}</span>
+                                        <span className="text-lg">{expandedSections.color ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.color && (
+                                        <div className="space-y-2">
+                                            {filterOptions.color.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="color"
+                                                        value={option.value}
+                                                        checked={filters.color === option.value}
+                                                        onChange={(e) => updateFilter('color', e.target.value)}
+                                                        className="mr-3"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* Scent Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleSection('scent')}
-                                    className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
-                                >
-                                    <span>{locale === 'fr' ? 'Parfum' : 'Scent'}</span>
-                                    <span className="text-lg">{expandedSections.scent ? '−' : '+'}</span>
-                                </button>
-                                {expandedSections.scent && (
-                                    <div className="space-y-2">
-                                        {filterOptions.scent.map((option) => (
-                                            <label key={option.value} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name="scent"
-                                                    value={option.value}
-                                                    checked={filters.scent === option.value}
-                                                    onChange={(e) => updateFilter('scent', e.target.value)}
-                                                    className="mr-3"
-                                                />
-                                                <span className="text-sm text-gray-700">{option.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {/* ✅ Scent Filter - Only show if has options */}
+                            {hasFilterOptions('scent') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('scent')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Parfum' : 'Scent'}</span>
+                                        <span className="text-lg">{expandedSections.scent ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.scent && (
+                                        <div className="space-y-2">
+                                            {filterOptions.scent.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="scent"
+                                                        value={option.value}
+                                                        checked={filters.scent === option.value}
+                                                        onChange={(e) => updateFilter('scent', e.target.value)}
+                                                        className="mr-3"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* Length Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleSection('length')}
-                                    className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
-                                >
-                                    <span>{locale === 'fr' ? 'Longueur' : 'Length'}</span>
-                                    <span className="text-lg">{expandedSections.length ? '−' : '+'}</span>
-                                </button>
-                                {expandedSections.length && (
-                                    <div className="space-y-2">
-                                        {filterOptions.length.map((option) => (
-                                            <label key={option.value} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name="length"
-                                                    value={option.value}
-                                                    checked={filters.length === option.value}
-                                                    onChange={(e) => updateFilter('length', e.target.value)}
-                                                    className="mr-3"
-                                                />
-                                                <span className="text-sm text-gray-700">{option.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {/* ✅ Length Filter - Only show if has options */}
+                            {hasFilterOptions('length') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('length')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Longueur' : 'Length'}</span>
+                                        <span className="text-lg">{expandedSections.length ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.length && (
+                                        <div className="space-y-2">
+                                            {filterOptions.length.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="length"
+                                                        value={option.value}
+                                                        checked={filters.length === option.value}
+                                                        onChange={(e) => updateFilter('length', e.target.value)}
+                                                        className="mr-3"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* Lace Size Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-4">
-                                <button
-                                    onClick={() => toggleSection('laceSize')}
-                                    className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
-                                >
-                                    <span>{locale === 'fr' ? 'Taille de Dentelle' : 'Lace Size'}</span>
-                                    <span className="text-lg">{expandedSections.laceSize ? '−' : '+'}</span>
-                                </button>
-                                {expandedSections.laceSize && (
-                                    <div className="space-y-2">
-                                        {filterOptions.laceSize.map((option) => (
-                                            <label key={option.value} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name="laceSize"
-                                                    value={option.value}
-                                                    checked={filters.laceSize === option.value}
-                                                    onChange={(e) => updateFilter('laceSize', e.target.value)}
-                                                    className="mr-3"
-                                                />
-                                                <span className="text-sm text-gray-700">{option.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {/* ✅ Lace Size Filter - Only show if has options */}
+                            {hasFilterOptions('laceSize') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('laceSize')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Taille de Dentelle' : 'Lace Size'}</span>
+                                        <span className="text-lg">{expandedSections.laceSize ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.laceSize && (
+                                        <div className="space-y-2">
+                                            {filterOptions.laceSize.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="laceSize"
+                                                        value={option.value}
+                                                        checked={filters.laceSize === option.value}
+                                                        onChange={(e) => updateFilter('laceSize', e.target.value)}
+                                                        className="mr-3"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            {/* Price Filter */}
+                            {/* ✅ Price Filter - Always show (doesn't depend on product data) */}
                             <div className="mb-6">
                                 <button
                                     onClick={() => toggleSection('price')}
@@ -396,7 +459,7 @@ export default function Collection() {
                                             </label>
                                             <input
                                                 type="number"
-                                                name={"price"}
+                                                name="price"
                                                 value={filters.minPrice}
                                                 onChange={(e) => updateFilter('minPrice', e.target.value)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -409,7 +472,7 @@ export default function Collection() {
                                             </label>
                                             <input
                                                 type="number"
-                                                name={"maxprice"}
+                                                name="maxprice"
                                                 value={filters.maxPrice}
                                                 onChange={(e) => updateFilter('maxPrice', e.target.value)}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -442,7 +505,19 @@ export default function Collection() {
                             </button>
                         </div>
 
-
+                        {/* Products Grid */}
+                        <PaginatedResourceSection
+                            connection={collection.products}
+                            resourcesClassName="products-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                        >
+                            {({node: product, index}) => (
+                                <ProductItem
+                                    key={product.id}
+                                    product={product}
+                                    loading={index < 8 ? 'eager' : undefined}
+                                />
+                            )}
+                        </PaginatedResourceSection>
 
                         {!collection?.products?.nodes?.length && (
                             <div className="text-center py-12">
@@ -492,6 +567,28 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
       maxVariantPrice {
         ...MoneyCollectionItem
       }
+    }
+    variants(first: 10) {
+      nodes {
+        id
+        title
+        availableForSale  # ADD THIS LINE
+        price {
+          amount
+          currencyCode
+        }
+        selectedOptions {
+          name
+          value
+        }
+      }
+    }
+    metafields(identifiers: [
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"}
+    ]) {
+      key
+      value
     }
     tags
     productType

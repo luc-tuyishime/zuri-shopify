@@ -5,6 +5,7 @@ import {ProductItem} from '~/components/ProductItem';
 import {useLocale} from "~/hooks/useLocale.js";
 import {useTranslation} from "~/lib/i18n.js";
 import {useState, useEffect, useMemo} from "react";
+import {useAside} from '~/components/Aside';
 
 /**
  * @type {MetaFunction<typeof loader>}
@@ -272,6 +273,7 @@ export default function Collection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [locale] = useLocale();
   const t = useTranslation(locale);
+  const {open} = useAside();
 
   // Get the current collection filter from URL
   const currentCollectionFilter = searchParams.get('collection') || '';
@@ -423,47 +425,49 @@ export default function Collection() {
 
   const collectionTitle = getCollectionTitle();
 
-  // Component to render filter section
-  const FilterSection = ({ title, filterKey, options }) => (
-      <div className="mb-8">
-        <button
-            onClick={() => toggleSection(filterKey)}
-            className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
-        >
-          <span>{title}</span>
-          <span className="text-lg">{expandedSections[filterKey] ? '−' : '+'}</span>
-        </button>
-        {expandedSections[filterKey] && (
-            <div className="space-y-3 ml-0">
-              {options.map((option) => (
-                  <label
-                      key={option.value}
-                      className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-                  >
-                    <input
-                        type="checkbox"
-                        checked={filters[filterKey].includes(option.value)}
-                        onChange={() => updateFilter(filterKey, option.value)}
-                        className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
-                    />
-                    <span className={`text-[14px] font-poppins font-regular ${
-                        filters[filterKey].includes(option.value)
-                            ? 'text-[#FF7575] font-medium'
-                            : 'text-[#00000066]'
-                    }`}>
+  const FilterSection = ({ title, filterKey, options }) => {
+    // Don't render the section if there are no options
+    if (!options || options.length === 0) {
+      return null;
+    }
+
+    return (
+        <div className="mb-8">
+          <button
+              onClick={() => toggleSection(filterKey)}
+              className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] mb-4"
+          >
+            <span>{title}</span>
+            <span className="text-lg">{expandedSections[filterKey] ? '−' : '+'}</span>
+          </button>
+          {expandedSections[filterKey] && (
+              <div className="space-y-3 ml-0">
+                {options.map((option) => (
+                    <label
+                        key={option.value}
+                        className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                    >
+                      <input
+                          type="checkbox"
+                          checked={filters[filterKey].includes(option.value)}
+                          onChange={() => updateFilter(filterKey, option.value)}
+                          className="mr-3 h-4 w-4 text-[#FF7575] focus:ring-[#FF7575] border-gray-300 rounded"
+                      />
+                      <span className={`text-[14px] font-poppins font-regular ${
+                          filters[filterKey].includes(option.value)
+                              ? 'text-[#FF7575] font-medium'
+                              : 'text-[#00000066]'
+                      }`}>
                 {option.label}
               </span>
-                  </label>
-              ))}
-              {options.length === 0 && (
-                  <p className="text-sm text-gray-500 italic">
-                    {locale === 'fr' ? 'Aucune option disponible' : 'No options available'}
-                  </p>
-              )}
-            </div>
-        )}
-      </div>
-  );
+                    </label>
+                ))}
+              </div>
+          )}
+        </div>
+    );
+  };
+
 
   return (
       <div className="collection-page min-h-screen bg-white pt-24">
@@ -510,7 +514,7 @@ export default function Collection() {
                   </button>
                 </div>
 
-                {/* Dynamic Filter Sections */}
+                {/* Dynamic Filter Sections - Only render if options exist */}
                 <FilterSection
                     title={locale === 'fr' ? 'Catégorie' : 'Category'}
                     filterKey="category"
@@ -579,8 +583,8 @@ export default function Collection() {
                       </div>
                   )}
                 </div>
+               </div>
               </div>
-            </div>
 
             {/* Products Grid */}
             <div className="lg:col-span-3">
@@ -611,6 +615,7 @@ export default function Collection() {
                             product={product}
                             loading={index < 8 ? 'eager' : undefined}
                             variant="collection"
+                            open={open}
                         />
                       </div>
                   )
