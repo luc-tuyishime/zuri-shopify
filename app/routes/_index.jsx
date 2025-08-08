@@ -824,7 +824,6 @@ function FeaturedCollection({ collection }) {
                 setCurrentVideoIndex((prevIndex) =>
                     (prevIndex + 1) % desktopVideos.length
                 );
-                setVideoLoaded(false);
             }, 8000);
 
             return () => clearInterval(interval);
@@ -851,23 +850,23 @@ function FeaturedCollection({ collection }) {
                 <div ref={containerRef} className="hero-video-container">
                     {getCurrentBackgroundMedia.type === 'video' && !videoErrors.has(getCurrentBackgroundMedia.url) ? (
                         <>
-                            <div
-                                className="hero-background-image"
-                                style={{
-                                    backgroundImage: getCurrentBackgroundMedia.fallbackImage ?
-                                        `url(${getCurrentBackgroundMedia.fallbackImage})` :
-                                        collection?.image?.url ? `url(${collection.image.url})` : 'none',
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    backgroundRepeat: 'no-repeat',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    zIndex: 1
-                                }}
-                            />
+                            {/*<div*/}
+                            {/*    className="hero-background-image"*/}
+                            {/*    style={{*/}
+                            {/*        backgroundImage: getCurrentBackgroundMedia.fallbackImage ?*/}
+                            {/*            `url(${getCurrentBackgroundMedia.fallbackImage})` :*/}
+                            {/*            collection?.image?.url ? `url(${collection.image.url})` : 'none',*/}
+                            {/*        backgroundSize: 'cover',*/}
+                            {/*        backgroundPosition: 'center',*/}
+                            {/*        backgroundRepeat: 'no-repeat',*/}
+                            {/*        position: 'absolute',*/}
+                            {/*        top: 0,*/}
+                            {/*        left: 0,*/}
+                            {/*        width: '100%',*/}
+                            {/*        height: '100%',*/}
+                            {/*        zIndex: 1*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <video
                                 key={`bg-video-${currentVideoIndex}`}
@@ -901,23 +900,24 @@ function FeaturedCollection({ collection }) {
                             </video>
                         </>
                     ) : (
-                        <div
-                            className="hero-background-image"
-                            style={{
-                                backgroundImage: `url(${getCurrentBackgroundMedia.url})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                backgroundRepeat: 'no-repeat',
-                                transition: 'opacity 0.5s ease',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                zIndex: 1
-                            }}
-                            key={`background-${currentVideoIndex}`}
-                        />
+                        <></>
+                        // <div
+                        //     className="hero-background-image"
+                        //     style={{
+                        //         backgroundImage: `url(${getCurrentBackgroundMedia.url})`,
+                        //         backgroundSize: 'cover',
+                        //         backgroundPosition: 'center',
+                        //         backgroundRepeat: 'no-repeat',
+                        //         transition: 'opacity 0.5s ease',
+                        //         position: 'absolute',
+                        //         top: 0,
+                        //         left: 0,
+                        //         width: '100%',
+                        //         height: '100%',
+                        //         zIndex: 1
+                        //     }}
+                        //     key={`background-${currentVideoIndex}`}
+                        // />
                     )}
 
                     {showVideo && desktopVideos.length > 0 && (
@@ -1210,7 +1210,6 @@ function FeaturedCollection({ collection }) {
                                     key={index}
                                     onClick={() => {
                                         setCurrentVideoIndex(index);
-                                        setVideoLoaded(false);
                                     }}
                                     className={`indicator ${index === currentVideoIndex ? 'active' : ''}`}
                                     aria-label={`Go to slide ${index + 1}: ${slideContent[index]?.title || 'Slide'}`}
@@ -1934,6 +1933,7 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
     id
     title
     handle
+    tags                    # ← ADD THIS (copy from collection)
     priceRange {
       minVariantPrice {
         amount
@@ -1946,6 +1946,21 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
       altText
       width
       height
+    }
+    variants(first: 10) {   # ← ADD THIS ENTIRE BLOCK (copy from collection)
+      nodes {
+        id
+        title
+        availableForSale
+        price {
+          amount
+          currencyCode
+        }
+        selectedOptions {
+          name
+          value
+        }
+      }
     }
     # Add metafields for ratings
     metafields(identifiers: [
@@ -1962,6 +1977,7 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
       id
       title
       handle
+      tags
       products(
         first: 20      
         sortKey: TITLE 
@@ -1980,6 +1996,7 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
     id
     title
     handle
+    tags                    # ✅ Already has this
     priceRange {
       minVariantPrice {
         amount
@@ -1992,6 +2009,21 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       altText
       width
       height
+    }
+    variants(first: 10) {   # ← ADD THIS ENTIRE BLOCK (missing from your query)
+      nodes {
+        id
+        title
+        availableForSale
+        price {
+          amount
+          currencyCode
+        }
+        selectedOptions {
+          name
+          value
+        }
+      }
     }
     # Add metafields for ratings
     metafields(identifiers: [

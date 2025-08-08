@@ -29,7 +29,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
   // Filter collections that have products (count > 0)
   const collectionsWithProducts = collections?.filter(collection =>
       collection.products && collection.products.nodes && collection.products.nodes.length > 0
-  ) || [];
+  )?.sort((a, b) => a.title.localeCompare(b.title)) || [];
 
   const navigationItems = [
     {

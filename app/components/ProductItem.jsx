@@ -70,14 +70,19 @@ export const ProductItem = memo(function ProductItem({
 
     // Prepare lines for CartForm (same as your AddToCartButton)
     const cartLines = useMemo(() => {
-        if (!selectedVariant) return [];
+        // Create a mock variant if selectedVariant is null
+        const variantToUse = selectedVariant || {
+            id: `gid://shopify/ProductVariant/${product.id.split('/').pop()}-default`,
+            price: product.priceRange?.minVariantPrice,
+            availableForSale: true
+        };
 
         return [
             {
-                merchandiseId: selectedVariant.id,
+                merchandiseId: variantToUse.id,
                 quantity: 1,
                 selectedVariant: {
-                    ...selectedVariant,
+                    ...variantToUse,
                     product: {
                         handle: product.handle,
                         title: product.title,
@@ -86,7 +91,7 @@ export const ProductItem = memo(function ProductItem({
                 }
             }
         ];
-    }, [selectedVariant, product.handle, product.title, product.featuredImage]);
+    }, [selectedVariant, product]);
 
     // PERFORMANCE: Optimize image URL (Shopify-safe)
     const optimizedImageSrc = useMemo(() => {
@@ -176,6 +181,17 @@ export const ProductItem = memo(function ProductItem({
             product.tags?.includes('featured'),
         [product.tags]
     );
+
+    console.log('🔍 Debug for product:', product.title);
+    console.log('Product.variants:', product.variants);
+    console.log('Product.variants?.nodes:', product.variants?.nodes);
+    console.log('Selected variant:', selectedVariant);
+    console.log('Product tags:', product.tags);
+    console.log('Has sold-out tag:', product.tags?.includes('sold-out'));
+    console.log('Button should be disabled?', !selectedVariant || product.tags?.includes('sold-out'));
+
+// Also add this to see the FULL product object structure:
+    console.log('FULL PRODUCT OBJECT:', JSON.stringify(product, null, 2));
 
     return (
         <div className="product-item group" style={styles.container}>
@@ -382,19 +398,19 @@ export const ProductItem = memo(function ProductItem({
                                     <button
                                         type="submit"
                                         onClick={handleAddToCart}
-                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
-                                        className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 flex items-center justify-center ${
-                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                        disabled={product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
+                                        className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg font-poppins text-xs sm:text-sm transition-colors duration-200 active:scale-95 flex items-center justify-center ${
+                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle')
+                                                ? 'bg-gray-400 border-gray-400 text-white opacity-50 cursor-not-allowed'
+                                                : 'bg-[#002F45] border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900'
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
-                                        {!selectedVariant
-                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
-                                            : product.tags?.includes('sold-out')
-                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
-                                                : fetcher.state !== 'idle'
-                                                    ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
-                                                    : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
+                                        {product.tags?.includes('sold-out')
+                                            ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                            : fetcher.state !== 'idle'
+                                                ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
+                                                : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
                                         }
                                     </button>
                                 );

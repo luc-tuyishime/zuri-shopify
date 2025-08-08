@@ -187,7 +187,7 @@ function FooterContent({footer, footerData, locale, t}) {
     ),
     shopsTitle: getFooterMetafieldValue(
         metafields,
-        locale === 'fr' ? 'shops_title_fr' : 'shops_title_en',
+        locale === 'fr' ? 'shops_title_fn' : 'shops_title_en',
         t.footer.shops
     ),
     contactTitle: getFooterMetafieldValue(
