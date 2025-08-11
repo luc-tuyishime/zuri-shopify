@@ -1977,7 +1977,6 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
       id
       title
       handle
-      tags
       products(
         first: 20      
         sortKey: TITLE 

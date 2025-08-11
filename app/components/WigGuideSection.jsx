@@ -72,48 +72,45 @@ export function WigGuideSection({ collection }) {
                         {/* Step 1 */}
                         <div className="step-card relative">
                             <div
-                                className="w-full h-80 bg-cover bg-center flex items-center justify-center relative"
+                                className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"
                                 style={{
                                     backgroundImage: step2.image ? `url(${step1.image})` : "url('')",
                                     backgroundPosition: 'center 30%',
                                 }}
                             >
-                                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                                <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4">
-                                    {step1.text}
-                                </span>
+                     <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">
+                      {step1.text}
+                     </span>
                             </div>
                         </div>
 
                         {/* Step 2 */}
                         <div className="step-card relative">
                             <div
-                                className="w-full h-80 bg-cover bg-center flex items-center justify-center relative"
+                                className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"
                                 style={{
                                     backgroundImage: step2.image ? `url(${step2.image})` : "url('')",
                                     backgroundPosition: 'center 30%',
                                 }}
                             >
-                                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                                <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4">
-                                    {step2.text}
-                                </span>
+        <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">
+            {step2.text}
+        </span>
                             </div>
                         </div>
 
                         {/* Step 3 */}
                         <div className="step-card relative">
                             <div
-                                className="w-full h-80 bg-cover bg-center flex items-center justify-center relative"
+                                className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"
                                 style={{
                                     backgroundImage: step3.image ? `url(${step3.image})` : "url('')",
                                     backgroundPosition: 'center 30%',
                                 }}
                             >
-                                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                                <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4">
-                                    {step3.text}
-                                </span>
+        <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">
+            {step3.text}
+        </span>
                             </div>
                         </div>
                     </div>
@@ -122,16 +119,15 @@ export function WigGuideSection({ collection }) {
                     <div className="flex justify-center">
                         <div className="step-card relative w-full md:w-5/6 lg:w-2/3 xl:w-3/5">
                             <div
-                                className="w-full h-80 bg-cover bg-center flex items-center justify-center relative"
+                                className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"
                                 style={{
                                     backgroundImage: step4.image ? `url(${step4.image})` : "url('')",
                                     backgroundPosition: 'center 25%',
                                 }}
                             >
-                                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                                <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4">
-                                    {step4.text}
-                                </span>
+            <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">
+                {step4.text}
+            </span>
                             </div>
                         </div>
                     </div>

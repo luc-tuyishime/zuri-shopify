@@ -26,7 +26,16 @@ export function YouMayAlsoLike({ products, currentProductId }) {
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
                     {relatedProducts.map((product, index) => {
-                        // EXTRA SAFETY: Double-check product exists before rendering
+                        // Add debug logging for each product
+                        console.log('🔍 YouMayAlsoLike Product:', {
+                            title: product.title,
+                            id: product.id,
+                            variants: product.variants?.nodes?.length || 0,
+                            firstVariant: product.variants?.nodes?.[0],
+                            tags: product.tags || [],
+                            hasSoldOutTag: product.tags?.includes('sold-out') || false
+                        });
+
                         if (!product || !product.id) {
                             console.warn('⚠️ Skipping null/invalid product at index:', index);
                             return null;

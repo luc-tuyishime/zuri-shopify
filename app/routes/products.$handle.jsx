@@ -232,7 +232,7 @@ const ZoomModal = memo(({
           <img
               src={images[selectedIndex]?.url}
               alt={images[selectedIndex]?.altText || productTitle}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
               onClick={(e) => e.stopPropagation()}
           />
 
@@ -245,7 +245,7 @@ const ZoomModal = memo(({
                           e.stopPropagation();
                           onPrevious();
                         }}
-                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
                     >
                       <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -373,13 +373,7 @@ export default function Product() {
     setShowZoomModal(true);
   }, []);
 
-  const handleImageNavigation = useCallback((direction) => {
-    if (direction === 'prev' && selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1);
-    } else if (direction === 'next' && selectedImageIndex < productImages.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1);
-    }
-  }, [selectedImageIndex]);
+
 
   // Memoized computed values
   const shippingInfo = useMemo(() => {
@@ -414,6 +408,21 @@ export default function Product() {
           product.images?.nodes || (selectedVariant?.image ? [selectedVariant.image] : []),
       [product.images, selectedVariant?.image]
   );
+
+
+  const handleImageNavigation = useCallback((direction) => {
+    setSelectedImageIndex(prevIndex => {
+      let newIndex = prevIndex;
+
+      if (direction === 'prev' && prevIndex > 0) {
+        newIndex = prevIndex - 1;
+      } else if (direction === 'next' && prevIndex < productImages.length - 1) {
+        newIndex = prevIndex + 1;
+      }
+
+      return newIndex;
+    });
+  }, [productImages?.length]);
 
   const subscriptionPrice = useMemo(() => {
     if (!selectedVariant?.price) return null;
@@ -775,7 +784,7 @@ export default function Product() {
                           <img
                               src={productImages[selectedImageIndex].url}
                               alt={productImages[selectedImageIndex].altText || product.title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
                               loading="eager"
                               fetchpriority="high"
                           />
@@ -795,13 +804,38 @@ export default function Product() {
                 {productImages.length > 1 && (
                     <div className="flex gap-1 sm:gap-2 justify-center overflow-x-auto pb-2">
                       {productImages.map((image, index) => (
-                          <ProductImage
+                          <div
                               key={image.id}
-                              image={image}
-                              isSelected={selectedImageIndex === index}
-                              onSelect={setSelectedImageIndex}
-                              index={index}
-                          />
+                              className={`
+                relative flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
+                rounded-lg sm:rounded-xl overflow-hidden cursor-pointer
+                transition-all duration-200 hover:scale-105
+                ${selectedImageIndex === index
+                                  ? 'ring-2 ring-[#8B4513] ring-offset-1 sm:ring-offset-2'
+                                  : 'ring-1 ring-gray-200 hover:ring-gray-300'
+                              }
+              `}
+                              onClick={() => {
+                                setSelectedImageIndex(index);
+                                handleZoomModalOpen();
+                              }}
+                          >
+                            <img
+                                src={image.url}
+                                alt={image.altText || `Product image ${index + 1}`}
+                                className="w-full h-full object-cover cursor-pointer"
+                                loading="lazy"
+                            />
+
+                            {/* Zoom indicator overlay */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center cursor-pointer">
+                              <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
                       ))}
                     </div>
                 )}
@@ -856,7 +890,7 @@ export default function Product() {
             product={product}
 
         />
-        <FAQ />
+        <FAQ product={product} />
       </div>
   );
 }
@@ -884,15 +918,30 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
         currencyCode
       }
     }
-    variants(first: 1) {
+    variants(first: 10) {         # ← Changed from first: 1
       nodes {
+        id                        # ← ADD THIS
+        title                     # ← ADD THIS
+        availableForSale          # ← ADD THIS
         price {
           amount
           currencyCode
         }
+        selectedOptions {         # ← ADD THIS BLOCK
+          name
+          value
+        }
       }
     }
-    tags
+    # Add metafields for ratings
+    metafields(identifiers: [
+      {namespace: "custom", key: "product_rating"},
+      {namespace: "custom", key: "review_count"}
+    ]) {
+      key
+      value
+    }
+    tags                          # ← ADD THIS
     productType
   }
 `;
@@ -1085,33 +1134,56 @@ const PRODUCT_FRAGMENT = `#graphql
       }
       # Product references for related products
       references(first: 20) {
+  nodes {
+    ... on Product {
+      id
+      handle
+      title
+      featuredImage {
+        id
+        url
+        altText
+        width
+        height
+      }
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+        maxVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      variants(first: 10) {         # ← ADD THIS ENTIRE BLOCK
         nodes {
-          ... on Product {
-            id
-            handle
-            title
-            featuredImage {
-              id
-              url
-              altText
-            }
-            priceRange {
-              minVariantPrice {
-                amount
-                currencyCode
-              }
-            }
-            # Include ratings for related products too
-            metafields(identifiers: [
-              {namespace: "custom", key: "product_rating"},
-              {namespace: "custom", key: "review_count"}
-            ]) {
-              key
-              value
-            }
+          id
+          title
+          availableForSale
+          price {
+            amount
+            currencyCode
+          }
+          selectedOptions {
+            name
+            value
           }
         }
       }
+      tags                          # ← ADD THIS
+      productType                   # ← ADD THIS
+      # Include ratings for related products too
+      metafields(identifiers: [
+        {namespace: "custom", key: "product_rating"},
+        {namespace: "custom", key: "review_count"}
+      ]) {
+        key
+        value
+      }
+    }
+  }
+}
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}

@@ -46,9 +46,11 @@ export const ProductItem = memo(function ProductItem({
     const selectedVariant = useMemo(() => {
         const variant = product.variants?.nodes?.[0] || null;
 
-        // Debug logging - let's see ALL available fields
-        console.log('Product:', product.title);
-        console.log('Selected variant FULL OBJECT:', JSON.stringify(variant, null, 2));
+        console.log('🔧 Variant Debug for', product.title, ':');
+        console.log('- Product variants count:', product.variants?.nodes?.length || 0);
+        console.log('- First variant from product:', variant);
+        console.log('- Variant ID:', variant?.id);
+        console.log('- Available for sale:', variant?.availableForSale);
 
         return variant;
     }, [product.variants, product.title]);
@@ -70,19 +72,20 @@ export const ProductItem = memo(function ProductItem({
 
     // Prepare lines for CartForm (same as your AddToCartButton)
     const cartLines = useMemo(() => {
-        // Create a mock variant if selectedVariant is null
-        const variantToUse = selectedVariant || {
-            id: `gid://shopify/ProductVariant/${product.id.split('/').pop()}-default`,
-            price: product.priceRange?.minVariantPrice,
-            availableForSale: true
-        };
+        // Only create cart lines if we have a REAL selected variant
+        if (!selectedVariant || !selectedVariant.id) {
+            console.log('❌ No valid variant for cart lines');
+            return [];
+        }
+
+        console.log('✅ Creating cart lines with real variant:', selectedVariant.id);
 
         return [
             {
-                merchandiseId: variantToUse.id,
+                merchandiseId: selectedVariant.id,
                 quantity: 1,
                 selectedVariant: {
-                    ...variantToUse,
+                    ...selectedVariant,
                     product: {
                         handle: product.handle,
                         title: product.title,
@@ -294,17 +297,82 @@ export const ProductItem = memo(function ProductItem({
                         {/* Add to Cart Button */}
                         <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
                             {(fetcher) => {
-                                // Open cart when submission is successful
                                 useEffect(() => {
-                                    if (fetcher.state === 'idle' && fetcher.data && open) {
-                                        open('cart');
+                                    console.log('🔄 CartForm State Change for', product.title, ':');
+                                    console.log('- Fetcher state:', fetcher.state);
+                                    console.log('- Fetcher data:', fetcher.data);
+
+                                    if (fetcher.state === 'idle' && fetcher.data) {
+                                        console.log('✅ Cart submission successful!');
+                                        console.log('- Response data:', fetcher.data);
+
+                                        // Method 1: Try the aside:open event
+                                        console.log('📢 Method 1: Dispatching aside:open event');
+                                        const asideEvent = new CustomEvent('aside:open', {
+                                            detail: { type: 'cart' },
+                                            bubbles: true
+                                        });
+                                        document.dispatchEvent(asideEvent);
+
+                                        // Method 2: Try to find and click cart button/trigger in header
+                                        console.log('🔍 Method 2: Looking for cart trigger in header');
+                                        const cartTriggers = [
+                                            '[data-cart-open]',
+                                            '[data-cart-trigger]',
+                                            '[aria-label*="cart" i]',
+                                            '[aria-label*="Cart"]',
+                                            'button[aria-label*="panier" i]', // French for cart
+                                            'button[title*="cart" i]',
+                                            'button[title*="panier" i]',
+                                            '.cart-trigger',
+                                            '.cart-button',
+                                            '#cart-trigger'
+                                        ];
+
+                                        let cartOpened = false;
+                                        for (const selector of cartTriggers) {
+                                            const cartElement = document.querySelector(selector);
+                                            if (cartElement) {
+                                                console.log('✅ Found cart trigger:', selector, cartElement);
+                                                cartElement.click();
+                                                cartOpened = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!cartOpened) {
+                                            console.log('❌ No cart trigger found, trying Aside provider methods');
+
+                                            // Method 3: Try to find Aside provider context
+                                            const asideElements = document.querySelectorAll('[data-aside], .aside, [class*="aside"]');
+                                            console.log('🔍 Found aside elements:', asideElements);
+
+                                            // Method 4: Check if there's a global cart open function
+                                            if (window.openCart) {
+                                                console.log('🌐 Found window.openCart function');
+                                                window.openCart();
+                                            } else if (window.Shopify && window.Shopify.cart) {
+                                                console.log('🛍️ Found Shopify cart object');
+                                                // Some themes have global cart opening functions
+                                            } else {
+                                                console.log('⚠️ No global cart opening method found');
+                                                console.log('💡 Consider adding a cart icon click simulation');
+
+                                                // Method 5: Try finding cart icon/badge and click it
+                                                const cartIcons = document.querySelectorAll('svg[data-cart], .cart-icon, [class*="cart-icon"]');
+                                                console.log('🛒 Found cart icons:', cartIcons);
+                                                if (cartIcons.length > 0) {
+                                                    cartIcons[0].closest('button, a')?.click();
+                                                }
+                                            }
+                                        }
                                     }
                                 }, [fetcher.state, fetcher.data]);
 
                                 return (
                                     <button
                                         type="submit"
-                                        onClick={handleAddToCart}
+                                        // onClick={...} ← REMOVE THIS COMPLETELY
                                         disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
                                         className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
                                             (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
@@ -387,18 +455,47 @@ export const ProductItem = memo(function ProductItem({
                         {/* Add to Cart Button using CartForm */}
                         <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
                             {(fetcher) => {
-                                // Open cart when submission is successful
                                 useEffect(() => {
-                                    if (fetcher.state === 'idle' && fetcher.data && open) {
-                                        open('cart');
+
+                                    if (fetcher.state === 'idle' && fetcher.data) {
+
+                                        const asideEvent = new CustomEvent('aside:open', {
+                                            detail: { type: 'cart' },
+                                            bubbles: true
+                                        });
+                                        document.dispatchEvent(asideEvent);
+
+                                        const cartButton = document.querySelector('[data-cart-trigger], [aria-label*="cart"], [aria-label*="Cart"]');
+                                        if (cartButton) {
+                                            cartButton.click();
+                                        } else {
+                                            console.log('❌ No cart button found in DOM');
+                                        }
+
+                                        // Method 4: Manual reload approach
+                                        setTimeout(() => {
+                                            console.log('⏰ Fallback: Could reload page to show updated cart');
+                                            // window.location.reload(); // Uncomment if needed as last resort
+                                        }, 1000);
                                     }
-                                }, [fetcher.state, fetcher.data]);
+
+                                    if (fetcher.state === 'submitting') {
+                                        console.log('⏳ Cart submission in progress...');
+                                    }
+
+                                    if (fetcher.state === 'loading') {
+                                        console.log('📡 Loading cart response...');
+                                    }
+
+                                }, [fetcher.state, fetcher.data, selectedVariant]);
 
                                 return (
                                     <button
                                         type="submit"
-                                        onClick={handleAddToCart}
-                                        disabled={product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
+                                        // onClick={(e) => {
+                                        //     handleAddToCart(e);
+                                        // }}
+                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
                                         className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg font-poppins text-xs sm:text-sm transition-colors duration-200 active:scale-95 flex items-center justify-center ${
                                             (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle')
                                                 ? 'bg-gray-400 border-gray-400 text-white opacity-50 cursor-not-allowed'
@@ -406,11 +503,13 @@ export const ProductItem = memo(function ProductItem({
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
-                                        {product.tags?.includes('sold-out')
-                                            ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
-                                            : fetcher.state !== 'idle'
-                                                ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
-                                                : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
+                                        {!selectedVariant
+                                            ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
+                                            : product.tags?.includes('sold-out')
+                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                                : fetcher.state !== 'idle'
+                                                    ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
+                                                    : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
                                         }
                                     </button>
                                 );
