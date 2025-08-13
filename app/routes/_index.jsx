@@ -483,7 +483,7 @@ function FeaturedCollection({ collection }) {
         }
     };
 
-    const getCurrentBackgroundMedia = useMemo(() => {
+    const getCurrentVideoSource = useMemo(() => {
         try {
             let customBg = null;
 
@@ -501,56 +501,24 @@ function FeaturedCollection({ collection }) {
                     customBg = getMetafield('hero_background_image');
             }
 
+            if (customBg && customBg.reference && customBg.reference.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
+                const videoSource = customBg.reference.sources[0];
+                let videoUrl = videoSource.url;
 
-            if (customBg && customBg.reference) {
-                if (customBg.reference.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
-                    const videoSource = customBg.reference.sources[0];
-                    let videoUrl = videoSource.url;
-
-                    if (videoErrors.has(videoUrl)) {
-                        console.log('⚠️ Video previously failed, using fallback immediately');
-                    } else {
-                        console.log('✅ Attempting to use video:', videoUrl);
-                        return {
-                            type: 'video',
-                            url: videoUrl,
-                            fallbackImage: collection?.image?.url
-                        };
-                    }
-                }
-
-                if (customBg.reference.image && customBg.reference.image.url) {
-                    const imageUrl = customBg.reference.image.url;
-                    console.log('🔄 Using image fallback:', imageUrl);
-                    const baseUrl = imageUrl.split('?')[0];
-                    return {
-                        type: 'image',
-                        url: `${baseUrl}?width=1920&format=webp&quality=80&crop=center`
-                    };
+                if (!videoErrors.has(videoUrl)) {
+                    console.log('✅ Using video:', videoUrl);
+                    return videoUrl;
                 }
             }
 
-            if (collection?.image?.url) {
-                const baseUrl = collection.image.url.split('?')[0];
-                return {
-                    type: 'image',
-                    url: `${baseUrl}?width=1920&format=webp&quality=80&crop=center`
-                };
-            }
-
-            return {
-                type: 'image',
-                url: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZGVmcz4KPGF2YXJHcmFkaWVudCBpZD0iZ3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgo8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjFmNWY5O3N0b3Atb3BhY2l0eToxIiAvPgo8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlMmU4ZjA7c3RvcC1vcGFjaXR5OjEiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHJlY3Qgd2lkdGg9IjE5MjAiIGhlaWdodD0iMTA4MCIgZmlsbD0idXJsKCNncmFkaWVudCkiLz4KPHRleHQgeD0iOTYwIiB5PSI1MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2Mzc1ODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI0OCI+U2xpZGUgJHtjdXJyZW50VmlkZW9JbmRleCArIDF9PC90ZXh0Pgo8L3N2Zz4K`
-            };
+            // No video source available or video failed - return null for video-only setup
+            return null;
 
         } catch (error) {
-            console.error('🚨 Error in getCurrentBackgroundMedia:', error);
-            return {
-                type: 'image',
-                url: collection?.image?.url || ''
-            };
+            console.error('🚨 Error getting video source:', error);
+            return null;
         }
-    }, [currentVideoIndex, collection?.metafields, collection?.image?.url, videoErrors]);
+    }, [currentVideoIndex, collection?.metafields, videoErrors]);
 
     const handleVideoError = (videoUrl) => {
         console.error('❌ Video failed to load:', videoUrl);
@@ -627,20 +595,20 @@ function FeaturedCollection({ collection }) {
                 title: slide2Title?.value || t.hero?.slide2Title || 'Natural Beauty Redefined',
                 subtitle: slide2Subtitle?.value || t.hero?.slide2Subtitle || '100% Human Hair Collection',
                 buttonText: slide2Button?.value || t.hero?.slide2Button || 'EXPLORE STYLES',
-                url: slide2Url?.value || collectionUrl  // ✅ USE DYNAMIC URL OR FALLBACK
+                url: slide2Url?.value || collectionUrl
             });
 
             // Slide 3
             const slide3Title = getMetafield('hero_title_slide_3');
             const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
             const slide3Button = getMetafield('hero_button_text_slide_3');
-            const slide3Url = getMetafield('hero_button_url_slide_3');  // ✅ GET URL
+            const slide3Url = getMetafield('hero_button_url_slide_3');
 
             slides.push({
                 title: slide3Title?.value || t.hero?.slide3Title || 'Transform Your Style',
                 subtitle: slide3Subtitle?.value || t.hero?.slide3Subtitle || 'Expert Crafted Designs',
                 buttonText: slide3Button?.value || t.hero?.slide3Button || 'VIEW ALL',
-                url: slide3Url?.value || collectionUrl  // ✅ USE DYNAMIC URL OR FALLBACK
+                url: slide3Url?.value || collectionUrl
             });
 
             return slides;
@@ -673,7 +641,6 @@ function FeaturedCollection({ collection }) {
     };
 
     useEffect(() => {
-
         if (collection?.metafields?.length > 0) {
             console.log('📋 ALL METAFIELDS COUNT:', collection.metafields.length);
 
@@ -706,9 +673,7 @@ function FeaturedCollection({ collection }) {
         } else {
             console.log('❌ No metafields found');
         }
-
-
-    }, [collection, slideContent, currentVideoIndex, getCurrentBackgroundMedia]);
+    }, [collection, slideContent, currentVideoIndex, getCurrentVideoSource]);
 
     if (!collection) {
         return (
@@ -734,34 +699,6 @@ function FeaturedCollection({ collection }) {
             </div>
         );
     }
-
-    useEffect(() => {
-        if (getCurrentBackgroundMedia.url &&
-            getCurrentBackgroundMedia.url.startsWith('http') &&
-            getCurrentBackgroundMedia.type === 'image') {
-
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.as = 'image';
-            link.href = getCurrentBackgroundMedia.url;
-            link.type = 'image/webp';
-            link.fetchPriority = 'high';
-            link.onerror = () => console.warn('Failed to preload background image:', getCurrentBackgroundMedia.url);
-            link.onload = () => console.log('✅ Background image preloaded successfully');
-
-            document.head.appendChild(link);
-
-            return () => {
-                try {
-                    if (document.head.contains(link)) {
-                        document.head.removeChild(link);
-                    }
-                } catch (error) {
-                    console.warn('Error removing preload link:', error);
-                }
-            };
-        }
-    }, [getCurrentBackgroundMedia]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -848,76 +785,38 @@ function FeaturedCollection({ collection }) {
         return (
             <>
                 <div ref={containerRef} className="hero-video-container">
-                    {getCurrentBackgroundMedia.type === 'video' && !videoErrors.has(getCurrentBackgroundMedia.url) ? (
-                        <>
-                            {/*<div*/}
-                            {/*    className="hero-background-image"*/}
-                            {/*    style={{*/}
-                            {/*        backgroundImage: getCurrentBackgroundMedia.fallbackImage ?*/}
-                            {/*            `url(${getCurrentBackgroundMedia.fallbackImage})` :*/}
-                            {/*            collection?.image?.url ? `url(${collection.image.url})` : 'none',*/}
-                            {/*        backgroundSize: 'cover',*/}
-                            {/*        backgroundPosition: 'center',*/}
-                            {/*        backgroundRepeat: 'no-repeat',*/}
-                            {/*        position: 'absolute',*/}
-                            {/*        top: 0,*/}
-                            {/*        left: 0,*/}
-                            {/*        width: '100%',*/}
-                            {/*        height: '100%',*/}
-                            {/*        zIndex: 1*/}
-                            {/*    }}*/}
-                            {/*/>*/}
-
-                            <video
-                                key={`bg-video-${currentVideoIndex}`}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="hero-background-video"
-                                preload="metadata"
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    objectPosition: 'center',
-                                    zIndex: 2,
-                                    opacity: 0,
-                                    transition: 'opacity 1s ease'
-                                }}
-                                onError={() => handleVideoError(getCurrentBackgroundMedia.url)}
-                                onCanPlay={(e) => {
-                                    console.log('✅ Video loaded successfully, fading in...');
-                                    e.target.style.opacity = '1';
-                                }}
-                                onLoadStart={() => console.log('🎥 Video loading started...')}
-                                onLoadedData={() => console.log('✅ Video data loaded')}
-                            >
-                                <source src={getCurrentBackgroundMedia.url} type="video/mp4" />
-                            </video>
-                        </>
-                    ) : (
-                        <></>
-                        // <div
-                        //     className="hero-background-image"
-                        //     style={{
-                        //         backgroundImage: `url(${getCurrentBackgroundMedia.url})`,
-                        //         backgroundSize: 'cover',
-                        //         backgroundPosition: 'center',
-                        //         backgroundRepeat: 'no-repeat',
-                        //         transition: 'opacity 0.5s ease',
-                        //         position: 'absolute',
-                        //         top: 0,
-                        //         left: 0,
-                        //         width: '100%',
-                        //         height: '100%',
-                        //         zIndex: 1
-                        //     }}
-                        //     key={`background-${currentVideoIndex}`}
-                        // />
+                    {/* Only show videos - no background images */}
+                    {getCurrentVideoSource && (
+                        <video
+                            key={`bg-video-${currentVideoIndex}`}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="hero-background-video"
+                            preload="metadata"
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                objectPosition: 'center',
+                                zIndex: 1,
+                                opacity: 0,
+                                transition: 'opacity 1s ease'
+                            }}
+                            onError={() => handleVideoError(getCurrentVideoSource)}
+                            onCanPlay={(e) => {
+                                console.log('✅ Video loaded successfully, fading in...');
+                                e.target.style.opacity = '1';
+                            }}
+                            onLoadStart={() => console.log('🎥 Video loading started...')}
+                            onLoadedData={() => console.log('✅ Video data loaded')}
+                        >
+                            <source src={getCurrentVideoSource} type="video/mp4" />
+                        </video>
                     )}
 
                     {showVideo && desktopVideos.length > 0 && (
@@ -938,7 +837,7 @@ function FeaturedCollection({ collection }) {
                                         opacity: videoLoaded ? 1 : 0,
                                         transition: 'opacity 1s ease',
                                         willChange: 'opacity',
-                                        zIndex: 3
+                                        zIndex: 2
                                     }}
                                     decoding="async"
                                     disablePictureInPicture
@@ -958,7 +857,7 @@ function FeaturedCollection({ collection }) {
                                     style={{
                                         opacity: videoLoaded ? 1 : 0,
                                         transition: 'opacity 0.8s ease',
-                                        zIndex: 3
+                                        zIndex: 2
                                     }}
                                     decoding="async"
                                     disablePictureInPicture
@@ -1028,10 +927,6 @@ function FeaturedCollection({ collection }) {
                     will-change: opacity;
                 }
                 
-                .hero-background-image {
-                    transition: opacity 0.5s ease !important;
-                }
-                
                 @media (prefers-reduced-motion: reduce) {
                     .hero-background-video {
                         transition: none !important;
@@ -1046,7 +941,8 @@ function FeaturedCollection({ collection }) {
     return (
         <>
             <div ref={containerRef} className="hero-video-container">
-                {getCurrentBackgroundMedia.type === 'video' ? (
+                {/* Only show videos from metafields - no background images */}
+                {getCurrentVideoSource && (
                     <video
                         key={`bg-video-${currentVideoIndex}`}
                         autoPlay
@@ -1054,7 +950,7 @@ function FeaturedCollection({ collection }) {
                         muted
                         playsInline
                         className="hero-background-video"
-                        src={getCurrentBackgroundMedia.url}
+                        src={getCurrentVideoSource}
                         style={{
                             position: 'absolute',
                             top: 0,
@@ -1067,59 +963,17 @@ function FeaturedCollection({ collection }) {
                             transition: 'opacity 0.5s ease'
                         }}
                         onError={(e) => {
-                            console.error('❌ Video background failed to load:', getCurrentBackgroundMedia.url);
-                            console.error('Error details:', e);
-
-                            const videoElement = e.target;
-                            if (videoElement && videoElement.error) {
-                                console.error('🔍 Video Error Code:', videoElement.error.code);
-                                console.error('🔍 Video Error Message:', videoElement.error.message);
-                                console.error('🔍 Full Error Object:', videoElement.error);
-                            }
-
-                            handleVideoError(getCurrentBackgroundMedia.url);
-                            console.log('🔄 Falling back to collection image due to video error');
+                            console.error('❌ Video background failed to load:', getCurrentVideoSource);
+                            handleVideoError(getCurrentVideoSource);
                         }}
                         onLoadStart={() => console.log('🎥 Video background loading started...')}
                         onCanPlay={() => console.log('✅ Video background ready to play')}
                         onLoadedData={() => console.log('✅ Video background data loaded')}
                         onLoadedMetadata={() => console.log('✅ Video background metadata loaded')}
                     >
-                        <source src={getCurrentBackgroundMedia.url} type="video/mp4" />
-                        <source src={getCurrentBackgroundMedia.url.replace('.mp4', '.webm')} type="video/webm" />
-
-                        <div
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                backgroundImage: collection?.image?.url ? `url(${collection.image.url})` : 'none',
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                backgroundRepeat: 'no-repeat'
-                            }}
-                        />
+                        <source src={getCurrentVideoSource} type="video/mp4" />
+                        <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
                     </video>
-                ) : (
-                    <div
-                        className="hero-background-image"
-                        style={{
-                            backgroundImage: `url(${getCurrentBackgroundMedia.url})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat',
-                            transition: 'opacity 0.5s ease',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            zIndex: 1
-                        }}
-                        key={`background-${currentVideoIndex}`}
-                    />
                 )}
 
                 {showVideo && desktopVideos.length > 0 && (
@@ -1248,12 +1102,8 @@ function FeaturedCollection({ collection }) {
                     }
                 }
                 
-                .hero-background-image {
-                    transition: opacity 0.5s ease !important;
-                }
-                
                 @media (prefers-reduced-motion: reduce) {
-                    .hero-title, .hero-subtitle, .hero-button, .hero-background-image, .hero-background-video {
+                    .hero-title, .hero-subtitle, .hero-button, .hero-background-video {
                         transition: none !important;
                         animation: none !important;
                     }
