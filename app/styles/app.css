@@ -208,6 +208,15 @@ button.reset:hover:not(:has(> *)) {
   cursor: pointer;
 }
 
+.product-form form {
+  width: 100% !important;
+}
+
+.product-form form button {
+  width: 100% !important;
+  display: block !important;
+}
+
 .header-ctas {
   align-items: center;
   display: flex;

@@ -7,19 +7,20 @@ import {CartForm} from '@shopify/hydrogen';
  *   disabled?: boolean;
  *   lines: Array<OptimisticCartLineInput>;
  *   onClick?: () => void;
+ *   className?: string;
+ *   style?: React.CSSProperties;
  * }}
  */
 export function AddToCartButton({
-  analytics,
-  children,
-  disabled,
-  lines,
-  onClick,
-    className,
-    style,
-
+                                  analytics,
+                                  children,
+                                  disabled,
+                                  lines,
+                                  onClick,
+                                  className,
+                                  style,
                                   ...props
-}) {
+                                }) {
 
   const handleClick = (e) => {
     console.log('🛒 Adding to cart:', {
@@ -37,26 +38,20 @@ export function AddToCartButton({
   };
 
   return (
-    <CartForm route="/cart" inputs={{lines}} action={CartForm.ACTIONS.LinesAdd}>
-      {(fetcher) => (
-        <>
-
-          <button
-            type="submit"
-            // onClick={onClick}
-            onClick={handleClick}
-            className={className}
-            style={style}
-            disabled={disabled ?? fetcher.state !== 'idle'}
-            {...props}
-          >
-            {children}
-          </button>
-
-
-        </>
-      )}
-    </CartForm>
+      <CartForm route="/cart" inputs={{lines}} action={CartForm.ACTIONS.LinesAdd}>
+        {(fetcher) => (
+            <button
+                type="submit"
+                onClick={handleClick}
+                className={className}
+                style={style}
+                disabled={disabled ?? fetcher.state !== 'idle'}
+                {...props}
+            >
+              {children}
+            </button>
+        )}
+      </CartForm>
   );
 }
 

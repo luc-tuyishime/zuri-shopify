@@ -8,7 +8,6 @@ import { useTranslation, getLocale, setLocale } from '~/lib/i18n';
 import { useLocale } from '~/hooks/useLocale';
 
 import CartIcon from '../assets/bucket-brown.png';
-import AccountIcon from '../assets/user-brown.png';
 import SearchIcon from '../assets/search-brown.png';
 import Logo from '../assets/Logo.svg';
 
@@ -183,13 +182,7 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                       <img src={CartIcon} className="w-7 h-7 2xl:w-6 2xl:h-6" alt="Cart" />
                     </button>
 
-                    <NavLink
-                        to="/account"
-                        className="focus:outline-none hover:opacity-80 transition-opacity duration-200 p-2"
-                        aria-label="Account"
-                    >
-                      <img src={AccountIcon} className="w-7 h-7 2xl:w-6 2xl:h-6" alt="Account" />
-                    </NavLink>
+
 
                     <Link
                         to="/search"
@@ -300,10 +293,6 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                     <img src={CartIcon} className="w-5 h-5 xl:w-6 xl:h-6" alt="Cart" />
                   </button>
 
-                  <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
-                    <img src={AccountIcon} className="w-5 h-5 xl:w-6 xl:h-6" alt="Account" />
-                  </NavLink>
-
                   <Link
                       to="/search"
                       className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
@@ -412,10 +401,6 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                     <img src={CartIcon} className="w-5 h-5" alt="Cart" />
                   </button>
 
-                  <NavLink to="/account" className="focus:outline-none hover:opacity-80 transition-opacity duration-200" aria-label="Account">
-                    <img src={AccountIcon} className="w-5 h-5" alt="Account" />
-                  </NavLink>
-
                   <Link
                       to="/search"
                       className="focus:outline-none hover:opacity-80 transition-opacity duration-200"
@@ -453,10 +438,6 @@ export function Header({header, isLoggedIn, cart, publicStoreDomain, collections
                 >
                   <img src={CartIcon} className="w-5 h-5" alt="Cart" />
                 </button>
-
-                <NavLink to="/account" className="focus:outline-none" aria-label="Account">
-                  <img src={AccountIcon} className="w-5 h-5" alt="Account" />
-                </NavLink>
 
                 <Link
                     to="/search"

@@ -1,187 +1,126 @@
 import {Link, useNavigate} from '@remix-run/react';
-import {AddToCartButton} from './AddToCartButton';
+import {CartForm} from '@shopify/hydrogen';
+import React from 'react';
 import {useAside} from './Aside';
 import { useLocale } from '~/hooks/useLocale';
 
 /**
- * @param {{
- *   productOptions: MappedProductOptions[];
- *   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
- *   product: ProductFragment; // Add product prop to access tags
- * }}
+ * ProductForm with aggressive full-width styling
  */
 export function ProductForm({productOptions, selectedVariant, product}) {
     const navigate = useNavigate();
     const {open} = useAside();
     const [locale] = useLocale();
 
-    // Check if product is sold out via tags
     const isSoldOut = product?.tags?.includes('sold-out');
+    const isDisabled = !selectedVariant || !selectedVariant.availableForSale || isSoldOut;
 
-    console.log('selectedVariant:', selectedVariant);
-    console.log('selectedVariant.product:', selectedVariant?.product);
-    console.log('selectedVariant.product.tags:', selectedVariant?.product?.tags);
+    const buttonText = !selectedVariant
+        ? (locale === 'fr' ? 'Non disponible' : 'Unavailable')
+        : isSoldOut
+            ? (locale === 'fr' ? 'Épuisé' : 'Sold out')
+            : selectedVariant?.availableForSale
+                ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')
+                : (locale === 'fr' ? 'Épuisé' : 'Sold out');
 
+    // Create CSS to inject into the page
+    const injectStyles = () => {
+        const styleId = 'product-form-full-width-styles';
+        if (document.getElementById(styleId)) return;
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            .product-form-full-width,
+            .product-form-full-width form,
+            .product-form-full-width form > *,
+            .product-form-full-width button {
+                width: 100% !important;
+                max-width: none !important;
+                display: block !important;
+                box-sizing: border-box !important;
+            }
+        `;
+        document.head.appendChild(style);
+    };
+
+    // Inject styles when component mounts
+    React.useEffect(() => {
+        injectStyles();
+    }, []);
 
     return (
-        <div className="product-form space-y-6">
-            {/*{productOptions.map((option) => {*/}
-            {/*    // If there is only a single value in the option values, don't display the option*/}
-            {/*    if (option.optionValues.length === 1) return null;*/}
-
-            {/*    return (*/}
-            {/*        <div className="product-options" key={option.name}>*/}
-            {/*            <h5 className="text-sm font-medium text-gray-900 mb-3">*/}
-            {/*                {option.name}*/}
-            {/*            </h5>*/}
-            {/*            <div className="flex flex-wrap gap-2">*/}
-            {/*                {option.optionValues.map((value) => {*/}
-            {/*                    const {*/}
-            {/*                        name,*/}
-            {/*                        handle,*/}
-            {/*                        variantUriQuery,*/}
-            {/*                        selected,*/}
-            {/*                        available,*/}
-            {/*                        exists,*/}
-            {/*                        isDifferentProduct,*/}
-            {/*                        swatch,*/}
-            {/*                    } = value;*/}
-
-            {/*                    const buttonClass = `*/}
-            {/*      px-4 py-2 border rounded-md text-sm font-medium transition-all duration-200*/}
-            {/*      ${selected*/}
-            {/*                        ? 'border-[#8B4513] bg-[#8B4513] text-white'*/}
-            {/*                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'*/}
-            {/*                    }*/}
-            {/*      ${!available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}*/}
-            {/*      ${exists && !selected ? 'hover:bg-gray-50' : ''}*/}
-            {/*    `;*/}
-
-            {/*                    if (isDifferentProduct) {*/}
-            {/*                        // SEO*/}
-            {/*                        // When the variant is a combined listing child product*/}
-            {/*                        // that leads to a different url, we need to render it*/}
-            {/*                        // as an anchor tag*/}
-            {/*                        return (*/}
-            {/*                            <Link*/}
-            {/*                                className={buttonClass}*/}
-            {/*                                key={option.name + name}*/}
-            {/*                                prefetch="intent"*/}
-            {/*                                preventScrollReset*/}
-            {/*                                replace*/}
-            {/*                                to={`/products/${handle}?${variantUriQuery}`}*/}
-            {/*                            >*/}
-            {/*                                <ProductOptionSwatch swatch={swatch} name={name} />*/}
-            {/*                            </Link>*/}
-            {/*                        );*/}
-            {/*                    } else {*/}
-            {/*                        // SEO*/}
-            {/*                        // When the variant is an update to the search param,*/}
-            {/*                        // render it as a button with javascript navigating to*/}
-            {/*                        // the variant so that SEO bots do not index these as*/}
-            {/*                        // duplicated links*/}
-            {/*                        return (*/}
-            {/*                            <button*/}
-            {/*                                type="button"*/}
-            {/*                                className={buttonClass}*/}
-            {/*                                key={option.name + name}*/}
-            {/*                                disabled={!exists}*/}
-            {/*                                onClick={() => {*/}
-            {/*                                    if (!selected) {*/}
-            {/*                                        navigate(`?${variantUriQuery}`, {*/}
-            {/*                                            replace: true,*/}
-            {/*                                            preventScrollReset: true,*/}
-            {/*                                        });*/}
-            {/*                                    }*/}
-            {/*                                }}*/}
-            {/*                            >*/}
-            {/*                                <ProductOptionSwatch swatch={swatch} name={name} />*/}
-            {/*                            </button>*/}
-            {/*                        );*/}
-            {/*                    }*/}
-            {/*                })}*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*    );*/}
-            {/*})}*/}
-
-            {/* Styled Add to Cart Button */}
-            <div className={`mt-8 py-3 px-6 rounded-md font-medium text-white transition-colors duration-200
-            ${selectedVariant?.availableForSale && !isSoldOut
-                ? 'bg-[#8B4513] hover:bg-[#7A3A0F] focus:ring-2 focus:ring-[#8B4513] focus:ring-offset-2'
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}>
-                <AddToCartButton
-                    disabled={!selectedVariant || !selectedVariant.availableForSale || isSoldOut}
-                    onClick={() => {
-                        open('cart');
-                    }}
-
-                    lines={
-                        selectedVariant && !isSoldOut
-                            ? [
-                                {
-                                    merchandiseId: selectedVariant.id,
-                                    quantity: 1,
-                                    selectedVariant,
-                                },
-                            ]
-                            : []
-                    }
-                >
-                    {!selectedVariant
-                        ? (locale === 'fr' ? 'Non disponible' : 'Unavailable')
-                        : isSoldOut
-                            ? (locale === 'fr' ? 'Épuisé' : 'Sold out')
-                            : selectedVariant?.availableForSale
-                                ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')
-                                : (locale === 'fr' ? 'Épuisé' : 'Sold out')
-                    }
-                </AddToCartButton>
-            </div>
+        <div className="product-form space-y-6 product-form-full-width">
+            <CartForm
+                route="/cart"
+                inputs={{
+                    lines: selectedVariant && !isSoldOut
+                        ? [
+                            {
+                                merchandiseId: selectedVariant.id,
+                                quantity: 1,
+                                selectedVariant,
+                            },
+                        ]
+                        : []
+                }}
+                action={CartForm.ACTIONS.LinesAdd}
+            >
+                {(fetcher) => (
+                    <button
+                        type="submit"
+                        onClick={() => {
+                            open('cart');
+                        }}
+                        disabled={isDisabled || (fetcher.state !== 'idle')}
+                        style={{
+                            marginTop: '2rem',
+                            padding: '1rem 1.5rem',
+                            borderRadius: '0.5rem',
+                            fontWeight: '600',
+                            color: 'white',
+                            textAlign: 'center',
+                            fontSize: '1.125rem',
+                            lineHeight: '1.75rem',
+                            transition: 'all 0.2s',
+                            transform: 'scale(1)',
+                            border: 'none',
+                            outline: 'none',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            backgroundColor: isDisabled ? '#9CA3AF' : '#8B4513',
+                            boxShadow: isDisabled ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isDisabled) {
+                                e.target.style.backgroundColor = '#7A3A0F';
+                                e.target.style.transform = 'scale(1.02)';
+                                e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isDisabled) {
+                                e.target.style.backgroundColor = '#8B4513';
+                                e.target.style.transform = 'scale(1)';
+                                e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                            }
+                        }}
+                        onMouseDown={(e) => {
+                            if (!isDisabled) {
+                                e.target.style.transform = 'scale(0.95)';
+                                e.target.style.backgroundColor = '#6B320C';
+                            }
+                        }}
+                        onMouseUp={(e) => {
+                            if (!isDisabled) {
+                                e.target.style.transform = 'scale(1.02)';
+                                e.target.style.backgroundColor = '#7A3A0F';
+                            }
+                        }}
+                    >
+                        {buttonText}
+                    </button>
+                )}
+            </CartForm>
         </div>
     );
 }
-
-/**
- * @param {{
- *   swatch?: Maybe<ProductOptionValueSwatch> | undefined;
- *   name: string;
- * }}
- */
-function ProductOptionSwatch({swatch, name}) {
-    const image = swatch?.image?.previewImage?.url;
-    const color = swatch?.color;
-
-    if (!image && !color) return name;
-
-    return (
-        <div
-            aria-label={name}
-            className="flex items-center justify-center"
-            style={{
-                backgroundColor: color || 'transparent',
-            }}
-        >
-            {!!image && (
-                <img
-                    src={image}
-                    alt={name}
-                    className="w-6 h-6 rounded-full object-cover"
-                />
-            )}
-            {color && !image && (
-                <div
-                    className="w-6 h-6 rounded-full border border-gray-300"
-                    style={{ backgroundColor: color }}
-                />
-            )}
-            {!color && !image && <span>{name}</span>}
-        </div>
-    );
-}
-
-/** @typedef {import('@shopify/hydrogen').MappedProductOptions} MappedProductOptions */
-/** @typedef {import('@shopify/hydrogen/storefront-api-types').Maybe} Maybe */
-/** @typedef {import('@shopify/hydrogen/storefront-api-types').ProductOptionValueSwatch} ProductOptionValueSwatch */
-/** @typedef {import('storefrontapi.generated').ProductFragment} ProductFragment */

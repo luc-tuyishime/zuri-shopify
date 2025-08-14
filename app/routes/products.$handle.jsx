@@ -6,7 +6,6 @@ import { useLocale } from '~/hooks/useLocale';
 import { useTranslation } from '~/lib/i18n';
 import {useOptimisticCart} from '@shopify/hydrogen';
 
-
 import {
   getSelectedProductOptions,
   Analytics,
@@ -16,7 +15,7 @@ import {
   useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
 import {ProductPrice} from '~/components/ProductPrice';
- import {ProductImage} from '~/components/ProductImage';
+import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductBenefitsSection} from "~/components/ProductBenefitsSection.jsx";
@@ -39,23 +38,149 @@ export const meta = ({data}) => {
   ];
 };
 
-function getRelatedProductIdsFromMetafields(product) {
-  if (!product?.metafields) return [];
-
-  const relatedProductsMetafield = product.metafields.find(
-      m => m?.key === 'related_products' && m?.namespace === 'shopify--discovery--product_recommendation'
-  );
-
-  if (!relatedProductsMetafield?.value) return [];
-
-  try {
-    const productIds = JSON.parse(relatedProductsMetafield.value);
-    return Array.isArray(productIds) ? productIds : [];
-  } catch (error) {
-    console.error('Error parsing related products metafield:', error);
-    return [];
-  }
+// Helper functions for media handling
+function isVideo(media) {
+  return media.__typename === 'Video' || media.__typename === 'ExternalVideo';
 }
+
+function getMediaUrl(media) {
+  if (media.__typename === 'MediaImage') {
+    return media.image?.url;
+  } else if (media.__typename === 'Video') {
+    return media.sources?.[0]?.url;
+  } else if (media.__typename === 'ExternalVideo') {
+    return media.embedUrl;
+  }
+  return null;
+}
+
+function getPreviewImageUrl(media) {
+  if (media.__typename === 'MediaImage') {
+    return media.image?.url;
+  } else if (media.__typename === 'Video' || media.__typename === 'ExternalVideo') {
+    return media.previewImage?.url;
+  }
+  return null;
+}
+
+// Enhanced ZoomModal component with video support
+const ZoomModalWithVideo = memo(({
+                                   isOpen,
+                                   onClose,
+                                   media,
+                                   selectedIndex,
+                                   onPrevious,
+                                   onNext,
+                                   productTitle
+                                 }) => {
+  if (!isOpen) return null;
+
+  const currentMedia = media[selectedIndex];
+  const isCurrentVideo = isVideo(currentMedia);
+
+  return (
+      <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-2 sm:p-4"
+          onClick={onClose}
+      >
+        <div className="relative max-w-4xl max-h-full w-full">
+          {/* Close Button */}
+          <button
+              onClick={onClose}
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-full p-2 shadow-lg z-10 hover:bg-gray-100 transition-colors"
+          >
+            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Media Content */}
+          {isCurrentVideo ? (
+              currentMedia.__typename === 'ExternalVideo' ? (
+                  // External video (YouTube, Vimeo)
+                  <iframe
+                      src={currentMedia.embedUrl}
+                      className="max-w-full max-h-full w-full h-96 sm:h-[500px] lg:h-[600px] rounded-lg shadow-2xl"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      onClick={(e) => e.stopPropagation()}
+                  />
+              ) : (
+                  // Native video
+                  <video
+                      src={getMediaUrl(currentMedia)}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                      onClick={(e) => e.stopPropagation()}
+                      poster={getPreviewImageUrl(currentMedia)}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+              )
+          ) : (
+              // Image
+              <img
+                  src={getMediaUrl(currentMedia)}
+                  alt={currentMedia.image?.altText || productTitle}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
+                  onClick={(e) => e.stopPropagation()}
+              />
+          )}
+
+          {/* Navigation Buttons - Desktop */}
+          {media.length > 1 && (
+              <>
+                {selectedIndex > 0 && (
+                    <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPrevious();
+                        }}
+                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                )}
+
+                {selectedIndex < media.length - 1 && (
+                    <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNext();
+                        }}
+                        className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                )}
+              </>
+          )}
+
+          {/* Media Counter */}
+          {media.length > 1 && (
+              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm">
+                {selectedIndex + 1} / {media.length}
+              </div>
+          )}
+
+          {/* Media Type Indicator */}
+          {isCurrentVideo && (
+              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                </svg>
+                Video
+              </div>
+          )}
+        </div>
+      </div>
+  );
+});
 
 function getRelatedProductsFromMetafields(product) {
   if (!product?.metafields) return [];
@@ -66,7 +191,6 @@ function getRelatedProductsFromMetafields(product) {
 
   if (!relatedProductsMetafield) return [];
 
-  // Use references first (this is now working according to your debug!)
   if (relatedProductsMetafield.references?.nodes?.length > 0) {
     console.log('✅ Using references:', relatedProductsMetafield.references.nodes);
     return relatedProductsMetafield.references.nodes.filter(product => product && product.id);
@@ -93,17 +217,16 @@ export async function loader({ params, request, context }) {
     throw new Error('Expected product handle to be defined');
   }
 
-  // Simplified: Just fetch product and fallback related products
+  // Use the updated product query with media support
   const [productResult, relatedProductsResult] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
       variables: {
         handle,
-        selectedOptions: [],
+        selectedOptions: getSelectedProductOptions(request),
         country: 'FR',
         language: 'FR',
       },
     }),
-    // Fetch fallback related products
     storefront.query(RELATED_PRODUCTS_QUERY, {
       variables: {
         first: 8,
@@ -123,53 +246,7 @@ export async function loader({ params, request, context }) {
   return json({
     product,
     relatedProducts,
-    // Remove relatedProductsFromMetafields since we're using references directly
   });
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- * @param {LoaderFunctionArgs}
- */
-async function loadCriticalData({context, params, request}) {
-  const {handle} = params;
-  const {storefront} = context;
-
-  if (!handle) {
-    throw new Error('Expected product handle to be defined');
-  }
-
-  const [{product}] = await Promise.all([
-    storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions: getSelectedProductOptions(request)},
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
-
-  if (!product?.id) {
-    throw new Response(null, {status: 404});
-  }
-
-  // The API handle might be localized, so redirect to the localized handle
-  redirectIfHandleIsLocalized(request, {handle, data: product});
-
-  return {
-    product,
-  };
-}
-
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- * @param {LoaderFunctionArgs}
- */
-function loadDeferredData({context, params}) {
-
-
-
-  return {};
 }
 
 const VariantButton = memo(({ value, variant, isSelected, isAvailable, onClick, locale }) => (
@@ -201,87 +278,7 @@ const VariantButton = memo(({ value, variant, isSelected, isAvailable, onClick, 
     </button>
 ));
 
-const ZoomModal = memo(({
-                          isOpen,
-                          onClose,
-                          images,
-                          selectedIndex,
-                          onPrevious,
-                          onNext,
-                          productTitle
-                        }) => {
-  if (!isOpen) return null;
-
-  return (
-      <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-2 sm:p-4"
-          onClick={onClose}
-      >
-        <div className="relative max-w-4xl max-h-full w-full">
-          {/* Close Button */}
-          <button
-              onClick={onClose}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-full p-2 shadow-lg z-10 hover:bg-gray-100 transition-colors"
-          >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Large Image */}
-          <img
-              src={images[selectedIndex]?.url}
-              alt={images[selectedIndex]?.altText || productTitle}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
-              onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Navigation Buttons - Desktop */}
-          {images.length > 1 && (
-              <>
-                {selectedIndex > 0 && (
-                    <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPrevious();
-                        }}
-                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                    >
-                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                )}
-
-                {selectedIndex < images.length - 1 && (
-                    <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNext();
-                        }}
-                        className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                )}
-              </>
-          )}
-
-          {/* Image Counter */}
-          {images.length > 1 && (
-              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm">
-                {selectedIndex + 1} / {images.length}
-              </div>
-          )}
-        </div>
-      </div>
-  );
-});
-
 function getProductReviewData(product) {
-  // Safe null checking for metafields
   if (!product || !product.metafields || !Array.isArray(product.metafields)) {
     return {
       rating: 0,
@@ -302,11 +299,11 @@ export default function Product() {
   const data = useLoaderData();
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const { product, relatedProducts } = useLoaderData();
   const cart = useOptimisticCart();
   const [locale] = useLocale();
   const t = useTranslation(locale);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     shipping: false,
     returns: false,
@@ -316,7 +313,49 @@ export default function Product() {
   const [selectedVariant, setSelectedVariant] = useState(product.selectedOrFirstAvailableVariant);
   const { rating, count } = getProductReviewData(product);
 
+  // Updated productMedia computation
+  const productMedia = useMemo(() => {
+    // Try to get media from product.media first (includes videos)
+    if (product.media?.nodes?.length > 0) {
+      return product.media.nodes;
+    }
+    // Fallback to images if media is not available
+    if (product.images?.nodes?.length > 0) {
+      return product.images.nodes.map(image => ({
+        __typename: 'MediaImage',
+        id: image.id,
+        image: image
+      }));
+    }
+    // Fallback to selected variant image
+    if (selectedVariant?.image) {
+      return [{
+        __typename: 'MediaImage',
+        id: selectedVariant.image.id,
+        image: selectedVariant.image
+      }];
+    }
+    return [];
+  }, [product.media, product.images, selectedVariant?.image]);
 
+  const handleMediaNavigation = useCallback((direction) => {
+    setSelectedMediaIndex(prevIndex => {
+      let newIndex = prevIndex;
+
+      if (direction === 'prev' && prevIndex > 0) {
+        newIndex = prevIndex - 1;
+      } else if (direction === 'next' && prevIndex < productMedia.length - 1) {
+        newIndex = prevIndex + 1;
+      }
+
+      return newIndex;
+    });
+  }, [productMedia?.length]);
+
+  // Reset selected media when product changes
+  useEffect(() => {
+    setSelectedMediaIndex(0);
+  }, [product?.id]);
 
   // Memoized handlers for better performance
   const toggleSection = useCallback((section) => {
@@ -326,44 +365,19 @@ export default function Product() {
     }));
   }, []);
 
-
   const finalRelatedProducts = useMemo(() => {
-    // Try to get from metafields first
     const metafieldProducts = getRelatedProductsFromMetafields(product);
-
     if (metafieldProducts.length > 0) {
       return { nodes: metafieldProducts };
     }
-
     return relatedProducts;
   }, [product, relatedProducts]);
 
   useEffect(() => {
-  }, [relatedProducts, finalRelatedProducts]);
-
-  useEffect(() => {
-
-    if (product?.metafields) {
-      console.log('🔑 Available metafield keys:', product.metafields.map(m => m?.key));
-
-      // Check specifically for related_products
-      const relatedMeta = product.metafields.find(m => m?.key === 'related_products');
-      console.log('🎯 related_products metafield:', relatedMeta);
-
-      if (relatedMeta) {
-        console.log('📊 Metafield value:', relatedMeta.value);
-        console.log('🔗 Metafield references:', relatedMeta.references);
-        console.log('📝 Metafield type:', relatedMeta.type);
-      } else {
-        console.log('❌ related_products metafield NOT FOUND');
-      }
+    if (product?.selectedOrFirstAvailableVariant) {
+      setSelectedVariant(product.selectedOrFirstAvailableVariant);
     }
-
-    // Test the helper function
-    const metafieldProducts = getRelatedProductsFromMetafields(product);
-    console.log('🧪 Helper function result:', metafieldProducts);
-
-  }, [product]);
+  }, [product?.id]);
 
   const handleZoomModalClose = useCallback(() => {
     setShowZoomModal(false);
@@ -372,8 +386,6 @@ export default function Product() {
   const handleZoomModalOpen = useCallback(() => {
     setShowZoomModal(true);
   }, []);
-
-
 
   // Memoized computed values
   const shippingInfo = useMemo(() => {
@@ -404,34 +416,6 @@ export default function Product() {
         : "Free returns within 30 days. Items must be in original condition, unused and in original packaging. Personalized or hygiene items cannot be returned. Contact our customer service to initiate a return.";
   }, [product?.metafields, locale]);
 
-  const productImages = useMemo(() =>
-          product.images?.nodes || (selectedVariant?.image ? [selectedVariant.image] : []),
-      [product.images, selectedVariant?.image]
-  );
-
-
-  const handleImageNavigation = useCallback((direction) => {
-    setSelectedImageIndex(prevIndex => {
-      let newIndex = prevIndex;
-
-      if (direction === 'prev' && prevIndex > 0) {
-        newIndex = prevIndex - 1;
-      } else if (direction === 'next' && prevIndex < productImages.length - 1) {
-        newIndex = prevIndex + 1;
-      }
-
-      return newIndex;
-    });
-  }, [productImages?.length]);
-
-  const subscriptionPrice = useMemo(() => {
-    if (!selectedVariant?.price) return null;
-    return {
-      amount: (parseFloat(selectedVariant.price.amount) * 0.65).toFixed(2),
-      currencyCode: selectedVariant.price.currencyCode
-    };
-  }, [selectedVariant?.price]);
-
   const shareProduct = useCallback(async () => {
     if (navigator.share) {
       try {
@@ -459,15 +443,11 @@ export default function Product() {
     if (newVariant) {
       setSelectedVariant(newVariant);
 
-      if (cart?.lines?.nodes?.length > 0) {
-        // replaceCartItem(newVariant);
-      }
-
       const searchParams = new URLSearchParams();
       searchParams.set(optionName.toLowerCase(), optionValue);
       navigate(`?${searchParams.toString()}`, { replace: true, preventScrollReset: true });
     }
-  }, [product.variants, cart, navigate]);
+  }, [product.variants, navigate]);
 
   // Header visibility effect
   useEffect(() => {
@@ -488,15 +468,14 @@ export default function Product() {
       setIsMobile(window.innerWidth < 640);
     };
 
-    // Check on mount
     checkMobile();
-
-    // Check on resize
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const { title, descriptionHtml } = product;
+  const currentMedia = productMedia[selectedMediaIndex];
+  const isCurrentVideo = currentMedia ? isVideo(currentMedia) : false;
 
   return (
       <div className="min-h-screen pt-16 sm:pt-20 md:pt-24">
@@ -511,13 +490,6 @@ export default function Product() {
                   {title}
                 </h1>
 
-                {/* Plant-based badge - Responsive */}
-                {/*<div className="mb-3 sm:mb-4">*/}
-                {/*<span className="font-semibold font-poppins text-sm sm:text-base text-[#7D390F] tracking-wide">*/}
-                {/*  {locale === 'fr' ? '100% INGRÉDIENTS D\'ORIGINE VÉGÉTALE' : '100% PLANT-BASED INGREDIENTS'}*/}
-                {/*</span>*/}
-                {/*</div>*/}
-
                 {/* Rating - Responsive */}
                 <div className="flex items-left mb-6 flex-wrap">
                   <div className="flex items-center">
@@ -528,7 +500,7 @@ export default function Product() {
                                 i < Math.floor(rating)
                                     ? 'text-yellow-400'
                                     : i < rating
-                                        ? 'text-yellow-300' // For half stars
+                                        ? 'text-yellow-300'
                                         : 'text-gray-300'
                             }`}
                             viewBox="0 0 20 20"
@@ -540,15 +512,15 @@ export default function Product() {
                     ))}
                   </div>
                   <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-600">
-                       {count > 0
-                           ? (locale === 'fr'
-                               ? `${count} avis${count !== 1 ? '' : ''}`  // French: "avis" is same for singular/plural
-                               : `${count} review${count !== 1 ? 's' : ''}`)  // English: review/reviews
-                           : (locale === 'fr'
-                               ? 'Aucun avis pour le moment'
-                               : 'No reviews yet')
-                       }
-                        </span>
+                  {count > 0
+                      ? (locale === 'fr'
+                          ? `${count} avis${count !== 1 ? '' : ''}`
+                          : `${count} review${count !== 1 ? 's' : ''}`)
+                      : (locale === 'fr'
+                          ? 'Aucun avis pour le moment'
+                          : 'No reviews yet')
+                  }
+                </span>
                 </div>
 
                 {/* Description - Responsive */}
@@ -626,52 +598,19 @@ export default function Product() {
                 {/* Purchase Options - Responsive */}
                 <div className="mb-4 sm:mb-6">
                   <div className="border border-gray-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-                    <div className="flexflex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <div className="flex items-center">
-                        {/*<input*/}
-                        {/*    id="purchase-one-time"*/}
-                        {/*    type="radio"*/}
-                        {/*    name="purchase-option"*/}
-                        {/*    value="one-time"*/}
-                        {/*    className="mr-2 sm:mr-3"*/}
-                        {/*    defaultChecked*/}
-                        {/*/>*/}
-                        {/*<label htmlFor="purchase-one-time" className="font-medium text-sm sm:text-base cursor-pointer">*/}
-                        {/*  {locale === 'fr' ? 'Achat unique' : 'One-Time Purchase'}*/}
-                        {/*</label>*/}
+                        {/* Purchase options content */}
                       </div>
                       <div className="text-base sm:text-lg font-semibold">
                         <Money data={selectedVariant?.price} />
                       </div>
                     </div>
                   </div>
-
-                  {/*<div className="border border-gray-200 rounded-lg p-3 sm:p-4">*/}
-                  {/*  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">*/}
-                  {/*    <div className="flex items-center">*/}
-                  {/*      <input*/}
-                  {/*          id="purchase-subscription"*/}
-                  {/*          type="radio"*/}
-                  {/*          name="purchase-option"*/}
-                  {/*          value="subscription"*/}
-                  {/*          className="mr-2 sm:mr-3"*/}
-                  {/*      />*/}
-                  {/*      <label htmlFor="purchase-subscription" className="font-medium text-sm sm:text-base cursor-pointer">*/}
-                  {/*        {locale === 'fr' ? 'S\'abonner et économiser (35%)' : 'Subscribe & Save (35%)'}*/}
-                  {/*      </label>*/}
-                  {/*    </div>*/}
-                  {/*    <div className="text-base sm:text-lg font-semibold text-green-600">*/}
-                  {/*      {subscriptionPrice && <Money data={subscriptionPrice} />}*/}
-                  {/*    </div>*/}
-                  {/*  </div>*/}
-                  {/*  <div className="text-xs sm:text-sm text-gray-600 ml-5 sm:ml-6">*/}
-                  {/*    {locale === 'fr' ? 'Livraison chaque mois' : 'Delivery every 1 month'}*/}
-                  {/*  </div>*/}
-                  {/*</div>*/}
                 </div>
 
                 {/* ProductForm */}
-                <div className="mb-6 sm:mb-8">
+                <div className="mb-6 w-full max-w-none sm:mb-8" style={{width: '100%'}}>
                   <ProductForm
                       productOptions={[]}
                       selectedVariant={selectedVariant}
@@ -770,29 +709,78 @@ export default function Product() {
               </div>
             </div>
 
-            {/* Right Side - Image Carousel - Responsive */}
+            {/* Right Side - Media Carousel with Video Support */}
             <div className="order-1 lg:order-2">
               <div className="sticky top-16 sm:top-20 md:top-24">
-                {/* Main Image - Responsive */}
+                {/* Main Media Display */}
                 <div className="mb-3 sm:mb-4">
                   <div
                       className="aspect-square bg-[#E8C4A0] rounded-lg sm:rounded-2xl overflow-hidden relative cursor-pointer group"
                       onClick={handleZoomModalOpen}
                   >
-                    {productImages[selectedImageIndex] && (
+                    {currentMedia && (
                         <>
-                          <img
-                              src={productImages[selectedImageIndex].url}
-                              alt={productImages[selectedImageIndex].altText || product.title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                              loading="eager"
-                              fetchpriority="high"
-                          />
+                          {isCurrentVideo ? (
+                              currentMedia.__typename === 'ExternalVideo' ? (
+                                  // External video preview
+                                  <div className="relative w-full h-full">
+                                    <img
+                                        src={getPreviewImageUrl(currentMedia)}
+                                        alt={currentMedia.previewImage?.altText || product.title}
+                                        className="w-full h-full object-cover"
+                                        loading="eager"
+                                        fetchpriority="high"
+                                    />
+                                    {/* Play button overlay */}
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                                      <div className="bg-white bg-opacity-90 rounded-full p-4 hover:bg-opacity-100 transition-all duration-300">
+                                        <svg className="w-8 h-8 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  </div>
+                              ) : (
+                                  // Native video
+                                  <video
+                                      src={getMediaUrl(currentMedia)}
+                                      poster={getPreviewImageUrl(currentMedia)}
+                                      className="w-full h-full object-cover cursor-pointer"
+                                      muted
+                                      loop
+                                      playsInline
+                                      onMouseEnter={(e) => e.target.play()}
+                                      onMouseLeave={(e) => {
+                                        e.target.pause();
+                                        e.target.currentTime = 0;
+                                      }}
+                                  />
+                              )
+                          ) : (
+                              // Image
+                              <img
+                                  src={getMediaUrl(currentMedia)}
+                                  alt={currentMedia.image?.altText || product.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                  loading="eager"
+                                  fetchpriority="high"
+                              />
+                          )}
 
-                          {/* Zoom Icon Overlay - Responsive */}
+                          {/* Media Type Indicator */}
+                          {isCurrentVideo && (
+                              <div className="absolute top-3 left-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                                </svg>
+                                Video
+                              </div>
+                          )}
+
+                          {/* Zoom/Play Icon Overlay */}
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
                             <div className="bg-white bg-opacity-0 group-hover:bg-opacity-90 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium text-gray-700 transition-all duration-300 opacity-0 group-hover:opacity-100">
-                              🔍 {isMobile ? 'Tap' : 'Click'} to Zoom
+                              {isCurrentVideo ? '▶️' : '🔍'} {isMobile ? 'Tap' : 'Click'} to {isCurrentVideo ? 'Play' : 'Zoom'}
                             </div>
                           </div>
                         </>
@@ -800,43 +788,55 @@ export default function Product() {
                   </div>
                 </div>
 
-                {/* Thumbnail Images - Responsive */}
-                {productImages.length > 1 && (
+                {/* Thumbnail Media */}
+                {productMedia.length > 1 && (
                     <div className="flex gap-1 sm:gap-2 justify-center overflow-x-auto pb-2">
-                      {productImages.map((image, index) => (
-                          <div
-                              key={image.id}
-                              className={`
-                relative flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
-                rounded-lg sm:rounded-xl overflow-hidden cursor-pointer
-                transition-all duration-200 hover:scale-105
-                ${selectedImageIndex === index
-                                  ? 'ring-2 ring-[#8B4513] ring-offset-1 sm:ring-offset-2'
-                                  : 'ring-1 ring-gray-200 hover:ring-gray-300'
-                              }
-              `}
-                              onClick={() => {
-                                setSelectedImageIndex(index);
-                                handleZoomModalOpen();
-                              }}
-                          >
-                            <img
-                                src={image.url}
-                                alt={image.altText || `Product image ${index + 1}`}
-                                className="w-full h-full object-cover cursor-pointer"
-                                loading="lazy"
-                            />
+                      {productMedia.map((media, index) => {
+                        const isVideoThumbnail = isVideo(media);
+                        return (
+                            <div
+                                key={media.id}
+                                className={`
+                          relative flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
+                          rounded-lg sm:rounded-xl overflow-hidden cursor-pointer
+                          transition-all duration-200 hover:scale-105
+                          ${selectedMediaIndex === index
+                                    ? 'ring-2 ring-[#8B4513] ring-offset-1 sm:ring-offset-2'
+                                    : 'ring-1 ring-gray-200 hover:ring-gray-300'
+                                }
+                        `}
+                                onClick={() => {
+                                  setSelectedMediaIndex(index);
+                                  handleZoomModalOpen();
+                                }}
+                            >
+                              <img
+                                  src={getPreviewImageUrl(media)}
+                                  alt={media.image?.altText || media.previewImage?.altText || `Product media ${index + 1}`}
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  loading="lazy"
+                              />
 
-                            {/* Zoom indicator overlay */}
-                            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center cursor-pointer">
-                              <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
-                                <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                </svg>
+                              {/* Video indicator on thumbnail */}
+                              {isVideoThumbnail && (
+                                  <div className="absolute top-1 right-1 bg-black bg-opacity-60 rounded-full p-1">
+                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                                    </svg>
+                                  </div>
+                              )}
+
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center cursor-pointer">
+                                <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+                                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                      ))}
+                        );
+                      })}
                     </div>
                 )}
               </div>
@@ -844,14 +844,14 @@ export default function Product() {
           </div>
         </div>
 
-        {/* Zoom Modal */}
-        <ZoomModal
+        {/* Enhanced Zoom Modal with Video Support */}
+        <ZoomModalWithVideo
             isOpen={showZoomModal}
             onClose={handleZoomModalClose}
-            images={productImages}
-            selectedIndex={selectedImageIndex}
-            onPrevious={() => handleImageNavigation('prev')}
-            onNext={() => handleImageNavigation('next')}
+            media={productMedia}
+            selectedIndex={selectedMediaIndex}
+            onPrevious={() => handleMediaNavigation('prev')}
+            onNext={() => handleMediaNavigation('next')}
             productTitle={product.title}
         />
 
@@ -872,29 +872,77 @@ export default function Product() {
             }}
         />
 
-        {/* Other Components (as requested, these are left unchanged) */}
-        {/*<ProductBenefitsSection product={product} />*/}
+        {/* Other Components */}
         <YouMayAlsoLike
             products={finalRelatedProducts}
             currentProductId={product.id}
         />
-        {/*<Suspense fallback={<div>Loading reviews...</div>}>*/}
-        {/*  <Await resolve={data.reviewsData}>*/}
-        {/*    {(reviewsResponse) => (*/}
-        {/*        <CustomerReviewsSection reviewsData={reviewsResponse} />*/}
-        {/*    )}*/}
-        {/*  </Await>*/}
-        {/*</Suspense>*/}
         <SilkSmoothDifference product={product} />
-        <CustomerTestimonial
-            product={product}
-
-        />
+        <CustomerTestimonial product={product} />
         <FAQ product={product} />
       </div>
   );
 }
 
+// GraphQL Fragments and Queries
+
+const PRODUCT_MEDIA_FRAGMENT = `#graphql
+  fragment ProductMedia on Media {
+    __typename
+    ... on MediaImage {
+      id
+      image {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
+    ... on Video {
+      id
+      sources {
+        url
+        mimeType
+        format
+        height
+        width
+      }
+      previewImage {
+        url
+        altText
+        width
+        height
+      }
+    }
+    ... on ExternalVideo {
+      id
+      embedUrl
+      host
+      previewImage {
+        url
+        altText
+        width
+        height
+      }
+    }
+    ... on Model3d {
+      id
+      sources {
+        url
+        mimeType
+        format
+        filesize
+      }
+      previewImage {
+        url
+        altText
+        width
+        height
+      }
+    }
+  }
+`;
 
 const COLLECTION_ITEM_FRAGMENT = `#graphql
   fragment CollectionItem on Product {
@@ -918,22 +966,21 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
         currencyCode
       }
     }
-    variants(first: 10) {         # ← Changed from first: 1
+    variants(first: 10) {
       nodes {
-        id                        # ← ADD THIS
-        title                     # ← ADD THIS
-        availableForSale          # ← ADD THIS
+        id
+        title
+        availableForSale
         price {
           amount
           currencyCode
         }
-        selectedOptions {         # ← ADD THIS BLOCK
+        selectedOptions {
           name
           value
         }
       }
     }
-    # Add metafields for ratings
     metafields(identifiers: [
       {namespace: "custom", key: "product_rating"},
       {namespace: "custom", key: "review_count"}
@@ -941,7 +988,7 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
       key
       value
     }
-    tags                          # ← ADD THIS
+    tags
     productType
   }
 `;
@@ -1009,6 +1056,12 @@ const PRODUCT_FRAGMENT = `#graphql
     tags
     encodedVariantExistence
     encodedVariantAvailability
+    # Include both media (for videos) and images (for fallback)
+    media(first: 10) {
+      nodes {
+        ...ProductMedia
+      }
+    }
     images(first: 10) {
       nodes {
         id
@@ -1051,12 +1104,7 @@ const PRODUCT_FRAGMENT = `#graphql
       title
     }
     metafields(identifiers: [
-      # FIXED: Use the correct namespace from Shopify
-     {namespace: "shopify--discovery--product_recommendation", key: "related_products"},
-     {namespace: "custom", key: "product_rating"},
-     {namespace: "custom", key: "review_count"},
-      
-      # Your existing metafields
+      {namespace: "shopify--discovery--product_recommendation", key: "related_products"},
       {namespace: "custom", key: "product_rating"},
       {namespace: "custom", key: "review_count"},
       {namespace: "custom", key: "statistic_1_percentage_fr"},
@@ -1065,8 +1113,7 @@ const PRODUCT_FRAGMENT = `#graphql
       {namespace: "custom", key: "statistic_1_title_fr"},
       {namespace: "custom", key: "statistic_2_title_fr"},
       {namespace: "custom", key: "statistic_3_title_fr"},
-      {namespace: "custom", key: "difference_section_title_fr"}
-      
+      {namespace: "custom", key: "difference_section_title_fr"},
       {namespace: "custom", key: "benefits_tab_label_fr"},
       {namespace: "custom", key: "ingredients_tab_label_fr"},
       {namespace: "custom", key: "usage_tab_label_fr"},
@@ -1085,16 +1132,14 @@ const PRODUCT_FRAGMENT = `#graphql
       {namespace: "custom", key: "usage_step_1_fr"},
       {namespace: "custom", key: "usage_step_2_fr"},
       {namespace: "custom", key: "usage_step_3_fr"},
-      {namespace: "custom", key: "usage_step_4_fr"}
-      
+      {namespace: "custom", key: "usage_step_4_fr"},
       {namespace: "custom", key: "testimonial_quote_en"},
       {namespace: "custom", key: "testimonial_quote_fr"},
       {namespace: "custom", key: "testimonial_author_en"},
       {namespace: "custom", key: "testimonial_author_fr"},
       {namespace: "custom", key: "testimonial_product_en"},
       {namespace: "custom", key: "testimonial_product_fr"},
-      {namespace: "custom", key: "testimonial_image"}
-      
+      {namespace: "custom", key: "testimonial_image"},
       {namespace: "custom", key: "faq_title_en"},
       {namespace: "custom", key: "faq_title_fr"},
       {namespace: "custom", key: "faq_1_question_en"},
@@ -1132,62 +1177,62 @@ const PRODUCT_FRAGMENT = `#graphql
           }
         }
       }
-      # Product references for related products
       references(first: 20) {
-  nodes {
-    ... on Product {
-      id
-      handle
-      title
-      featuredImage {
-        id
-        url
-        altText
-        width
-        height
-      }
-      priceRange {
-        minVariantPrice {
-          amount
-          currencyCode
-        }
-        maxVariantPrice {
-          amount
-          currencyCode
-        }
-      }
-      variants(first: 10) {         # ← ADD THIS ENTIRE BLOCK
         nodes {
-          id
-          title
-          availableForSale
-          price {
-            amount
-            currencyCode
-          }
-          selectedOptions {
-            name
-            value
+          ... on Product {
+            id
+            handle
+            title
+            featuredImage {
+              id
+              url
+              altText
+              width
+              height
+            }
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+              maxVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            variants(first: 10) {
+              nodes {
+                id
+                title
+                availableForSale
+                price {
+                  amount
+                  currencyCode
+                }
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+            tags
+            productType
+            metafields(identifiers: [
+              {namespace: "custom", key: "product_rating"},
+              {namespace: "custom", key: "review_count"}
+            ]) {
+              key
+              value
+            }
           }
         }
       }
-      tags                          # ← ADD THIS
-      productType                   # ← ADD THIS
-      # Include ratings for related products too
-      metafields(identifiers: [
-        {namespace: "custom", key: "product_rating"},
-        {namespace: "custom", key: "review_count"}
-      ]) {
-        key
-        value
-      }
-    }
-  }
-}
     }
   }
   ${PRODUCT_VARIANT_FRAGMENT}
+  ${PRODUCT_MEDIA_FRAGMENT}
 `;
+
 const PRODUCT_QUERY = `#graphql
   query Product(
     $country: CountryCode
@@ -1201,46 +1246,3 @@ const PRODUCT_QUERY = `#graphql
   }
   ${PRODUCT_FRAGMENT}
 `;
-
-const PRODUCTS_BY_IDS_QUERY = `#graphql
-  query ProductsByIds($ids: [ID!]!, $country: CountryCode, $language: LanguageCode) 
-    @inContext(country: $country, language: $language) {
-    nodes(ids: $ids) {
-      ... on Product {
-        id
-        handle
-        title
-        featuredImage {
-          id
-          altText
-          url
-          width
-          height
-        }
-        priceRange {
-          minVariantPrice {
-            amount
-            currencyCode
-          }
-          maxVariantPrice {
-            amount
-            currencyCode
-          }
-        }
-        metafields(identifiers: [
-          {namespace: "custom", key: "product_rating"},
-          {namespace: "custom", key: "review_count"}
-        ]) {
-          key
-          value
-        }
-        tags
-        productType
-      }
-    }
-  }
-`;
-
-/** @typedef {import('@shopify/remix-oxygen').LoaderFunctionArgs} LoaderFunctionArgs */
-/** @template T @typedef {import('@remix-run/react').MetaFunction<T>} MetaFunction */
-/** @typedef {import('@shopify/remix-oxygen').SerializeFrom<typeof loader>} LoaderReturnData */

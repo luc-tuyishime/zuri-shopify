@@ -359,6 +359,7 @@ function FooterContent({footer, footerData, locale, t}) {
     );
   }
 
+
   return (
       <footer className="bg-[#5C2E1C] text-white py-8 md:py-16 relative">
         {/* Debug info in development */}
