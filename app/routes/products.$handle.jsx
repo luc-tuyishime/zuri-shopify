@@ -388,33 +388,44 @@ export default function Product() {
   }, []);
 
   // Memoized computed values
-  const shippingInfo = useMemo(() => {
+  const getShippingInfo = (product, locale) => {
     const shippingMetafield = product?.metafields?.find(
-        field => field?.key === 'shipping_info'
+        field => field?.key === `shipping_info_${locale}`
     );
 
     if (shippingMetafield?.value) {
       return shippingMetafield.value;
     }
 
+    // Fallback content based on locale
     return locale === 'fr'
         ? "Livraison gratuite en France métropolitaine pour toute commande supérieure à 50€. Expédition sous 2-3 jours ouvrés. Livraison standard : 3-5 jours ouvrés. Livraison express : 1-2 jours ouvrés (supplément applicable)."
         : "Free shipping in metropolitan France for orders over €50. Ships within 2-3 business days. Standard delivery: 3-5 business days. Express delivery: 1-2 business days (additional charges apply).";
-  }, [product?.metafields, locale]);
+  };
 
-  const returnsInfo = useMemo(() => {
+  const getReturnsInfo = (product, locale) => {
     const returnsMetafield = product?.metafields?.find(
-        field => field?.key === 'returns_info'
+        field => field?.key === `returns_info_${locale}`
     );
 
     if (returnsMetafield?.value) {
       return returnsMetafield.value;
     }
 
+    // Fallback content based on locale
     return locale === 'fr'
         ? "Retours gratuits sous 30 jours. Les articles doivent être dans leur état d'origine, non utilisés et dans leur emballage d'origine. Les articles personnalisés ou d'hygiène ne peuvent pas être retournés. Contactez notre service client pour initier un retour."
         : "Free returns within 30 days. Items must be in original condition, unused and in original packaging. Personalized or hygiene items cannot be returned. Contact our customer service to initiate a return.";
+  };
+
+  const shippingInfo = useMemo(() => {
+    return getShippingInfo(product, locale);
   }, [product?.metafields, locale]);
+
+  const returnsInfo = useMemo(() => {
+    return getReturnsInfo(product, locale);
+  }, [product?.metafields, locale]);
+
 
   const shareProduct = useCallback(async () => {
     if (navigator.share) {
@@ -1161,7 +1172,13 @@ const PRODUCT_FRAGMENT = `#graphql
       {namespace: "custom", key: "faq_5_question_en"},
       {namespace: "custom", key: "faq_5_question_fr"},
       {namespace: "custom", key: "faq_5_answer_en"},
-      {namespace: "custom", key: "faq_5_answer_fr"}
+      {namespace: "custom", key: "faq_5_answer_fr"},
+      
+      # ADD THESE TWO LINES - English shipping and returns metafields
+      {namespace: "custom", key: "shipping_info_fr"},
+      {namespace: "custom", key: "shipping_info_en"},
+      {namespace: "custom", key: "returns_info_fr"},
+      {namespace: "custom", key: "returns_info_en"},
     ]) {
       id
       namespace

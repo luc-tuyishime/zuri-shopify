@@ -609,6 +609,7 @@ export default function Collection() {
                   resourcesClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
               >
                 {({node: product, index}) => {
+
                   return (
                       <div key={product.id} className="bg-white overflow-hidden hover:shadow-lg transition-shadow">
                         <ProductItem
