@@ -6,7 +6,25 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [
-    hydrogen(),
+    hydrogen({
+      // Add this CSP configuration
+      contentSecurityPolicy: {
+        mediaSrc: [
+          "'self'",
+          'https://cdn.shopify.com',
+          'https://res.cloudinary.com', // ✅ Add Cloudinary
+          'https://video.cloudinary.com', // ✅ Add Cloudinary video domain
+          'data:', // For inline videos
+        ],
+        defaultSrc: [
+          "'self'",
+          'https://cdn.shopify.com',
+          'https://shopify.com',
+          'https://res.cloudinary.com', // ✅ Add Cloudinary
+          'http://localhost:*',
+        ],
+      },
+    }),
     oxygen(),
     remix({
       presets: [hydrogen.v3preset()],

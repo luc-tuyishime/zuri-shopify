@@ -5,9 +5,9 @@ import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CUSTOMER_REVIEWS_QUERY, CustomerReviewsSection} from '~/components/CustomerReviewsSection';
 import BG from '~/assets/bg.svg'
-import VIDEO1 from '~/assets/video.mp4'
-import VIDEO2 from '~/assets/video.mp4'
-import VIDEO3 from '~/assets/video.mp4'
+// import VIDEO1 from '~/assets/video.mp4'
+// import VIDEO2 from '~/assets/video.mp4'
+// import VIDEO3 from '~/assets/video.mp4'
 import MOBILE_VIDEO from '../assets/aaa.webm'
 import {ProductSkeleton} from "~/components/ProductSkeleton.jsx";
 import {getLocale, useTranslation} from "~/lib/i18n.js";
@@ -155,9 +155,14 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    setIsVisible(true);
-                    setShouldPrioritizeImages(true);
-                    observer.disconnect();
+                    setIsIntersecting(true);
+
+                    // Load video if we have metafield source OR desktop videos
+                    if (!isMobile && !isSlowConnection && (getCurrentVideoSource || desktopVideos.length > 0)) {
+                        setTimeout(() => {
+                            setShouldLoadVideo(true);
+                        }, 1000);
+                    }
                 }
             },
             {
@@ -165,12 +170,6 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 rootMargin: '100px'
             }
         );
-
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => observer.disconnect();
     }, []);
 
 
@@ -458,7 +457,6 @@ function FeaturedCollection({ collection }) {
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [isIntersecting, setIsIntersecting] = useState(false);
     const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
-    const [userRequestedVideo, setUserRequestedVideo] = useState(false);
     const [videoErrors, setVideoErrors] = useState(new Set());
 
     const containerRef = useRef(null);
@@ -484,6 +482,7 @@ function FeaturedCollection({ collection }) {
     };
 
     const getCurrentVideoSource = useMemo(() => {
+
         try {
             let customBg = null;
 
@@ -501,17 +500,21 @@ function FeaturedCollection({ collection }) {
                     customBg = getMetafield('hero_background_image');
             }
 
-            if (customBg && customBg.reference && customBg.reference.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
+            // Check if it's a direct URL string (Cloudinary)
+            if (customBg?.value && typeof customBg.value === 'string' && customBg.value.startsWith('http')) {
+                return customBg.value;
+            }
+
+            // Check if it's a video reference
+            if (customBg?.reference?.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
                 const videoSource = customBg.reference.sources[0];
                 let videoUrl = videoSource.url;
 
                 if (!videoErrors.has(videoUrl)) {
-                    console.log('✅ Using video:', videoUrl);
                     return videoUrl;
                 }
             }
 
-            // No video source available or video failed - return null for video-only setup
             return null;
 
         } catch (error) {
@@ -522,94 +525,222 @@ function FeaturedCollection({ collection }) {
 
     const handleVideoError = (videoUrl) => {
         console.error('❌ Video failed to load:', videoUrl);
-        console.log('🔄 Adding to failed videos list and switching to fallback');
         setVideoErrors(prev => new Set([...prev, videoUrl]));
     };
 
     useEffect(() => {
-        console.log('\n🔍🔍🔍 METAFIELD DEEP INSPECTION 🔍🔍🔍');
 
-        if (collection?.metafields?.length > 0) {
-            const backgroundMetafields = collection.metafields.filter(m =>
-                m?.key?.includes('hero_background_image')
-            );
+        // Check all metafields for background images
+        const allMetafields = collection?.metafields || [];
 
-            console.log('📋 BACKGROUND METAFIELDS FOUND:', backgroundMetafields.length);
 
-            backgroundMetafields.forEach((metafield, index) => {
-                console.log(`\n--- BACKGROUND METAFIELD ${index + 1} ---`);
-                console.log('Key:', metafield.key);
-                console.log('Value (GID):', metafield.value);
-                console.log('Type:', metafield.type);
-                console.log('Reference object:', metafield.reference);
+        // Filter background image metafields
+        const backgroundMetafields = allMetafields.filter(m =>
+            m?.key?.includes('hero_background_image')
+        );
 
-                if (metafield.reference) {
-                    console.log('Reference keys:', Object.keys(metafield.reference));
 
-                    if (metafield.value?.includes('Video/')) {
-                        console.log('🎥 THIS IS A VIDEO METAFIELD');
-                        console.log('But reference structure:', metafield.reference);
-                    }
-                }
-            });
+        // Test specific metafield keys
+        const slide1 = getMetafield('hero_background_image');
+        const slide2 = getMetafield('hero_background_image_slide_2');
+        const slide3 = getMetafield('hero_background_image_slide_3');
+
+        // Test the desktopVideos array generation
+        const videos = [];
+
+        if (slide1?.value && typeof slide1.value === 'string' && slide1.value.startsWith('http')) {
+            videos.push(slide1.value);
         }
 
-        console.log('🔍🔍🔍 END METAFIELD INSPECTION 🔍🔍🔍\n');
+        if (slide2?.value && typeof slide2.value === 'string' && slide2.value.startsWith('http')) {
+            videos.push(slide2.value);
+        }
+
+        if (slide3?.value && typeof slide3.value === 'string' && slide3.value.startsWith('http')) {
+            videos.push(slide3.value);
+        } else {
+            console.log('Slide 3 value:', slide3?.value);
+
+        }
+
     }, [collection?.metafields]);
+
 
     const collectionUrl = useMemo(() => {
         return collection?.handle ? `/collections/${collection.handle}` : '/collections/all';
     }, [collection?.handle]);
 
-    const OPTIMIZED_MOBILE_VIDEO = typeof MOBILE_VIDEO !== 'undefined' ? MOBILE_VIDEO : null;
-    const desktopVideos = [
-        typeof VIDEO1 !== 'undefined' ? VIDEO1 : null,
-        typeof VIDEO2 !== 'undefined' ? VIDEO2 : null,
-        typeof VIDEO3 !== 'undefined' ? VIDEO3 : null
-    ].filter(Boolean);
+
+
+
+    const OPTIMIZED_MOBILE_VIDEO = useMemo(() => {
+        const mobileVideoMetafield = getMetafield('hero_mobile_video');
+        if (mobileVideoMetafield?.value && mobileVideoMetafield.value.startsWith('http')) {
+            return mobileVideoMetafield.value;
+        }
+        return null; // Fallback to no mobile video
+    }, [collection?.metafields]);
+
+    const desktopVideos = useMemo(() => {
+        const videos = [];
+
+        const video1Metafield = getMetafield('hero_background_image');
+
+        if (video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) {
+            videos.push(video1Metafield.value);
+        } else if (video1Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video1Metafield.reference.sources[0].url);
+        }
+
+        // Get video 2 (slide 2)
+        const video2Metafield = getMetafield('hero_background_image_slide_2');
+
+        if (video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) {
+            videos.push(video2Metafield.value);
+        } else if (video2Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video2Metafield.reference.sources[0].url);
+        }
+
+        // Get video 3 (slide 3) - Check multiple possible keys
+        let video3Metafield = getMetafield('hero_background_image_slide_3');
+
+        // If not found, try alternative keys that might exist in Shopify
+        if (!video3Metafield) {
+            video3Metafield = getMetafield('hero_background_image_3') ||
+                getMetafield('hero_video_slide_3') ||
+                getMetafield('background_video_3');
+        }
+
+        if (video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) {
+            videos.push(video3Metafield.value);
+        } else if (video3Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video3Metafield.reference.sources[0].url);
+        } else {
+            console.log('no valid metafield');
+        }
+
+
+        return videos;
+    }, [collection?.metafields]);
+
+    useEffect(() => {
+
+
+        // Only start slideshow if we have more than 1 video
+        if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
+
+
+            const interval = setInterval(() => {
+                setCurrentVideoIndex((prevIndex) => {
+                    const nextIndex = (prevIndex + 1) % desktopVideos.length;
+                    setVideoLoaded(false);
+                    return nextIndex;
+                });
+            }, 8000);
+
+            return () => {
+                clearInterval(interval);
+            };
+        } else {
+            // Log why slideshow isn't running
+            const reasons = [];
+            if (isMobile) reasons.push('Mobile device');
+            if (!isClient) reasons.push('Client not ready');
+            if (!shouldLoadVideo) reasons.push('Video loading disabled');
+            if (desktopVideos.length <= 1) reasons.push(`Only ${desktopVideos.length} video(s)`);
+
+        }
+    }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
+
+    const renderSlideIndicators = () => {
+        // Show indicators only if:
+        // - Not mobile
+        // - Client is ready
+        // - Should show video
+        // - Have more than 1 video
+        if (!isMobile && isClient && showVideo && desktopVideos.length > 1) {
+            return (
+                <div className="slideshow-indicators">
+                    {desktopVideos.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => {
+                                setCurrentVideoIndex(index);
+                                setVideoLoaded(false);
+                            }}
+                            className={`indicator ${index === currentVideoIndex ? 'active' : ''}`}
+                            aria-label={`Go to slide ${index + 1}${slideContent[index] ? ': ' + slideContent[index].title : ''}`}
+                            style={{
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                                border: '2px solid white',
+                                background: index === currentVideoIndex ? 'white' : 'transparent',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                margin: '0 5px'
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
 
     const slideContent = useMemo(() => {
         try {
             const slides = [];
 
-            // Slide 1
-            const slide1Title = getMetafield('hero_title');
-            const slide1Subtitle = getMetafield('hero_subtitle');
-            const slide1Button = getMetafield('hero_button_text');
-            const slide1Url = getMetafield('hero_button_url_slide_1');
+            // Only add slide content if we have a corresponding video
+            const video1Metafield = getMetafield('hero_background_image');
+            const video2Metafield = getMetafield('hero_background_image_slide_2');
+            const video3Metafield = getMetafield('hero_background_image_slide_3');
 
-            slides.push({
-                title: slide1Title?.value || t.hero?.defaultTitle || `Discover ${collection?.title || 'Our Collection'}`,
-                subtitle: slide1Subtitle?.value || t.hero?.defaultSubtitle || 'Premium Quality Collection',
-                buttonText: slide1Button?.value || t.hero?.defaultButton || 'SHOP COLLECTION',
-                url: slide1Url?.value || collectionUrl
-            });
+            // Slide 1 - Only add if video exists
+            if (video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) {
+                const slide1Title = getMetafield('hero_title');
+                const slide1Subtitle = getMetafield('hero_subtitle');
+                const slide1Button = getMetafield('hero_button_text');
+                const slide1Url = getMetafield('hero_button_url_slide_1');
 
-            // Slide 2
-            const slide2Title = getMetafield('hero_title_slide_2');
-            const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
-            const slide2Button = getMetafield('hero_button_text_slide_2');
-            const slide2Url = getMetafield('hero_button_url_slide_2');
+                slides.push({
+                    title: slide1Title?.value || t.hero?.defaultTitle || `Discover ${collection?.title || 'Our Collection'}`,
+                    subtitle: slide1Subtitle?.value || t.hero?.defaultSubtitle || 'Premium Quality Collection',
+                    buttonText: slide1Button?.value || t.hero?.defaultButton || 'SHOP COLLECTION',
+                    url: slide1Url?.value || collectionUrl
+                });
+            }
 
-            slides.push({
-                title: slide2Title?.value || t.hero?.slide2Title || 'Natural Beauty Redefined',
-                subtitle: slide2Subtitle?.value || t.hero?.slide2Subtitle || '100% Human Hair Collection',
-                buttonText: slide2Button?.value || t.hero?.slide2Button || 'EXPLORE STYLES',
-                url: slide2Url?.value || collectionUrl
-            });
+            // Slide 2 - Only add if video exists
+            if (video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) {
+                const slide2Title = getMetafield('hero_title_slide_2');
+                const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
+                const slide2Button = getMetafield('hero_button_text_slide_2');
+                const slide2Url = getMetafield('hero_button_url_slide_2');
 
-            // Slide 3
-            const slide3Title = getMetafield('hero_title_slide_3');
-            const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
-            const slide3Button = getMetafield('hero_button_text_slide_3');
-            const slide3Url = getMetafield('hero_button_url_slide_3');
+                slides.push({
+                    title: slide2Title?.value || t.hero?.slide2Title || 'Natural Beauty Redefined',
+                    subtitle: slide2Subtitle?.value || t.hero?.slide2Subtitle || '100% Human Hair Collection',
+                    buttonText: slide2Button?.value || t.hero?.slide2Button || 'EXPLORE STYLES',
+                    url: slide2Url?.value || collectionUrl
+                });
+            }
 
-            slides.push({
-                title: slide3Title?.value || t.hero?.slide3Title || 'Transform Your Style',
-                subtitle: slide3Subtitle?.value || t.hero?.slide3Subtitle || 'Expert Crafted Designs',
-                buttonText: slide3Button?.value || t.hero?.slide3Button || 'VIEW ALL',
-                url: slide3Url?.value || collectionUrl
-            });
+            // Slide 3 - Only add if video exists
+            if (video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) {
+                const slide3Title = getMetafield('hero_title_slide_3');
+                const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
+                const slide3Button = getMetafield('hero_button_text_slide_3');
+                const slide3Url = getMetafield('hero_button_url_slide_3');
+
+                slides.push({
+                    title: slide3Title?.value || t.hero?.slide3Title || 'Transform Your Style',
+                    subtitle: slide3Subtitle?.value || t.hero?.slide3Subtitle || 'Expert Crafted Designs',
+                    buttonText: slide3Button?.value || t.hero?.slide3Button || 'VIEW ALL',
+                    url: slide3Url?.value || collectionUrl
+                });
+            }
 
             return slides;
 
@@ -627,53 +758,18 @@ function FeaturedCollection({ collection }) {
     }, [collection?.title, collection?.handle, collection?.metafields, t, locale, collectionUrl]);
 
     const getCurrentSlideContent = () => {
-        if (slideContent.length === 0) {
+        if (!slideContent || slideContent.length === 0) {
             return {
-                title: 'Our Collection',
+                title: collection?.title || 'Our Collection',
                 subtitle: 'Premium Quality',
                 buttonText: 'SHOP NOW',
-                url: '/collections/all'
+                url: collectionUrl
             };
         }
 
-        const slideIndex = currentVideoIndex % slideContent.length;
-        return slideContent[slideIndex];
+        const safeIndex = Math.max(0, Math.min(currentVideoIndex, slideContent.length - 1));
+        return slideContent[safeIndex] || slideContent[0];
     };
-
-    useEffect(() => {
-        if (collection?.metafields?.length > 0) {
-            console.log('📋 ALL METAFIELDS COUNT:', collection.metafields.length);
-
-            const bg1 = getMetafield('hero_background_image');
-            const bg2 = getMetafield('hero_background_image_slide_2');
-            const bg3 = getMetafield('hero_background_image_slide_3');
-
-            console.log('🖼️ BACKGROUND METAFIELDS:');
-            console.log('Slide 1 background:', bg1 ? 'Found' : 'Not found');
-            console.log('Slide 2 background:', bg2 ? 'Found' : 'Not found');
-            console.log('Slide 3 background:', bg3 ? 'Found' : 'Not found');
-
-            console.log('🎬 CONTENT METAFIELDS:');
-            console.log('Slide 1:', {
-                title: getMetafield('hero_title')?.value || 'Not set',
-                subtitle: getMetafield('hero_subtitle')?.value || 'Not set',
-                button: getMetafield('hero_button_text')?.value || 'Not set'
-            });
-            console.log('Slide 2:', {
-                title: getMetafield('hero_title_slide_2')?.value || 'Not set',
-                subtitle: getMetafield('hero_subtitle_slide_2')?.value || 'Not set',
-                button: getMetafield('hero_button_text_slide_2')?.value || 'Not set'
-            });
-            console.log('Slide 3:', {
-                title: getMetafield('hero_title_slide_3')?.value || 'Not set',
-                subtitle: getMetafield('hero_subtitle_slide_3')?.value || 'Not set',
-                button: getMetafield('hero_button_text_slide_3')?.value || 'Not set'
-            });
-
-        } else {
-            console.log('❌ No metafields found');
-        }
-    }, [collection, slideContent, currentVideoIndex, getCurrentVideoSource]);
 
     if (!collection) {
         return (
@@ -706,10 +802,11 @@ function FeaturedCollection({ collection }) {
                 if (entry.isIntersecting) {
                     setIsIntersecting(true);
 
-                    if (!isMobile && !isSlowConnection && desktopVideos.length > 0) {
+                    // Always load video when intersecting and we have a video source
+                    if (getCurrentVideoSource) {
                         setTimeout(() => {
                             setShouldLoadVideo(true);
-                        }, 1000);
+                        }, 500);
                     }
                 }
             },
@@ -728,7 +825,7 @@ function FeaturedCollection({ collection }) {
                 observer.unobserve(containerRef.current);
             }
         };
-    }, [isMobile, isSlowConnection, desktopVideos.length]);
+    }, [getCurrentVideoSource]);
 
     useEffect(() => {
         setIsClient(true);
@@ -756,23 +853,35 @@ function FeaturedCollection({ collection }) {
     }, []);
 
     useEffect(() => {
+
+        // Dynamic slideshow: works with 1, 2, or 3+ slides
+        // Only runs timer if we have MORE THAN 1 video/slide
         if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
+
             const interval = setInterval(() => {
-                setCurrentVideoIndex((prevIndex) =>
-                    (prevIndex + 1) % desktopVideos.length
-                );
+                setCurrentVideoIndex((prevIndex) => {
+                    const nextIndex = (prevIndex + 1) % desktopVideos.length;
+                    setVideoLoaded(false);
+                    return nextIndex;
+                });
             }, 8000);
 
-            return () => clearInterval(interval);
+            return () => {
+                clearInterval(interval);
+            };
+        } else {
+            // Log why slideshow isn't running
+            const reasons = [];
+            if (isMobile) reasons.push('Mobile device');
+            if (!isClient) reasons.push('Client not ready');
+            if (!shouldLoadVideo) reasons.push('Video loading disabled');
+            if (desktopVideos.length <= 1) reasons.push(`Only ${desktopVideos.length} video(s)`);
+
         }
     }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
 
-    const handlePlayVideo = () => {
-        setUserRequestedVideo(true);
-        setShouldLoadVideo(true);
-    };
 
-    const showVideo = shouldLoadVideo && isIntersecting;
+    const showVideo = isIntersecting;
 
     if (!isClient) {
         const currentContent = slideContent[0] || {
@@ -809,18 +918,16 @@ function FeaturedCollection({ collection }) {
                             }}
                             onError={() => handleVideoError(getCurrentVideoSource)}
                             onCanPlay={(e) => {
-                                console.log('✅ Video loaded successfully, fading in...');
                                 e.target.style.opacity = '1';
                             }}
-                            onLoadStart={() => console.log('🎥 Video loading started...')}
-                            onLoadedData={() => console.log('✅ Video data loaded')}
                         >
                             <source src={getCurrentVideoSource} type="video/mp4" />
                         </video>
                     )}
 
-                    {showVideo && desktopVideos.length > 0 && (
+                    {(showVideo || getCurrentVideoSource) && (
                         <>
+                            {/* Mobile Video - Only show on mobile when metafield exists */}
                             {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                                 <video
                                     ref={videoRef}
@@ -829,7 +936,7 @@ function FeaturedCollection({ collection }) {
                                     loop
                                     muted
                                     playsInline
-                                    preload="none"
+                                    preload="metadata"
                                     onLoadedData={() => setVideoLoaded(true)}
                                     onCanPlay={() => setVideoLoaded(true)}
                                     className="hero-video"
@@ -837,51 +944,55 @@ function FeaturedCollection({ collection }) {
                                         opacity: videoLoaded ? 1 : 0,
                                         transition: 'opacity 1s ease',
                                         willChange: 'opacity',
-                                        zIndex: 2
+                                        zIndex: 2,
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
                                     }}
                                     decoding="async"
                                     disablePictureInPicture
                                 >
-                                    <source src={OPTIMIZED_MOBILE_VIDEO} type="video/webm" />
+                                    <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                                 </video>
-                            ) : !isMobile && desktopVideos[currentVideoIndex] ? (
-                                <video
-                                    key={`desktop-video-${currentVideoIndex}`}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    preload="metadata"
-                                    onLoadedData={() => setVideoLoaded(true)}
-                                    className="hero-video"
-                                    style={{
-                                        opacity: videoLoaded ? 1 : 0,
-                                        transition: 'opacity 0.8s ease',
-                                        zIndex: 2
-                                    }}
-                                    decoding="async"
-                                    disablePictureInPicture
-                                >
-                                    <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
-                                </video>
-                            ) : null}
+                            ) : (
+                                /* Desktop Video - Only show on desktop when videos exist */
+                                !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
+                                    <video
+                                        key={`desktop-video-${currentVideoIndex}`}
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        preload="metadata"
+                                        onLoadedData={() => setVideoLoaded(true)}
+                                        className="hero-video"
+                                        style={{
+                                            opacity: videoLoaded ? 1 : 0,
+                                            transition: 'opacity 0.8s ease',
+                                            zIndex: 2,
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                        onError={() => handleVideoError(getCurrentVideoSource)}
+                                        decoding="async"
+                                        disablePictureInPicture
+                                    >
+                                        <source src={getCurrentVideoSource} type="video/mp4" />
+                                        <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                                    </video>
+                                )
+                            )}
                         </>
                     )}
 
-                    {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
-                        <div className="video-play-overlay">
-                            <button
-                                onClick={handlePlayVideo}
-                                className="play-button"
-                                aria-label="Play background video"
-                            >
-                                <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                </svg>
-                                <span className="play-text">Play Video</span>
-                            </button>
-                        </div>
-                    )}
+
 
                     <div className="hero-link">
                         <div className="hero-content">
@@ -966,18 +1077,15 @@ function FeaturedCollection({ collection }) {
                             console.error('❌ Video background failed to load:', getCurrentVideoSource);
                             handleVideoError(getCurrentVideoSource);
                         }}
-                        onLoadStart={() => console.log('🎥 Video background loading started...')}
-                        onCanPlay={() => console.log('✅ Video background ready to play')}
-                        onLoadedData={() => console.log('✅ Video background data loaded')}
-                        onLoadedMetadata={() => console.log('✅ Video background metadata loaded')}
                     >
                         <source src={getCurrentVideoSource} type="video/mp4" />
                         <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
                     </video>
                 )}
 
-                {showVideo && desktopVideos.length > 0 && (
+                {(showVideo || getCurrentVideoSource) && (
                     <>
+                        {/* Mobile Video - Only show on mobile when metafield exists */}
                         {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                             <video
                                 ref={videoRef}
@@ -986,7 +1094,7 @@ function FeaturedCollection({ collection }) {
                                 loop
                                 muted
                                 playsInline
-                                preload="none"
+                                preload="metadata"
                                 onLoadedData={() => setVideoLoaded(true)}
                                 onCanPlay={() => setVideoLoaded(true)}
                                 className="hero-video"
@@ -994,51 +1102,55 @@ function FeaturedCollection({ collection }) {
                                     opacity: videoLoaded ? 1 : 0,
                                     transition: 'opacity 1s ease',
                                     willChange: 'opacity',
-                                    zIndex: 2
+                                    zIndex: 2,
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
                                 }}
                                 decoding="async"
                                 disablePictureInPicture
                             >
-                                <source src={OPTIMIZED_MOBILE_VIDEO} type="video/webm" />
+                                <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                             </video>
-                        ) : !isMobile && desktopVideos[currentVideoIndex] ? (
-                            <video
-                                key={`desktop-video-${currentVideoIndex}`}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                preload="metadata"
-                                onLoadedData={() => setVideoLoaded(true)}
-                                className="hero-video"
-                                style={{
-                                    opacity: videoLoaded ? 1 : 0,
-                                    transition: 'opacity 0.8s ease',
-                                    zIndex: 2
-                                }}
-                                decoding="async"
-                                disablePictureInPicture
-                            >
-                                <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
-                            </video>
-                        ) : null}
+                        ) : (
+                            /* Desktop Video - Only show on desktop when videos exist */
+                            !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
+                                <video
+                                    key={`desktop-video-${currentVideoIndex}`}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    preload="metadata"
+                                    onLoadedData={() => setVideoLoaded(true)}
+                                    className="hero-video"
+                                    style={{
+                                        opacity: videoLoaded ? 1 : 0,
+                                        transition: 'opacity 0.8s ease',
+                                        zIndex: 2,
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
+                                    }}
+                                    onError={() => handleVideoError(getCurrentVideoSource)}
+                                    decoding="async"
+                                    disablePictureInPicture
+                                >
+                                    <source src={getCurrentVideoSource} type="video/mp4" />
+                                    <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                                </video>
+                            )
+                        )}
                     </>
                 )}
 
-                {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
-                    <div className="video-play-overlay">
-                        <button
-                            onClick={handlePlayVideo}
-                            className="play-button"
-                            aria-label="Play background video"
-                        >
-                            <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span className="play-text">Play Video</span>
-                        </button>
-                    </div>
-                )}
+
 
                 <div className="hero-link">
                     <div className="hero-content">
@@ -1176,54 +1288,7 @@ const styles = `
         }
     }
 
-    .video-play-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.3);
-        z-index: 5;
-        backdrop-filter: blur(2px);
-    }
-
-    .play-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        border-radius: 50px;
-        padding: 20px 30px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .play-button:hover {
-        background: rgba(255, 255, 255, 1);
-        transform: scale(1.05);
-    }
-
-    .play-icon {
-        width: 24px;
-        height: 24px;
-        color: #333;
-        margin-bottom: 8px;
-    }
-
-    .play-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+  
 
     .hero-link {
         display: block;
@@ -1378,6 +1443,16 @@ const styles = `
             left: 40px;
         }
     }
+    
+    @media (max-width: 767px) {
+    .slideshow-indicators {
+        display: none !important;
+    }
+    
+    .hero-video-container {
+        height: 70vh; /* Optimize mobile height */
+      }
+    }
 
     /* Critical: Reduce motion for performance */
     @media (prefers-reduced-motion: reduce) {
@@ -1437,24 +1512,32 @@ export function RecommendedProducts({products}) {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    setIsVisible(true);
-                    // PERFORMANCE: Start prioritizing images when section becomes visible
-                    setShouldPrioritizeImages(true);
-                    observer.disconnect(); // Stop observing once visible
+                    setIsIntersecting(true);
+
+                    // Always load video when intersecting and we have a video source
+                    if (getCurrentVideoSource) {
+                        setTimeout(() => {
+                            setShouldLoadVideo(true);
+                        }, 500);
+                    }
                 }
             },
             {
                 threshold: 0.1,
-                rootMargin: '100px' // Start loading 100px before visible
+                rootMargin: '100px'
             }
         );
 
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
         }
 
-        return () => observer.disconnect();
-    }, []);
+        return () => {
+            if (containerRef.current) {
+                observer.unobserve(containerRef.current);
+            }
+        };
+    }, [getCurrentVideoSource]);
 
     // PERFORMANCE: Preload critical images when section becomes visible
     useEffect(() => {
@@ -1685,6 +1768,7 @@ const FEATURED_COLLECTION_QUERY = `#graphql
     # 🎬 MINIMAL: Only use confirmed Video fields
     metafields(identifiers: [
       # Slide 1
+      {namespace: "custom", key: "hero_mobile_video"},
       {namespace: "custom", key: "hero_background_image"},
       {namespace: "custom", key: "hero_title"},
       {namespace: "custom", key: "hero_subtitle"},

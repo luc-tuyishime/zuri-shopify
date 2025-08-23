@@ -193,8 +193,7 @@ export const ProductItem = memo(function ProductItem({
     console.log('Has sold-out tag:', product.tags?.includes('sold-out'));
     console.log('Button should be disabled?', !selectedVariant || product.tags?.includes('sold-out'));
 
-// Also add this to see the FULL product object structure:
-    console.log('FULL PRODUCT OBJECT:', JSON.stringify(product, null, 2));
+
 
     return (
         <div className="product-item group" style={styles.container}>
