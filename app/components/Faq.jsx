@@ -24,6 +24,46 @@ export function FAQ({ product }) {
         }
     };
 
+    // Check if ANY relevant metafields exist
+    const hasRelevantMetafields = () => {
+        if (!product?.metafields || !Array.isArray(product.metafields)) {
+            return false;
+        }
+
+        // Check for FAQ title
+        const hasFAQTitle = getMetafield(`faq_title_${locale}`) ||
+            getMetafield('faq_title');
+
+        // Check for FAQ items (check up to 10 FAQs)
+        let hasFAQItems = false;
+        for (let i = 1; i <= 10; i++) {
+            const hasQuestion = getMetafield(`faq_${i}_question_${locale}`) ||
+                getMetafield(`faq_${i}_question`);
+            const hasAnswer = getMetafield(`faq_${i}_answer_${locale}`) ||
+                getMetafield(`faq_${i}_answer`);
+
+            if (hasQuestion && hasAnswer) {
+                hasFAQItems = true;
+                break;
+            }
+        }
+
+        console.log('FAQ metafields check:', {
+            hasFAQTitle,
+            hasFAQItems,
+            hasAnyRelevant: hasFAQTitle || hasFAQItems
+        });
+
+        // Return true if we have either FAQ title OR FAQ items
+        return hasFAQTitle || hasFAQItems;
+    };
+
+    // Early return - don't render component if no relevant metafields exist
+    if (!hasRelevantMetafields()) {
+        console.log('FAQ: No relevant metafields found, hiding component');
+        return null;
+    }
+
     const getLocalizedContent = (baseKey, fallbackText) => {
         const localizedField = getMetafield(`${baseKey}_${locale}`);
         if (localizedField?.value) return localizedField.value;
@@ -42,10 +82,10 @@ export function FAQ({ product }) {
         locale === 'fr' ? 'QUESTIONS FRÉQUEMMENT POSÉES' : 'FREQUENTLY ASKED QUESTIONS'
     );
 
-
     const getFAQsData = () => {
         const faqsData = [];
 
+        // Try to get up to 10 FAQs from metafields
         for (let i = 1; i <= 10; i++) {
             const question = getLocalizedContent(`faq_${i}_question`, '');
             const answer = getLocalizedContent(`faq_${i}_answer`, '');
@@ -55,55 +95,16 @@ export function FAQ({ product }) {
             }
         }
 
-        if (faqsData.length === 0) {
-            return [
-                {
-                    question: locale === 'fr'
-                        ? 'Le shampooing Silk Smooth convient-il à tous les types de cheveux?'
-                        : 'Is Silk Smooth Shampoo suitable for all hair types?',
-                    answer: locale === 'fr'
-                        ? 'Oui, le shampooing Silk Smooth est formulé pour convenir à tous les types de cheveux, des cheveux fins aux cheveux épais et bouclés. Sa formule douce nettoie efficacement sans agresser le cuir chevelu.'
-                        : 'Yes, Silk Smooth Shampoo is formulated to suit all hair types, from fine to thick and curly hair. Its gentle formula cleanses effectively without irritating the scalp.'
-                },
-                {
-                    question: locale === 'fr'
-                        ? 'Le shampooing Silk Smooth contient-il des sulfates ou des parabènes?'
-                        : 'Does Silk Smooth Shampoo contain sulfates or parabens?',
-                    answer: locale === 'fr'
-                        ? 'Non, notre shampooing Silk Smooth est formulé sans sulfates agressifs ni parabènes. Nous utilisons des ingrédients doux et naturels pour nettoyer et nourrir vos cheveux en toute sécurité.'
-                        : 'No, our Silk Smooth Shampoo is formulated without harsh sulfates or parabens. We use gentle, natural ingredients to safely cleanse and nourish your hair.'
-                },
-                {
-                    question: locale === 'fr'
-                        ? 'Le shampooing Silk Smooth peut-il aider avec les cheveux secs ou abîmés?'
-                        : 'Can Silk Smooth Shampoo help with dry or damaged hair?',
-                    answer: locale === 'fr'
-                        ? 'Absolument ! Le shampooing Silk Smooth est enrichi d\'ingrédients hydratants qui aident à restaurer l\'hydratation et à réparer les cheveux abîmés, laissant vos cheveux plus doux et plus maniables.'
-                        : 'Absolutely! Silk Smooth Shampoo is enriched with moisturizing ingredients that help restore hydration and repair damaged hair, leaving your hair softer and more manageable.'
-                },
-                {
-                    question: locale === 'fr'
-                        ? 'À quelle fréquence dois-je utiliser le shampooing Silk Smooth?'
-                        : 'How often should I use Silk Smooth Shampoo?',
-                    answer: locale === 'fr'
-                        ? 'Pour la plupart des types de cheveux, nous recommandons d\'utiliser le shampooing Silk Smooth 2-3 fois par semaine. Les cheveux très gras peuvent nécessiter une utilisation quotidienne, tandis que les cheveux secs peuvent bénéficier d\'une utilisation moins fréquente.'
-                        : 'For most hair types, we recommend using Silk Smooth Shampoo 2-3 times per week. Very oily hair may require daily use, while dry hair may benefit from less frequent use.'
-                },
-                {
-                    question: locale === 'fr'
-                        ? 'Le shampooing Silk Smooth est-il sans danger pour les cheveux colorés?'
-                        : 'Is Silk Smooth Shampoo color-safe?',
-                    answer: locale === 'fr'
-                        ? 'Oui, le shampooing Silk Smooth est sans danger pour les cheveux colorés. Sa formule douce aide à préserver la couleur tout en nettoyant efficacement, prolongeant ainsi la durée de vie de votre coloration.'
-                        : 'Yes, Silk Smooth Shampoo is color-safe. Its gentle formula helps preserve color while cleansing effectively, extending the life of your hair color.'
-                }
-            ];
-        }
-
         return faqsData;
     };
 
     const faqs = getFAQsData();
+
+    // If we have metafields but no valid FAQ data, don't render
+    if (faqs.length === 0) {
+        console.log('FAQ: No valid FAQ data found, hiding component');
+        return null;
+    }
 
     return (
         <div className="bg-white py-16">

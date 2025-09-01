@@ -60,8 +60,16 @@ async function loadCriticalData({ context, params, request }) {
         filters.push(`tag:${searchParams.get('scent')}`);
     }
 
+    // Try both approaches for length filtering
     if (searchParams.get('length') && searchParams.get('length') !== '') {
-        filters.push(`tag:${searchParams.get('length')}`);
+        const lengthValue = searchParams.get('length');
+        // Since Shopify stores duplicated values like '14 14 14', we need to match both ways
+        // Try exact match first, then try the duplicated pattern
+        filters.push(`variants.option.value:"${lengthValue} ${lengthValue} ${lengthValue}"`);
+    }
+
+    if (searchParams.get('texture') && searchParams.get('texture') !== '') {
+        filters.push(`variants.option.value:${searchParams.get('texture')}`);
     }
 
     if (searchParams.get('laceSize') && searchParams.get('laceSize') !== '') {
@@ -128,6 +136,7 @@ export default function Collection() {
         color: searchParams.get('color') || '',
         scent: searchParams.get('scent') || '',
         length: searchParams.get('length') || '',
+        texture: searchParams.get('texture') || '',
         laceSize: searchParams.get('laceSize') || '',
         minPrice: searchParams.get('minPrice') || '',
         maxPrice: searchParams.get('maxPrice') || '',
@@ -139,11 +148,12 @@ export default function Collection() {
         scent: false,
         option: false,
         length: false,
+        texture: false,
         laceSize: false,
         price: false,
     });
 
-    // ✅ UPDATED: Dynamic filter options based on actual product data
+    // Enhanced debugging for variant options
     const getAvailableFilterOptions = () => {
         const products = collection?.products?.nodes || [];
 
@@ -153,34 +163,47 @@ export default function Collection() {
             color: new Set(),
             scent: new Set(),
             length: new Set(),
+            texture: new Set(),
             laceSize: new Set(),
         };
 
-        products.forEach(product => {
+        products.forEach((product, productIndex) => {
+
             // Categories from product types
             if (product.productType) {
                 availableOptions.category.add(product.productType);
             }
 
+            // Debug variant options
+            product.variants?.nodes?.forEach((variant, variantIndex) => {
+
+                variant.selectedOptions?.forEach(option => {
+                    if (option.name === 'Longueur') {
+                        const cleanValue = option.value.split(' ')[0];
+                        availableOptions.length.add(cleanValue);
+                    }
+
+                    if (option.name === 'Texture') {
+                        availableOptions.texture.add(option.value);
+                    }
+                });
+            });
+
             // Extract from tags
             product.tags?.forEach(tag => {
-                // Color tags (adjust these based on your actual tag patterns)
-                if (['Châtain caramel', 'Noir', 'Blonde', 'Auburn', 'Black', 'Caramel Brown'].includes(tag)) {
+                // Color tags (you might need to adjust these)
+                if (['Châtain caramel', 'Noir', 'Blonde', 'Auburn', 'Black', 'Caramel Brown',
+                    'Brown', 'Blond', 'Dark Brown', 'Light Brown'].includes(tag)) {
                     availableOptions.color.add(tag);
                 }
 
                 // Scent tags
-                if (['Vanilla', 'Coconut', 'Lavender'].includes(tag)) {
+                if (['Vanilla', 'Coconut', 'Lavender', 'Rose', 'Citrus'].includes(tag)) {
                     availableOptions.scent.add(tag);
                 }
 
-                // Length tags
-                if (['12"', '14"', '16"', '18"', '20"'].includes(tag)) {
-                    availableOptions.length.add(tag);
-                }
-
                 // Lace size tags
-                if (['4x4', '5x5', '13x4', '13x6'].includes(tag)) {
+                if (['4x4', '5x5', '13x4', '13x6', '6x6', '4x1', '5x1'].includes(tag)) {
                     availableOptions.laceSize.add(tag);
                 }
             });
@@ -210,9 +233,24 @@ export default function Collection() {
             ],
             length: [
                 { value: '', label: locale === 'fr' ? 'Toutes les longueurs' : 'All lengths' },
-                ...Array.from(availableOptions.length).map(length => ({
-                    value: length,
-                    label: length
+                // Sort length options by numeric value
+                ...Array.from(availableOptions.length)
+                    .sort((a, b) => {
+                        // Extract numeric part from strings like "14", "18", "20 20 20", etc.
+                        const aNum = parseInt(a.toString().match(/\d+/)?.[0] || '0');
+                        const bNum = parseInt(b.toString().match(/\d+/)?.[0] || '0');
+                        return aNum - bNum;
+                    })
+                    .map(length => ({
+                        value: length,
+                        label: length
+                    }))
+            ],
+            texture: [
+                { value: '', label: locale === 'fr' ? 'Toutes les textures' : 'All textures' },
+                ...Array.from(availableOptions.texture).map(texture => ({
+                    value: texture,
+                    label: texture
                 }))
             ],
             laceSize: [
@@ -227,12 +265,13 @@ export default function Collection() {
 
     const filterOptions = getAvailableFilterOptions();
 
-    // ✅ Function to check if a filter has options (more than just "All")
+    // Function to check if a filter has options (more than just "All")
     const hasFilterOptions = (filterKey) => {
         return filterOptions[filterKey] && filterOptions[filterKey].length > 1;
     };
 
     const updateFilter = (key, value) => {
+
         const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
 
@@ -262,6 +301,7 @@ export default function Collection() {
             color: '',
             scent: '',
             length: '',
+            texture: '',
             laceSize: '',
             minPrice: '',
             maxPrice: '',
@@ -289,7 +329,7 @@ export default function Collection() {
                                 </button>
                             </div>
 
-                            {/* ✅ Category Filter - Only show if has options */}
+                            {/* Category Filter */}
                             {hasFilterOptions('category') && (
                                 <div className="mb-6 border-b border-gray-200 pb-4">
                                     <button
@@ -322,7 +362,7 @@ export default function Collection() {
                                 </div>
                             )}
 
-                            {/* ✅ Color Filter - Only show if has options */}
+                            {/* Color Filter */}
                             {hasFilterOptions('color') && (
                                 <div className="mb-6 border-b border-gray-200 pb-4">
                                     <button
@@ -352,7 +392,7 @@ export default function Collection() {
                                 </div>
                             )}
 
-                            {/* ✅ Scent Filter - Only show if has options */}
+                            {/* Scent Filter */}
                             {hasFilterOptions('scent') && (
                                 <div className="mb-6 border-b border-gray-200 pb-4">
                                     <button
@@ -382,14 +422,19 @@ export default function Collection() {
                                 </div>
                             )}
 
-                            {/* ✅ Length Filter - Only show if has options */}
+                            {/* Length Filter with Debug Info */}
                             {hasFilterOptions('length') && (
                                 <div className="mb-6 border-b border-gray-200 pb-4">
                                     <button
                                         onClick={() => toggleSection('length')}
                                         className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
                                     >
-                                        <span>{locale === 'fr' ? 'Longueur' : 'Length'}</span>
+                                        <span>
+                                            {locale === 'fr' ? 'Longueur' : 'Length'}
+                                            <small className="text-xs text-gray-500 ml-1">
+                                                ({filterOptions.length.length - 1} options)
+                                            </small>
+                                        </span>
                                         <span className="text-lg">{expandedSections.length ? '−' : '+'}</span>
                                     </button>
                                     {expandedSections.length && (
@@ -404,6 +449,43 @@ export default function Collection() {
                                                         onChange={(e) => updateFilter('length', e.target.value)}
                                                         className="mr-3"
                                                     />
+                                                    <span className="text-sm text-gray-700">
+                                                        {option.label}
+                                                        {option.value && (
+                                                            <small className="text-xs text-gray-400 ml-1">
+                                                                (value: {option.value})
+                                                            </small>
+                                                        )}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Texture Filter */}
+                            {hasFilterOptions('texture') && (
+                                <div className="mb-6 border-b border-gray-200 pb-4">
+                                    <button
+                                        onClick={() => toggleSection('texture')}
+                                        className="flex items-center justify-between w-full text-left text-gray-900 font-medium mb-3"
+                                    >
+                                        <span>{locale === 'fr' ? 'Texture' : 'Texture'}</span>
+                                        <span className="text-lg">{expandedSections.texture ? '−' : '+'}</span>
+                                    </button>
+                                    {expandedSections.texture && (
+                                        <div className="space-y-2">
+                                            {filterOptions.texture.map((option) => (
+                                                <label key={option.value} className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="texture"
+                                                        value={option.value}
+                                                        checked={filters.texture === option.value}
+                                                        onChange={(e) => updateFilter('texture', e.target.value)}
+                                                        className="mr-3"
+                                                    />
                                                     <span className="text-sm text-gray-700">{option.label}</span>
                                                 </label>
                                             ))}
@@ -412,7 +494,7 @@ export default function Collection() {
                                 </div>
                             )}
 
-                            {/* ✅ Lace Size Filter - Only show if has options */}
+                            {/* Lace Size Filter */}
                             {hasFilterOptions('laceSize') && (
                                 <div className="mb-6 border-b border-gray-200 pb-4">
                                     <button
@@ -442,7 +524,7 @@ export default function Collection() {
                                 </div>
                             )}
 
-                            {/* ✅ Price Filter - Always show (doesn't depend on product data) */}
+                            {/* Price Filter */}
                             <div className="mb-6">
                                 <button
                                     onClick={() => toggleSection('price')}
@@ -497,6 +579,11 @@ export default function Collection() {
                                         {collection.description}
                                     </p>
                                 )}
+
+                                {/* Debug Info */}
+                                <div className="mt-2 text-xs text-gray-400">
+                                    Active filters: {JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([k, v]) => v)))}
+                                </div>
                             </div>
                             <button className="p-2 text-gray-600 hover:text-gray-900">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -572,7 +659,7 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
       nodes {
         id
         title
-        availableForSale  # Keep this
+        availableForSale
         price {
           amount
           currencyCode

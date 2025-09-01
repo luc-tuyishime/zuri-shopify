@@ -287,7 +287,7 @@ export const ProductItem = memo(function ProductItem({
                         <Link
                             to={variantUrl}
                             prefetch="intent"
-                            className="flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center"
+                            className="flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#8B4513] text-[#8B4513] font-medium hover:bg-[#8B4513] hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center"
                             style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                         >
                             {locale === 'fr' ? 'VOIR' : 'VIEW'}
@@ -373,7 +373,7 @@ export const ProductItem = memo(function ProductItem({
                                         type="submit"
                                         // onClick={...} ← REMOVE THIS COMPLETELY
                                         disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
-                                        className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#002F45] border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
+                                        className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#8B4513] border rounded-lg font-poppins text-xs sm:text-sm border-[#8B4513] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
                                             (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
@@ -445,7 +445,7 @@ export const ProductItem = memo(function ProductItem({
                         <Link
                             to={variantUrl}
                             prefetch="intent"
-                            className="flex-shrink-0 px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#002F45] text-[#002F45] font-medium hover:bg-gray-900 hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center min-w-[60px]"
+                            className="flex-shrink-0 px-3 py-2 sm:px-4 sm:py-3 bg-white border rounded-lg font-poppins text-xs sm:text-sm border-[#8B4513] text-[#8B4513] font-medium hover:bg-[#8B4513] hover:text-white transition-colors duration-200 active:scale-95 flex items-center justify-center min-w-[60px]"
                             style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                         >
                             {locale === 'fr' ? 'VOIR' : 'VIEW'}
@@ -498,7 +498,7 @@ export const ProductItem = memo(function ProductItem({
                                         className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg font-poppins text-xs sm:text-sm transition-colors duration-200 active:scale-95 flex items-center justify-center ${
                                             (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle')
                                                 ? 'bg-gray-400 border-gray-400 text-white opacity-50 cursor-not-allowed'
-                                                : 'bg-[#002F45] border-[#002F45] text-white font-medium hover:bg-gray-900 hover:border-gray-900'
+                                                : 'bg-[#8B4513] border-[#8B4513] text-white font-medium hover:bg-[#8B4513] hover:border-[#8B4513]'
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >

@@ -3,15 +3,13 @@ import { useLocale } from '~/hooks/useLocale';
 export function SilkSmoothDifference({ product }) {
     console.log('SilkSmoothDifference', product);
     const [locale] = useLocale();
-    // Helper function to get metafield with null safety
-    const getMetafield = (key, namespace = 'custom') => {
 
+    const getMetafield = (key, namespace = 'custom') => {
         try {
             if (!product?.metafields || !Array.isArray(product.metafields)) {
                 return null;
             }
 
-            // Filter out null values first, then find the metafield
             return product.metafields
                 .filter(metafield => metafield !== null)
                 .find(metafield =>
@@ -24,6 +22,46 @@ export function SilkSmoothDifference({ product }) {
             return null;
         }
     };
+
+    // Check if ANY relevant metafields exist
+    const hasRelevantMetafields = () => {
+        if (!product?.metafields || !Array.isArray(product.metafields)) {
+            return false;
+        }
+
+        // Check for section title metafields
+        const hasSectionTitle = getMetafield(`difference_section_title_${locale}`) ||
+            getMetafield('difference_section_title');
+
+        // Check for statistics metafields (check up to 5 statistics)
+        let hasStatistics = false;
+        for (let i = 1; i <= 5; i++) {
+            const hasPercentage = getMetafield(`statistic_${i}_percentage_${locale}`) ||
+                getMetafield(`statistic_${i}_percentage`);
+            const hasTitle = getMetafield(`statistic_${i}_title_${locale}`) ||
+                getMetafield(`statistic_${i}_title`);
+
+            if (hasPercentage || hasTitle) {
+                hasStatistics = true;
+                break;
+            }
+        }
+
+        console.log('SilkSmoothDifference metafields check:', {
+            hasSectionTitle,
+            hasStatistics,
+            hasAnyRelevant: hasSectionTitle || hasStatistics
+        });
+
+        // Return true if we have either section title OR statistics metafields
+        return hasSectionTitle || hasStatistics;
+    };
+
+    // Early return - don't render component if no relevant metafields exist
+    if (!hasRelevantMetafields()) {
+        console.log('SilkSmoothDifference: No relevant metafields found, hiding component');
+        return null;
+    }
 
     // Get localized content with fallback
     const getLocalizedContent = (baseKey, fallbackText) => {
@@ -45,7 +83,7 @@ export function SilkSmoothDifference({ product }) {
         locale === 'fr' ? 'LA DIFFÉRENCE SILK SMOOTH' : 'THE SILK SMOOTH DIFFERENCE'
     );
 
-    // Get statistics data from metafields or use defaults
+    // Get statistics data from metafields
     const getStatisticsData = () => {
         const statisticsData = [];
 
@@ -59,35 +97,16 @@ export function SilkSmoothDifference({ product }) {
             }
         }
 
-        // If no metafields found, use default statistics
-        if (statisticsData.length === 0) {
-            return [
-                {
-                    percentage: '85%',
-                    title: locale === 'fr'
-                        ? 'Des utilisateurs ont signalé des cheveux plus lisses et plus maniables après avoir utilisé le shampooing Silk Smooth.*'
-                        : 'Of users reported smoother, more manageable hair after using Silk Smooth Shampoo.*'
-                },
-                {
-                    percentage: '90%',
-                    title: locale === 'fr'
-                        ? 'Des utilisateurs ont remarqué une amélioration visible de l\'éclat naturel de leurs cheveux après avoir intégré Silk Smooth dans leur routine.*'
-                        : 'Of users noticed a visible improvement in their hair\'s natural shine after incorporating Silk Smooth into their routine.*'
-                },
-                {
-                    percentage: '92%',
-                    title: locale === 'fr'
-                        ? 'Des utilisateurs recommanderaient le shampooing Silk Smooth à un ami ou un membre de la famille pour sa formule douce mais efficace.*'
-                        : 'Of users would recommend Silk Smooth Shampoo to a friend or family member for its gentle yet effective formula.*'
-                }
-            ];
-        }
-
         return statisticsData;
     };
 
-
     const statistics = getStatisticsData();
+
+    // If we have metafields but no valid statistics data, don't render
+    if (statistics.length === 0) {
+        console.log('SilkSmoothDifference: No valid statistics data, hiding component');
+        return null;
+    }
 
     return (
         <div className="py-16">

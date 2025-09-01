@@ -266,7 +266,7 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                             disabled={!canScrollRight}
                             className={`p-2 rounded-full border ${
                                 canScrollRight
-                                    ? 'border-gray-300 hover:border-gray-500 text-gray-700 hover:text-gray-900'
+                                    ? 'border-[#8B4513] hover:border-gray-500 text-[#8B4513] hover:text-[#8B4513]'
                                     : 'border-gray-200 text-gray-300 cursor-not-allowed'
                             } transition-colors`}
                             aria-label="Scroll right"
@@ -450,7 +450,12 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
  * }}
  */
 function FeaturedCollection({ collection }) {
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
     const [videoLoaded, setVideoLoaded] = useState(false);
     const [isSlowConnection, setIsSlowConnection] = useState(false);
     const [isClient, setIsClient] = useState(false);
@@ -463,6 +468,14 @@ function FeaturedCollection({ collection }) {
     const videoRef = useRef(null);
     const [locale] = useLocale();
     const t = useTranslation(locale);
+
+    const mobileHideCSS = `
+    @media (max-width: 767px) {
+        .desktop-video-only {
+            display: none !important;
+        }
+    }
+`;
 
     const getMetafield = (key, namespace = 'custom') => {
         try {
@@ -895,14 +908,14 @@ function FeaturedCollection({ collection }) {
             <>
                 <div ref={containerRef} className="hero-video-container">
                     {/* Only show videos - no background images */}
-                    {getCurrentVideoSource && (
+                    {!isMobile && getCurrentVideoSource && (
                         <video
                             key={`bg-video-${currentVideoIndex}`}
                             autoPlay
                             loop
                             muted
                             playsInline
-                            className="hero-background-video"
+                            className="hero-background-video desktop-video-only"
                             preload="metadata"
                             style={{
                                 position: 'absolute',
@@ -1060,7 +1073,7 @@ function FeaturedCollection({ collection }) {
                         loop
                         muted
                         playsInline
-                        className="hero-background-video"
+                        className="hero-background-video desktop-video-only"
                         src={getCurrentVideoSource}
                         style={{
                             position: 'absolute',
@@ -1188,6 +1201,13 @@ function FeaturedCollection({ collection }) {
 
             <style dangerouslySetInnerHTML={{
                 __html: styles + `
+                
+                 @media (max-width: 767px) {
+                  .hero-background-video {
+                  display: none !important;
+                  }
+                }
+        
                 .hero-background-video {
                     transform: translateZ(0);
                     backface-visibility: hidden;

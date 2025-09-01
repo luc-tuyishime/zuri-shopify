@@ -75,15 +75,11 @@ async function loadCriticalData({ context, request }) {
       allProductsForFilters = allCollectionProducts.collection?.products?.nodes || [];
 
     } catch (error) {
-      console.error('Error fetching collection:', error);
-      // Fallback to regular products query
       products = { nodes: [], pageInfo: {} };
     }
   } else {
-    // Regular products query with other filters
     const queryParts = [];
 
-    // Handle category filter (can be multiple)
     if (searchParams.get('category') && searchParams.get('category') !== '') {
       const categories = searchParams.get('category').split(',');
       const categoryQueries = categories.map(cat => `product_type:"${cat}"`);
@@ -92,20 +88,29 @@ async function loadCriticalData({ context, request }) {
       }
     }
 
-    // Handle variant filters dynamically
     const variantFilters = ['longueur', 'texture', 'couleur', 'capSize'];
     variantFilters.forEach(filterKey => {
       if (searchParams.get(filterKey) && searchParams.get(filterKey) !== '') {
         const values = searchParams.get(filterKey).split(',');
+
         const valueQueries = values.map(val => {
-          // For variant-based filters, we need to search in variant titles and option values
-          return `(variants.title:"${val}" OR tag:"${val}")`;
-        });
+          if (filterKey === 'longueur') {
+            return `${val}`;
+          } else if (filterKey === 'texture') {
+            return null;
+          } else if (filterKey === 'capSize') {
+            const cleanVal = val.replace(/[()""]/g, '');
+            return `(variants.title:*${cleanVal}* OR tag:"${cleanVal}")`;
+          } else {
+            return `(variants.title:"${val}" OR tag:"${val}")`;
+          }
+        }).filter(query => query !== null);
         if (valueQueries.length > 0) {
           queryParts.push(`(${valueQueries.join(' OR ')})`);
         }
       }
     });
+
 
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
@@ -122,21 +127,32 @@ async function loadCriticalData({ context, request }) {
     const sortKey = searchParams.get('sortKey') || 'TITLE';
     const reverse = searchParams.get('reverse') === 'true';
 
-    // Regular products query
-    const productsData = await storefront.query(CATALOG_QUERY, {
-      variables: {
-        query,
-        sortKey,
-        reverse,
-        country: 'FR',
-        language: 'FR',
-        ...paginationVariables
-      },
-    });
+    if (query === '') {
 
-    products = productsData.products;
+      const productsData = await storefront.query(ALL_PRODUCTS_QUERY, {
+        variables: {
+          sortKey,
+          reverse,
+          country: 'FR',
+          language: 'FR',
+          ...paginationVariables
+        },
+      });
+      products = productsData.products;
+    } else {
+      const productsData = await storefront.query(CATALOG_QUERY, {
+        variables: {
+          query,
+          sortKey,
+          reverse,
+          country: 'FR',
+          language: 'FR',
+          ...paginationVariables
+        },
+      });
+      products = productsData.products;
+    }
 
-    // Also fetch all products for filter generation
     const allProductsData = await storefront.query(ALL_PRODUCTS_FOR_FILTERS_QUERY, {
       variables: {
         country: 'FR',
@@ -191,12 +207,17 @@ function extractVariantOptions(products, locale) {
 
             // Map option names to our filter categories
             if (optionName.includes('longueur') || optionName.includes('length')) {
-              optionSets.longueur.add(optionValue);
+              const cleanValue = option.value.split(' ')[0];
+              if (cleanValue && /^\d+$/.test(cleanValue)) {
+                optionSets.longueur.add(cleanValue);
+              } else {
+                console.log(`🔍 DEBUG: Skipped invalid length value: ${option.value}`);
+              }
             } else if (optionName.includes('texture')) {
               optionSets.texture.add(optionValue);
             } else if (optionName.includes('couleur') || optionName.includes('color') || optionName.includes('colour')) {
               optionSets.couleur.add(optionValue);
-            } else if (optionName.includes('cap') || optionName.includes('taille') || optionName.includes('size')) {
+            } else if (optionName.includes('cap size') || optionName.includes('cap') || optionName.includes('size')) {
               optionSets.capSize.add(optionValue);
             }
           });
@@ -337,7 +358,33 @@ export default function Collection() {
     };
   }, [allProductsForFilters, locale]);
 
+  const finalProducts = useMemo(() => {
+    let filtered = products?.nodes || [];
+
+    if (filters.texture && filters.texture.length > 0) {
+      filtered = filtered.filter(product => {
+        return product.variants?.nodes?.some(variant => {
+          const hasTextureOption = variant.selectedOptions?.some(option => {
+            if (option.name === 'Texture') {
+              return filters.texture.includes(option.value);
+            }
+            return false;
+          });
+          return hasTextureOption;
+        });
+      });
+    }
+
+    return filtered;
+  }, [products, filters.texture]);
+
+  const finalProductsConnection = {
+    nodes: finalProducts,
+    pageInfo: products?.pageInfo || {}
+  };
+
   const updateFilter = (key, value) => {
+
     if (key === 'minPrice' || key === 'maxPrice') {
       // Handle price inputs normally
       const newFilters = { ...filters, [key]: value };
@@ -351,19 +398,29 @@ export default function Collection() {
       }
       newSearchParams.delete('cursor');
       newSearchParams.delete('direction');
+
       setSearchParams(newSearchParams);
     } else {
-      // Handle checkbox filters (arrays)
       const currentValues = filters[key] || [];
+
+      // Clean the incoming value first for comparison
+      let cleanValue = value;
+      if (key === 'longueur') {
+        const cleanVal = value.split(' ')[0];
+        const numericVal = cleanVal.replace(/[^0-9]/g, '');
+        cleanValue = numericVal;
+      }
+
       let newValues;
 
-      if (currentValues.includes(value)) {
-        // Remove if already selected
-        newValues = currentValues.filter(v => v !== value);
+      if (currentValues.includes(cleanValue)) {
+        newValues = currentValues.filter(v => v !== cleanValue);
       } else {
-        // Add if not selected
-        newValues = [...currentValues, value];
+        newValues = [...currentValues, cleanValue];
       }
+
+      // Remove duplicates just in case
+      newValues = [...new Set(newValues)];
 
       const newFilters = { ...filters, [key]: newValues };
       setFilters(newFilters);
@@ -378,6 +435,7 @@ export default function Collection() {
       // Reset pagination when filters change
       newSearchParams.delete('cursor');
       newSearchParams.delete('direction');
+
       setSearchParams(newSearchParams);
     }
   };
@@ -605,7 +663,7 @@ export default function Collection() {
               </div>
 
               <PaginatedResourceSection
-                  connection={products}
+                  connection={finalProductsConnection}
                   resourcesClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
               >
                 {({node: product, index}) => {
@@ -622,7 +680,7 @@ export default function Collection() {
                   )
                 }}
               </PaginatedResourceSection>
-              {!products?.nodes?.length && (
+              {finalProducts.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-gray-500">
                       {locale === 'fr'
@@ -767,6 +825,39 @@ const ALL_PRODUCTS_FOR_FILTERS_QUERY = `#graphql
     products(first: $first) {
       nodes {
         ...CollectionItem
+      }
+    }
+  }
+  ${COLLECTION_ITEM_FRAGMENT}
+`;
+
+const ALL_PRODUCTS_QUERY = `#graphql
+  query AllProducts(
+    $country: CountryCode
+    $language: LanguageCode
+    $sortKey: ProductSortKeys
+    $reverse: Boolean
+    $first: Int
+    $last: Int
+    $startCursor: String
+    $endCursor: String
+  ) @inContext(country: $country, language: $language) {
+    products(
+      first: $first
+      last: $last
+      before: $startCursor
+      after: $endCursor
+      sortKey: $sortKey
+      reverse: $reverse
+    ) {
+      nodes {
+        ...CollectionItem
+      }
+      pageInfo {
+        hasPreviousPage
+        hasNextPage
+        startCursor
+        endCursor
       }
     }
   }

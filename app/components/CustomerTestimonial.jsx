@@ -26,6 +26,43 @@ export function CustomerTestimonial({ product, testimonial, productImage }) {
         }
     };
 
+    // Check if ANY relevant metafields exist
+    const hasRelevantMetafields = () => {
+        if (!product?.metafields || !Array.isArray(product.metafields)) {
+            return false;
+        }
+
+        // Check for testimonial-related metafields
+        const hasTestimonialQuote = getMetafield(`testimonial_quote_${locale}`) ||
+            getMetafield('testimonial_quote');
+
+        const hasTestimonialAuthor = getMetafield(`testimonial_author_${locale}`) ||
+            getMetafield('testimonial_author');
+
+        const hasTestimonialProduct = getMetafield(`testimonial_product_${locale}`) ||
+            getMetafield('testimonial_product');
+
+        const hasTestimonialImage = getMetafield('testimonial_image');
+
+        console.log('CustomerTestimonial metafields check:', {
+            hasTestimonialQuote,
+            hasTestimonialAuthor,
+            hasTestimonialProduct,
+            hasTestimonialImage,
+            hasTestimonialProp: Boolean(testimonial),
+            hasAnyRelevant: hasTestimonialQuote || hasTestimonialAuthor || hasTestimonialProduct || hasTestimonialImage || Boolean(testimonial)
+        });
+
+        // Return true if we have any testimonial metafields OR the testimonial prop
+        return hasTestimonialQuote || hasTestimonialAuthor || hasTestimonialProduct || hasTestimonialImage || Boolean(testimonial);
+    };
+
+    // Early return - don't render component if no relevant metafields or testimonial prop exist
+    if (!hasRelevantMetafields()) {
+        console.log('CustomerTestimonial: No relevant metafields or testimonial prop found, hiding component');
+        return null;
+    }
+
     // Get localized content with fallback
     const getLocalizedContent = (baseKey, fallbackText) => {
         // Try language-specific metafield first
@@ -36,7 +73,7 @@ export function CustomerTestimonial({ product, testimonial, productImage }) {
         const defaultField = getMetafield(baseKey);
         if (defaultField?.value) return defaultField.value;
 
-        // Final fallback to provided text
+        // Final fallback to provided text (only if we have metafields)
         return fallbackText;
     };
 
@@ -51,27 +88,17 @@ export function CustomerTestimonial({ product, testimonial, productImage }) {
         return productImage || IMAGE;
     };
 
-    // Get testimonial content from metafields or props or defaults
+    // Get testimonial content from metafields or props
     const getTestimonialContent = () => {
         // If testimonial prop is passed, use it (for backward compatibility)
         if (testimonial) {
             return testimonial;
         }
 
-        // Otherwise, get from metafields
-        const quote = getLocalizedContent('testimonial_quote',
-            locale === 'fr'
-                ? "Ce shampooing est parfait pour mon cuir chevelu sensible. Il nettoie en profondeur tout en gardant mes cheveux doux."
-                : "This shampoo is perfect for my sensitive scalp. Cleans thoroughly while keeping my hair soft."
-        );
-
-        const author = getLocalizedContent('testimonial_author',
-            locale === 'fr' ? "Marie D." : "Jamie P."
-        );
-
-        const productName = getLocalizedContent('testimonial_product',
-            locale === 'fr' ? "Shampooing Silk Smooth, Cliente" : "Silk Smooth Shampoo, Customer"
-        );
+        // Otherwise, get from metafields (no fallback defaults since we checked for metafields existence)
+        const quote = getLocalizedContent('testimonial_quote', '');
+        const author = getLocalizedContent('testimonial_author', '');
+        const productName = getLocalizedContent('testimonial_product', '');
 
         return {
             quote,
@@ -82,6 +109,12 @@ export function CustomerTestimonial({ product, testimonial, productImage }) {
 
     const currentTestimonial = getTestimonialContent();
     const testimonialImage = getTestimonialImage();
+
+    // Additional safety check - if we have metafields but no actual content, don't render
+    if (!testimonial && (!currentTestimonial.quote || !currentTestimonial.author)) {
+        console.log('CustomerTestimonial: No valid testimonial content found, hiding component');
+        return null;
+    }
 
     return (
         <div className="bg-[#EBEBEB]" style={{
@@ -117,9 +150,11 @@ export function CustomerTestimonial({ product, testimonial, productImage }) {
                             <div className="font-semibold text-[#0D2936] text-sm sm:text-base lg:text-[16px] font-poppins mb-1">
                                 — {currentTestimonial.author}
                             </div>
-                            <div className="font-semibold text-[#0D2936] text-sm sm:text-base lg:text-[16px] font-poppins">
-                                {currentTestimonial.product}
-                            </div>
+                            {currentTestimonial.product && (
+                                <div className="font-semibold text-[#0D2936] text-sm sm:text-base lg:text-[16px] font-poppins">
+                                    {currentTestimonial.product}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
