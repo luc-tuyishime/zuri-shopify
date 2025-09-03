@@ -398,26 +398,26 @@ function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
                             </Link>
 
                             {/* Cart */}
-                            <Link to="/cart" className="text-white hover:text-gray-200 transition-colors relative">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l-1 12H6L5 9z" />
-                                </svg>
-                                {cart?.totalQuantity > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-white text-[#8B4513] text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                        {cart.totalQuantity}
-                                    </span>
-                                )}
-                            </Link>
+                            {/*<Link to="/cart" className="text-white hover:text-gray-200 transition-colors relative">*/}
+                            {/*    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
+                            {/*        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l-1 12H6L5 9z" />*/}
+                            {/*    </svg>*/}
+                            {/*    {cart?.totalQuantity > 0 && (*/}
+                            {/*        <span className="absolute -top-2 -right-2 bg-white text-[#8B4513] text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">*/}
+                            {/*            {cart.totalQuantity}*/}
+                            {/*        </span>*/}
+                            {/*    )}*/}
+                            {/*</Link>*/}
 
                             {/* Account */}
-                            <Link
-                                to={isLoggedIn ? "/account" : ""}
-                                className="text-white hover:text-gray-200 transition-colors"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                            </Link>
+                            {/*<Link*/}
+                            {/*    to={isLoggedIn ? "/account" : ""}*/}
+                            {/*    className="text-white hover:text-gray-200 transition-colors"*/}
+                            {/*>*/}
+                            {/*    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
+                            {/*        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />*/}
+                            {/*    </svg>*/}
+                            {/*</Link>*/}
 
                             {/* Mobile Menu Button */}
                             <button className="md:hidden text-white">

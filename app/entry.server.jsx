@@ -31,6 +31,7 @@ export default async function handleRequest(
     // Add mediaSrc for videos
     mediaSrc: [
       "'self'",
+      "https://myzuri.com",
       "https://cdn.shopify.com",
       "https://res.cloudinary.com",        // ✅ Add Cloudinary
       "https://video.cloudinary.com"       // ✅ Add Cloudinary video

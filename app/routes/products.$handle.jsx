@@ -1,6 +1,6 @@
 import {Await, json, useLoaderData, useNavigate} from '@remix-run/react';
 
-import {memo, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
+import {memo, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import { Money } from '@shopify/hydrogen';
 import { useLocale } from '~/hooks/useLocale';
 import { useTranslation } from '~/lib/i18n';
@@ -73,6 +73,40 @@ const ZoomModalWithVideo = memo(({
                                    onNext,
                                    productTitle
                                  }) => {
+  // ALL hooks must be declared first, before any early returns
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const imageRef = useRef(null);
+
+  // All useCallback hooks
+  const handleMouseMove = useCallback((e) => {
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setZoomPosition({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    });
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsZoomed(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsZoomed(false);
+  }, []);
+
+  // All useEffect hooks
+  useEffect(() => {
+    setIsZoomed(false);
+    setZoomPosition({ x: 50, y: 50 });
+  }, [selectedIndex]);
+
+  // NOW we can do early returns after ALL hooks are declared
   if (!isOpen) return null;
 
   const currentMedia = media[selectedIndex];
@@ -95,38 +129,75 @@ const ZoomModalWithVideo = memo(({
           </button>
 
           {/* Media Content */}
-          {isCurrentVideo ? (
-              currentMedia.__typename === 'ExternalVideo' ? (
-                  // External video (YouTube, Vimeo)
-                  <iframe
-                      src={currentMedia.embedUrl}
-                      className="max-w-full max-h-full w-full h-96 sm:h-[500px] lg:h-[600px] rounded-lg shadow-2xl"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      onClick={(e) => e.stopPropagation()}
-                  />
-              ) : (
-                  // Native video
-                  <video
+          <div
+              className="relative overflow-hidden rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+          >
+            {isCurrentVideo ? (
+                currentMedia.__typename === 'ExternalVideo' ? (
+                    // External video (YouTube, Vimeo)
+                    <iframe
+                        src={currentMedia.embedUrl}
+                        className="max-w-full max-h-full w-full h-96 sm:h-[500px] lg:h-[600px] rounded-lg shadow-2xl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
+                ) : (
+                    // Native video
+                    <video
+                        src={getMediaUrl(currentMedia)}
+                        controls
+                        autoPlay
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                        poster={getPreviewImageUrl(currentMedia)}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                )
+            ) : (
+                // Image with zoom functionality
+                <div
+                    className="relative max-w-full max-h-full overflow-hidden"
+                    onMouseMove={handleMouseMove}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                >
+                  <img
+                      ref={imageRef}
                       src={getMediaUrl(currentMedia)}
-                      controls
-                      autoPlay
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                      onClick={(e) => e.stopPropagation()}
-                      poster={getPreviewImageUrl(currentMedia)}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-              )
-          ) : (
-              // Image
-              <img
-                  src={getMediaUrl(currentMedia)}
-                  alt={currentMedia.image?.altText || productTitle}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
-                  onClick={(e) => e.stopPropagation()}
-              />
-          )}
+                      alt={currentMedia.image?.altText || productTitle}
+                      className={`
+                  max-w-full max-h-full object-contain cursor-zoom-in transition-transform duration-300 ease-out
+                  ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}
+                `}
+                      style={isZoomed ? {
+                        transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                        transform: `scale(2.5)`
+                      } : {}}
+                  />
+
+                  {/* Zoom indicator */}
+                  {!isZoomed && (
+                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center opacity-75 hover:opacity-100 transition-opacity">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                        Hover to zoom
+                      </div>
+                  )}
+
+                  {/* Zoomed state indicator */}
+                  {isZoomed && (
+                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-full text-xs flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM15 12H9" />
+                        </svg>
+                        2.5x Zoom
+                      </div>
+                  )}
+                </div>
+            )}
+          </div>
 
           {/* Navigation Buttons - Desktop */}
           {media.length > 1 && (
@@ -137,7 +208,7 @@ const ZoomModalWithVideo = memo(({
                           e.stopPropagation();
                           onPrevious();
                         }}
-                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer z-20"
                     >
                       <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -151,7 +222,7 @@ const ZoomModalWithVideo = memo(({
                           e.stopPropagation();
                           onNext();
                         }}
-                        className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                        className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-20"
                     >
                       <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -163,14 +234,14 @@ const ZoomModalWithVideo = memo(({
 
           {/* Media Counter */}
           {media.length > 1 && (
-              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm">
+              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm z-20">
                 {selectedIndex + 1} / {media.length}
               </div>
           )}
 
           {/* Media Type Indicator */}
           {isCurrentVideo && (
-              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center">
+              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center z-20">
                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                 </svg>
