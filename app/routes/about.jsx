@@ -494,7 +494,6 @@ function AboutHeroFeaturedCollection({ collection }) {
                 }
             }
 
-            // No video source available or video failed - return null for video-only setup
             return null;
 
         } catch (error) {
@@ -504,8 +503,6 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, [currentVideoIndex, collection?.metafields, videoErrors]);
 
     const handleVideoError = (videoUrl) => {
-        console.error('❌ Video failed to load:', videoUrl);
-        console.log('🔄 Adding to failed videos list and switching to fallback');
         setVideoErrors(prev => new Set([...prev, videoUrl]));
     };
 
