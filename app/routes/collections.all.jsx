@@ -152,6 +152,89 @@ async function loadCriticalData({ context, request }) {
       console.error('Collection filtering error:', error);
       products = { nodes: [], pageInfo: {} };
     }
+  } else {
+    // ADD THIS MISSING ELSE BLOCK:
+    const queryParts = [];
+
+    if (searchParams.get('category') && searchParams.get('category') !== '') {
+      const categories = searchParams.get('category').split(',');
+      const categoryQueries = categories.map(cat => `product_type:"${cat}"`);
+      if (categoryQueries.length > 0) {
+        queryParts.push(`(${categoryQueries.join(' OR ')})`);
+      }
+    }
+
+    const variantFilters = ['longueur', 'texture', 'couleur', 'capSize'];
+    variantFilters.forEach(filterKey => {
+      if (searchParams.get(filterKey) && searchParams.get(filterKey) !== '') {
+        const values = searchParams.get(filterKey).split(',');
+
+        const valueQueries = values.map(val => {
+          if (filterKey === 'longueur') {
+            return `variants.title:*${val}*`;
+          } else if (filterKey === 'texture') {
+            return `(variants.title:"${val}" OR tag:"${val}")`;
+          } else if (filterKey === 'capSize') {
+            const cleanVal = val.replace(/[()""]/g, '');
+            return `(variants.title:*${cleanVal}* OR tag:"${cleanVal}")`;
+          } else {
+            return `(variants.title:"${val}" OR tag:"${val}")`;
+          }
+        }).filter(query => query !== null);
+        if (valueQueries.length > 0) {
+          queryParts.push(`(${valueQueries.join(' OR ')})`);
+        }
+      }
+    });
+
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+
+    if (minPrice && maxPrice) {
+      queryParts.push(`variants.price:>=${minPrice} AND variants.price:<=${maxPrice}`);
+    } else if (minPrice) {
+      queryParts.push(`variants.price:>=${minPrice}`);
+    } else if (maxPrice) {
+      queryParts.push(`variants.price:<=${maxPrice}`);
+    }
+
+    const query = queryParts.length > 0 ? queryParts.join(' AND ') : '';
+    const sortKey = searchParams.get('sortKey') || 'TITLE';
+    const reverse = searchParams.get('reverse') === 'true';
+
+    if (query === '') {
+      const productsData = await storefront.query(ALL_PRODUCTS_QUERY, {
+        variables: {
+          sortKey,
+          reverse,
+          country: 'FR',
+          language: 'FR',
+          ...paginationVariables
+        },
+      });
+      products = productsData.products;
+    } else {
+      const productsData = await storefront.query(CATALOG_QUERY, {
+        variables: {
+          query,
+          sortKey,
+          reverse,
+          country: 'FR',
+          language: 'FR',
+          ...paginationVariables
+        },
+      });
+      products = productsData.products;
+    }
+
+    const allProductsData = await storefront.query(ALL_PRODUCTS_FOR_FILTERS_QUERY, {
+      variables: {
+        country: 'FR',
+        language: 'FR',
+        first: 250
+      },
+    });
+    allProductsForFilters = allProductsData.products.nodes;
   }
 
 

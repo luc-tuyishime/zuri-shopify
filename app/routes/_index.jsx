@@ -637,12 +637,8 @@ function FeaturedCollection({ collection }) {
     }, [collection?.metafields]);
 
     useEffect(() => {
-
-
-        // Only start slideshow if we have more than 1 video
-        if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
-
-
+        // Only start slideshow if we have more than 1 video and we're intersecting
+        if (!isMobile && isClient && isIntersecting && desktopVideos.length > 1) {
             const interval = setInterval(() => {
                 setCurrentVideoIndex((prevIndex) => {
                     const nextIndex = (prevIndex + 1) % desktopVideos.length;
@@ -654,16 +650,8 @@ function FeaturedCollection({ collection }) {
             return () => {
                 clearInterval(interval);
             };
-        } else {
-            // Log why slideshow isn't running
-            const reasons = [];
-            if (isMobile) reasons.push('Mobile device');
-            if (!isClient) reasons.push('Client not ready');
-            if (!shouldLoadVideo) reasons.push('Video loading disabled');
-            if (desktopVideos.length <= 1) reasons.push(`Only ${desktopVideos.length} video(s)`);
-
         }
-    }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
+    }, [isMobile, isClient, isIntersecting, desktopVideos.length]);
 
     const renderSlideIndicators = () => {
         // Show indicators only if:
@@ -865,33 +853,7 @@ function FeaturedCollection({ collection }) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    useEffect(() => {
 
-        // Dynamic slideshow: works with 1, 2, or 3+ slides
-        // Only runs timer if we have MORE THAN 1 video/slide
-        if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
-
-            const interval = setInterval(() => {
-                setCurrentVideoIndex((prevIndex) => {
-                    const nextIndex = (prevIndex + 1) % desktopVideos.length;
-                    setVideoLoaded(false);
-                    return nextIndex;
-                });
-            }, 8000);
-
-            return () => {
-                clearInterval(interval);
-            };
-        } else {
-            // Log why slideshow isn't running
-            const reasons = [];
-            if (isMobile) reasons.push('Mobile device');
-            if (!isClient) reasons.push('Client not ready');
-            if (!shouldLoadVideo) reasons.push('Video loading disabled');
-            if (desktopVideos.length <= 1) reasons.push(`Only ${desktopVideos.length} video(s)`);
-
-        }
-    }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
 
 
     const showVideo = isIntersecting;

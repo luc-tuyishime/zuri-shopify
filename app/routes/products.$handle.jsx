@@ -1222,6 +1222,7 @@ const PRODUCT_FRAGMENT = `#graphql
       {namespace: "custom", key: "testimonial_product_en"},
       {namespace: "custom", key: "testimonial_product_fr"},
       {namespace: "custom", key: "testimonial_image"},
+      {namespace: "custom", key: "testimonial_video"},
       {namespace: "custom", key: "faq_title_en"},
       {namespace: "custom", key: "faq_title_fr"},
       {namespace: "custom", key: "faq_1_question_en"},
