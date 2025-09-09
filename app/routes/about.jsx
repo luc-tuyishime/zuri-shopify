@@ -129,43 +129,7 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
 // Updated GraphQL query to include FeaturedCollection data
 const ABOUT_PAGE_QUERY = `#graphql
   query AboutPage {
-    shop {
-      metafields(identifiers: [
-        {namespace: "custom", key: "hero_title_en"},
-        {namespace: "custom", key: "hero_title_fr"},
-        {namespace: "custom", key: "hero_background_image"},
-        {namespace: "custom", key: "stats_text_en"},
-        {namespace: "custom", key: "stats_text_fr"},
-        {namespace: "custom", key: "logos_banner_image"},
-        {namespace: "custom", key: "founder_name"},
-        {namespace: "custom", key: "founder_title_en"},
-        {namespace: "custom", key: "founder_title_fr"},
-        {namespace: "custom", key: "founder_bio_paragraph_1_en"},
-        {namespace: "custom", key: "founder_bio_paragraph_1_fr"},
-        {namespace: "custom", key: "founder_bio_paragraph_2_en"},
-        {namespace: "custom", key: "founder_bio_paragraph_2_fr"},
-        {namespace: "custom", key: "founder_bio_paragraph_3_en"},
-        {namespace: "custom", key: "founder_bio_paragraph_3_fr"},
-        {namespace: "custom", key: "founder_quote_en"},
-        {namespace: "custom", key: "founder_quote_fr"},
-        {namespace: "custom", key: "founder_image"}
-      ]) {
-        key
-        value
-        reference {
-          ... on MediaImage {
-            image {
-              url
-              altText
-              width
-              height
-            }
-          }
-        }
-      }
-    }
-    
-    # Get featured collection for hero section
+    # Get featured collection for About hero section with About-specific metafields
     collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         id
@@ -180,26 +144,42 @@ const ABOUT_PAGE_QUERY = `#graphql
           height
         }
         metafields(identifiers: [
-          # Slide 1
-          {namespace: "custom", key: "hero_background_image"},
-          {namespace: "custom", key: "hero_title"},
-          {namespace: "custom", key: "hero_subtitle"},
-          {namespace: "custom", key: "hero_button_text"},
-          {namespace: "custom", key: "hero_button_url_slide_1"},
+          # About Mobile Video
+          {namespace: "custom", key: "about_hero_mobile_video"},
           
-          # Slide 2
-          {namespace: "custom", key: "hero_background_image_slide_2"},
-          {namespace: "custom", key: "hero_title_slide_2"},
-          {namespace: "custom", key: "hero_subtitle_slide_2"},
-          {namespace: "custom", key: "hero_button_text_slide_2"},
-          {namespace: "custom", key: "hero_button_url_slide_2"},
+          # About Slide 1
+          {namespace: "custom", key: "about_hero_background_image"},
+          {namespace: "custom", key: "about_hero_title_en"},
+          {namespace: "custom", key: "about_hero_title_fr"},
+          {namespace: "custom", key: "about_hero_subtitle_en"},
+          {namespace: "custom", key: "about_hero_subtitle_fr"},
+          {namespace: "custom", key: "about_hero_button_text_en"},
+          {namespace: "custom", key: "about_hero_button_text_fr"},
+          {namespace: "custom", key: "about_hero_button_url_slide_1"},
           
-          # Slide 3
-          {namespace: "custom", key: "hero_background_image_slide_3"},
-          {namespace: "custom", key: "hero_title_slide_3"},
-          {namespace: "custom", key: "hero_subtitle_slide_3"},
-          {namespace: "custom", key: "hero_button_text_slide_3"},
-          {namespace: "custom", key: "hero_button_url_slide_3"}
+          {namespace: "custom", key: "about_banner_background_image"},
+          {namespace: "custom", key: "about_banner_title_en"},
+          {namespace: "custom", key: "about_banner_title_fr"},
+          
+          # About Slide 2
+          {namespace: "custom", key: "about_hero_background_image_slide_2"},
+          {namespace: "custom", key: "about_hero_title_slide_2_en"},
+          {namespace: "custom", key: "about_hero_title_slide_2_fr"},
+          {namespace: "custom", key: "about_hero_subtitle_slide_2_en"},
+          {namespace: "custom", key: "about_hero_subtitle_slide_2_fr"},
+          {namespace: "custom", key: "about_hero_button_text_slide_2_en"},
+          {namespace: "custom", key: "about_hero_button_text_slide_2_fr"},
+          {namespace: "custom", key: "about_hero_button_url_slide_2"},
+          
+          # About Slide 3
+          {namespace: "custom", key: "about_hero_background_image_slide_3"},
+          {namespace: "custom", key: "about_hero_title_slide_3_en"},
+          {namespace: "custom", key: "about_hero_title_slide_3_fr"},
+          {namespace: "custom", key: "about_hero_subtitle_slide_3_en"},
+          {namespace: "custom", key: "about_hero_subtitle_slide_3_fr"},
+          {namespace: "custom", key: "about_hero_button_text_slide_3_en"},
+          {namespace: "custom", key: "about_hero_button_text_slide_3_fr"},
+          {namespace: "custom", key: "about_hero_button_url_slide_3"}
         ]) {
           id
           namespace
@@ -283,10 +263,9 @@ export async function loader({ context }) {
             })
         ]);
 
-        const { shop, collections } = aboutData;
+        const { collections } = aboutData;
 
         return json({
-            shop,
             featuredCollection: collections.nodes[0] || null,
             bestSellersCollection: bestSellersResult,
             recommendedProducts: recommendedProductsResult
@@ -294,7 +273,6 @@ export async function loader({ context }) {
     } catch (error) {
         console.error('Error loading about page data:', error);
         return json({
-            shop: { metafields: [] },
             featuredCollection: null,
             bestSellersCollection: null,
             recommendedProducts: null
@@ -309,6 +287,8 @@ export const meta = () => {
 export const handle = {
     noLayout: true // Custom flag
 };
+
+
 
 // Helper function to get metafield value
 function getMetafieldValue(metafields, key, fallback = '') {
@@ -435,14 +415,18 @@ function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
 
 // FeaturedCollection Component (adapted for About page)
 function AboutHeroFeaturedCollection({ collection }) {
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
     const [videoLoaded, setVideoLoaded] = useState(false);
     const [isSlowConnection, setIsSlowConnection] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [isIntersecting, setIsIntersecting] = useState(false);
     const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
-    const [userRequestedVideo, setUserRequestedVideo] = useState(false);
     const [videoErrors, setVideoErrors] = useState(new Set());
 
     const containerRef = useRef(null);
@@ -472,24 +456,29 @@ function AboutHeroFeaturedCollection({ collection }) {
 
             switch (currentVideoIndex) {
                 case 0:
-                    customBg = getMetafield('hero_background_image');
+                    customBg = getMetafield('about_hero_background_image');
                     break;
                 case 1:
-                    customBg = getMetafield('hero_background_image_slide_2');
+                    customBg = getMetafield('about_hero_background_image_slide_2');
                     break;
                 case 2:
-                    customBg = getMetafield('hero_background_image_slide_3');
+                    customBg = getMetafield('about_hero_background_image_slide_3');
                     break;
                 default:
-                    customBg = getMetafield('hero_background_image');
+                    customBg = getMetafield('about_hero_background_image');
             }
 
-            if (customBg && customBg.reference && customBg.reference.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
+            // Check if it's a direct URL string (Cloudinary)
+            if (customBg?.value && typeof customBg.value === 'string' && customBg.value.startsWith('http')) {
+                return customBg.value;
+            }
+
+            // Check if it's a video reference
+            if (customBg?.reference?.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
                 const videoSource = customBg.reference.sources[0];
                 let videoUrl = videoSource.url;
 
                 if (!videoErrors.has(videoUrl)) {
-                    console.log('✅ Using video:', videoUrl);
                     return videoUrl;
                 }
             }
@@ -503,6 +492,7 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, [currentVideoIndex, collection?.metafields, videoErrors]);
 
     const handleVideoError = (videoUrl) => {
+        console.error('❌ Video failed to load:', videoUrl);
         setVideoErrors(prev => new Set([...prev, videoUrl]));
     };
 
@@ -510,73 +500,119 @@ function AboutHeroFeaturedCollection({ collection }) {
         return collection?.handle ? `/collections/${collection.handle}` : '/collections/all';
     }, [collection?.handle]);
 
-    const OPTIMIZED_MOBILE_VIDEO = typeof MOBILE_VIDEO !== 'undefined' ? MOBILE_VIDEO : null;
-    const desktopVideos = [
-        typeof VIDEO1 !== 'undefined' ? VIDEO1 : null,
-        typeof VIDEO2 !== 'undefined' ? VIDEO2 : null,
-        typeof VIDEO3 !== 'undefined' ? VIDEO3 : null
-    ].filter(Boolean);
+    const OPTIMIZED_MOBILE_VIDEO = useMemo(() => {
+        const mobileVideoMetafield = getMetafield('about_hero_mobile_video');
+        if (mobileVideoMetafield?.value && mobileVideoMetafield.value.startsWith('http')) {
+            return mobileVideoMetafield.value;
+        }
+        // Fallback to first desktop video for mobile if no mobile-specific video
+        return getCurrentVideoSource;
+    }, [collection?.metafields, getCurrentVideoSource]);
+
+    const desktopVideos = useMemo(() => {
+        const videos = [];
+
+        const video1Metafield = getMetafield('about_hero_background_image');
+        if (video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) {
+            videos.push(video1Metafield.value);
+        } else if (video1Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video1Metafield.reference.sources[0].url);
+        }
+
+        const video2Metafield = getMetafield('about_hero_background_image_slide_2');
+        if (video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) {
+            videos.push(video2Metafield.value);
+        } else if (video2Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video2Metafield.reference.sources[0].url);
+        }
+
+        const video3Metafield = getMetafield('about_hero_background_image_slide_3');
+        if (video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) {
+            videos.push(video3Metafield.value);
+        } else if (video3Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video3Metafield.reference.sources[0].url);
+        }
+
+        return videos;
+    }, [collection?.metafields]);
 
     const slideContent = useMemo(() => {
         try {
             const slides = [];
 
-            // Slide 1 - About Page specific content
-            const slide1Title = getMetafield('hero_title');
-            const slide1Subtitle = getMetafield('hero_subtitle');
-            const slide1Button = getMetafield('hero_button_text');
-            const slide1Url = getMetafield('hero_button_url_slide_1');
+            // Only add slide content if we have a corresponding video
+            const video1Metafield = getMetafield('about_hero_background_image');
+            const video2Metafield = getMetafield('about_hero_background_image_slide_2');
+            const video3Metafield = getMetafield('about_hero_background_image_slide_3');
 
-            slides.push({
-                title: slide1Title?.value || (locale === 'fr'
-                    ? 'Notre Histoire'
-                    : 'Our Story'),
-                subtitle: slide1Subtitle?.value || (locale === 'fr'
-                    ? 'Découvrez l\'aventure Zuri'
-                    : 'Discover the Zuri Journey'),
-                buttonText: slide1Button?.value || (locale === 'fr'
-                    ? 'EN SAVOIR PLUS'
-                    : 'LEARN MORE'),
-                url: slide1Url?.value || '#founder'
-            });
+            // About Slide 1 - Only add if video exists
+            if ((video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) ||
+                video1Metafield?.reference?.sources?.[0]?.url) {
 
-            // Slide 2
-            const slide2Title = getMetafield('hero_title_slide_2');
-            const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
-            const slide2Button = getMetafield('hero_button_text_slide_2');
-            const slide2Url = getMetafield('hero_button_url_slide_2');
+                const slide1Title = getMetafield(locale === 'fr' ? 'about_hero_title_fr' : 'about_hero_title_en');
+                const slide1Subtitle = getMetafield(locale === 'fr' ? 'about_hero_subtitle_fr' : 'about_hero_subtitle_en');
+                const slide1Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_fr' : 'about_hero_button_text_en');
+                const slide1Url = getMetafield('about_hero_button_url_slide_1');
 
-            slides.push({
-                title: slide2Title?.value || (locale === 'fr'
-                    ? 'Innovation Beauté'
-                    : 'Beauty Innovation'),
-                subtitle: slide2Subtitle?.value || (locale === 'fr'
-                    ? 'Redéfinir les standards de beauté'
-                    : 'Redefining Beauty Standards'),
-                buttonText: slide2Button?.value || (locale === 'fr'
-                    ? 'DÉCOUVRIR'
-                    : 'DISCOVER'),
-                url: slide2Url?.value || collectionUrl
-            });
+                slides.push({
+                    title: slide1Title?.value || (locale === 'fr'
+                        ? 'Notre Histoire'
+                        : 'Our Story'),
+                    subtitle: slide1Subtitle?.value || (locale === 'fr'
+                        ? 'Découvrez l\'aventure Zuri'
+                        : 'Discover the Zuri Journey'),
+                    buttonText: slide1Button?.value || (locale === 'fr'
+                        ? 'EN SAVOIR PLUS'
+                        : 'LEARN MORE'),
+                    url: slide1Url?.value || '#founder'
+                });
+            }
 
-            // Slide 3
-            const slide3Title = getMetafield('hero_title_slide_3');
-            const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
-            const slide3Button = getMetafield('hero_button_text_slide_3');
-            const slide3Url = getMetafield('hero_button_url_slide_3');
+            // About Slide 2 - Only add if video exists
+            if ((video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) ||
+                video2Metafield?.reference?.sources?.[0]?.url) {
 
-            slides.push({
-                title: slide3Title?.value || (locale === 'fr'
-                    ? 'Autonomisation Féminine'
-                    : 'Women Empowerment'),
-                subtitle: slide3Subtitle?.value || (locale === 'fr'
-                    ? 'Soutenir les femmes entrepreneures'
-                    : 'Supporting Women Entrepreneurs'),
-                buttonText: slide3Button?.value || (locale === 'fr'
-                    ? 'REJOINDRE'
-                    : 'JOIN US'),
-                url: slide3Url?.value || collectionUrl
-            });
+                const slide2Title = getMetafield(locale === 'fr' ? 'about_hero_title_slide_2_fr' : 'about_hero_title_slide_2_en');
+                const slide2Subtitle = getMetafield(locale === 'fr' ? 'about_hero_subtitle_slide_2_fr' : 'about_hero_subtitle_slide_2_en');
+                const slide2Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_slide_2_fr' : 'about_hero_button_text_slide_2_en');
+                const slide2Url = getMetafield('about_hero_button_url_slide_2');
+
+                slides.push({
+                    title: slide2Title?.value || (locale === 'fr'
+                        ? 'Innovation Beauté'
+                        : 'Beauty Innovation'),
+                    subtitle: slide2Subtitle?.value || (locale === 'fr'
+                        ? 'Redéfinir les standards de beauté'
+                        : 'Redefining Beauty Standards'),
+                    buttonText: slide2Button?.value || (locale === 'fr'
+                        ? 'DÉCOUVRIR'
+                        : 'DISCOVER'),
+                    url: slide2Url?.value || collectionUrl
+                });
+            }
+
+            // About Slide 3 - Only add if video exists
+            if ((video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) ||
+                video3Metafield?.reference?.sources?.[0]?.url) {
+
+                const slide3Title = getMetafield(locale === 'fr' ? 'about_hero_title_slide_3_fr' : 'about_hero_title_slide_3_en');
+                const slide3Subtitle = getMetafield(locale === 'fr' ? 'about_hero_subtitle_slide_3_fr' : 'about_hero_subtitle_slide_3_en');
+                const slide3Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_slide_3_fr' : 'about_hero_button_text_slide_3_en');
+                const slide3Url = getMetafield('about_hero_button_url_slide_3');
+
+                slides.push({
+                    title: slide3Title?.value || (locale === 'fr'
+                        ? 'Autonomisation Féminine'
+                        : 'Women Empowerment'),
+                    subtitle: slide3Subtitle?.value || (locale === 'fr'
+                        ? 'Soutenir les femmes entrepreneures'
+                        : 'Supporting Women Entrepreneurs'),
+                    buttonText: slide3Button?.value || (locale === 'fr'
+                        ? 'REJOINDRE'
+                        : 'JOIN US'),
+                    url: slide3Url?.value || collectionUrl
+                });
+            }
 
             return slides;
 
@@ -594,7 +630,7 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, [collection?.title, collection?.handle, collection?.metafields, locale, collectionUrl]);
 
     const getCurrentSlideContent = () => {
-        if (slideContent.length === 0) {
+        if (!slideContent || slideContent.length === 0) {
             return {
                 title: locale === 'fr' ? 'Notre Histoire' : 'Our Story',
                 subtitle: locale === 'fr' ? 'Découvrez Zuri' : 'Discover Zuri',
@@ -603,21 +639,23 @@ function AboutHeroFeaturedCollection({ collection }) {
             };
         }
 
-        const slideIndex = currentVideoIndex % slideContent.length;
-        return slideContent[slideIndex];
+        const safeIndex = Math.max(0, Math.min(currentVideoIndex, slideContent.length - 1));
+        return slideContent[safeIndex] || slideContent[0];
     };
 
-    // Effects for mobile detection, intersection observer, etc.
+
+
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setIsIntersecting(true);
 
-                    if (!isMobile && !isSlowConnection && desktopVideos.length > 0) {
+                    // Always load video when intersecting and we have a video source
+                    if (getCurrentVideoSource) {
                         setTimeout(() => {
                             setShouldLoadVideo(true);
-                        }, 1000);
+                        }, 500);
                     }
                 }
             },
@@ -636,7 +674,7 @@ function AboutHeroFeaturedCollection({ collection }) {
                 observer.unobserve(containerRef.current);
             }
         };
-    }, [isMobile, isSlowConnection, desktopVideos.length]);
+    }, [getCurrentVideoSource]);
 
     useEffect(() => {
         setIsClient(true);
@@ -664,23 +702,48 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, []);
 
     useEffect(() => {
+        // Only start slideshow if we have more than 1 video
         if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
             const interval = setInterval(() => {
-                setCurrentVideoIndex((prevIndex) =>
-                    (prevIndex + 1) % desktopVideos.length
-                );
+                setCurrentVideoIndex((prevIndex) => {
+                    const nextIndex = (prevIndex + 1) % desktopVideos.length;
+                    setVideoLoaded(false);
+                    return nextIndex;
+                });
             }, 8000);
 
-            return () => clearInterval(interval);
+            return () => {
+                clearInterval(interval);
+            };
         }
     }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
 
-    const handlePlayVideo = () => {
-        setUserRequestedVideo(true);
-        setShouldLoadVideo(true);
-    };
+    const showVideo = isIntersecting;
 
-    const showVideo = shouldLoadVideo && isIntersecting;
+    if (!collection) {
+        return (
+            <div className="hero-video-container" style={{
+                height: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)'
+            }}>
+                <div style={{ textAlign: 'center', color: '#64748b' }}>
+                    <div style={{
+                        fontSize: '18px',
+                        marginBottom: '8px',
+                        animation: 'pulse 2s infinite'
+                    }}>
+                        Loading Collection...
+                    </div>
+                    <div style={{ fontSize: '14px' }}>
+                        Fetching About hero content from Shopify
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!isClient) {
         const currentContent = slideContent[0] || {
@@ -694,14 +757,14 @@ function AboutHeroFeaturedCollection({ collection }) {
             <>
                 <div ref={containerRef} className="hero-video-container">
                     {/* Only show videos - no background images */}
-                    {getCurrentVideoSource && (
+                    {!isMobile && getCurrentVideoSource && (
                         <video
                             key={`bg-video-${currentVideoIndex}`}
                             autoPlay
                             loop
                             muted
                             playsInline
-                            className="hero-background-video"
+                            className="hero-background-video desktop-video-only"
                             preload="metadata"
                             style={{
                                 position: 'absolute',
@@ -717,18 +780,16 @@ function AboutHeroFeaturedCollection({ collection }) {
                             }}
                             onError={() => handleVideoError(getCurrentVideoSource)}
                             onCanPlay={(e) => {
-                                console.log('✅ Video loaded successfully, fading in...');
                                 e.target.style.opacity = '1';
                             }}
-                            onLoadStart={() => console.log('🎥 Video loading started...')}
-                            onLoadedData={() => console.log('✅ Video data loaded')}
                         >
                             <source src={getCurrentVideoSource} type="video/mp4" />
                         </video>
                     )}
 
-                    {showVideo && desktopVideos.length > 0 && (
+                    {(showVideo || getCurrentVideoSource) && (
                         <>
+                            {/* Mobile Video - Show same video as desktop */}
                             {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                                 <video
                                     ref={videoRef}
@@ -737,7 +798,7 @@ function AboutHeroFeaturedCollection({ collection }) {
                                     loop
                                     muted
                                     playsInline
-                                    preload="none"
+                                    preload="metadata"
                                     onLoadedData={() => setVideoLoaded(true)}
                                     onCanPlay={() => setVideoLoaded(true)}
                                     className="hero-video"
@@ -745,50 +806,52 @@ function AboutHeroFeaturedCollection({ collection }) {
                                         opacity: videoLoaded ? 1 : 0,
                                         transition: 'opacity 1s ease',
                                         willChange: 'opacity',
-                                        zIndex: 2
+                                        zIndex: 2,
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
                                     }}
                                     decoding="async"
                                     disablePictureInPicture
                                 >
-                                    <source src={OPTIMIZED_MOBILE_VIDEO} type="video/webm" />
+                                    <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                                 </video>
-                            ) : !isMobile && desktopVideos[currentVideoIndex] ? (
-                                <video
-                                    key={`desktop-video-${currentVideoIndex}`}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    preload="metadata"
-                                    onLoadedData={() => setVideoLoaded(true)}
-                                    className="hero-video"
-                                    style={{
-                                        opacity: videoLoaded ? 1 : 0,
-                                        transition: 'opacity 0.8s ease',
-                                        zIndex: 2
-                                    }}
-                                    decoding="async"
-                                    disablePictureInPicture
-                                >
-                                    <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
-                                </video>
-                            ) : null}
+                            ) : (
+                                /* Desktop Video - Only show on desktop when videos exist */
+                                !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
+                                    <video
+                                        key={`desktop-video-${currentVideoIndex}`}
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        preload="metadata"
+                                        onLoadedData={() => setVideoLoaded(true)}
+                                        className="hero-video"
+                                        style={{
+                                            opacity: videoLoaded ? 1 : 0,
+                                            transition: 'opacity 0.8s ease',
+                                            zIndex: 2,
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                        onError={() => handleVideoError(getCurrentVideoSource)}
+                                        decoding="async"
+                                        disablePictureInPicture
+                                    >
+                                        <source src={getCurrentVideoSource} type="video/mp4" />
+                                        <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                                    </video>
+                                )
+                            )}
                         </>
-                    )}
-
-                    {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
-                        <div className="video-play-overlay">
-                            <button
-                                onClick={handlePlayVideo}
-                                className="play-button"
-                                aria-label="Play background video"
-                            >
-                                <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                </svg>
-                                <span className="play-text">Play Video</span>
-                            </button>
-                        </div>
                     )}
 
                     <div className="hero-link">
@@ -827,7 +890,20 @@ function AboutHeroFeaturedCollection({ collection }) {
                 </div>
 
                 <style dangerouslySetInnerHTML={{
-                    __html: heroStyles
+                    __html: heroStyles + `
+                .hero-background-video {
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                    perspective: 1000px;
+                    will-change: opacity;
+                }
+                
+                @media (prefers-reduced-motion: reduce) {
+                    .hero-background-video {
+                        transition: none !important;
+                    }
+                }
+            `
                 }} />
             </>
         );
@@ -844,7 +920,7 @@ function AboutHeroFeaturedCollection({ collection }) {
                         loop
                         muted
                         playsInline
-                        className="hero-background-video"
+                        className="hero-background-video desktop-video-only"
                         src={getCurrentVideoSource}
                         style={{
                             position: 'absolute',
@@ -861,18 +937,15 @@ function AboutHeroFeaturedCollection({ collection }) {
                             console.error('❌ Video background failed to load:', getCurrentVideoSource);
                             handleVideoError(getCurrentVideoSource);
                         }}
-                        onLoadStart={() => console.log('🎥 Video background loading started...')}
-                        onCanPlay={() => console.log('✅ Video background ready to play')}
-                        onLoadedData={() => console.log('✅ Video background data loaded')}
-                        onLoadedMetadata={() => console.log('✅ Video background metadata loaded')}
                     >
                         <source src={getCurrentVideoSource} type="video/mp4" />
                         <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
                     </video>
                 )}
 
-                {showVideo && desktopVideos.length > 0 && (
+                {(showVideo || getCurrentVideoSource) && (
                     <>
+                        {/* Mobile Video - Show same video as desktop */}
                         {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                             <video
                                 ref={videoRef}
@@ -881,7 +954,7 @@ function AboutHeroFeaturedCollection({ collection }) {
                                 loop
                                 muted
                                 playsInline
-                                preload="none"
+                                preload="metadata"
                                 onLoadedData={() => setVideoLoaded(true)}
                                 onCanPlay={() => setVideoLoaded(true)}
                                 className="hero-video"
@@ -889,50 +962,52 @@ function AboutHeroFeaturedCollection({ collection }) {
                                     opacity: videoLoaded ? 1 : 0,
                                     transition: 'opacity 1s ease',
                                     willChange: 'opacity',
-                                    zIndex: 2
+                                    zIndex: 2,
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
                                 }}
                                 decoding="async"
                                 disablePictureInPicture
                             >
-                                <source src={OPTIMIZED_MOBILE_VIDEO} type="video/webm" />
+                                <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                             </video>
-                        ) : !isMobile && desktopVideos[currentVideoIndex] ? (
-                            <video
-                                key={`desktop-video-${currentVideoIndex}`}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                preload="metadata"
-                                onLoadedData={() => setVideoLoaded(true)}
-                                className="hero-video"
-                                style={{
-                                    opacity: videoLoaded ? 1 : 0,
-                                    transition: 'opacity 0.8s ease',
-                                    zIndex: 2
-                                }}
-                                decoding="async"
-                                disablePictureInPicture
-                            >
-                                <source src={desktopVideos[currentVideoIndex]} type="video/mp4" />
-                            </video>
-                        ) : null}
+                        ) : (
+                            /* Desktop Video - Only show on desktop when videos exist */
+                            !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
+                                <video
+                                    key={`desktop-video-${currentVideoIndex}`}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    preload="metadata"
+                                    onLoadedData={() => setVideoLoaded(true)}
+                                    className="hero-video"
+                                    style={{
+                                        opacity: videoLoaded ? 1 : 0,
+                                        transition: 'opacity 0.8s ease',
+                                        zIndex: 2,
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
+                                    }}
+                                    onError={() => handleVideoError(getCurrentVideoSource)}
+                                    decoding="async"
+                                    disablePictureInPicture
+                                >
+                                    <source src={getCurrentVideoSource} type="video/mp4" />
+                                    <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                                </video>
+                            )
+                        )}
                     </>
-                )}
-
-                {isMobile && isIntersecting && !userRequestedVideo && OPTIMIZED_MOBILE_VIDEO && (
-                    <div className="video-play-overlay">
-                        <button
-                            onClick={handlePlayVideo}
-                            className="play-button"
-                            aria-label="Play background video"
-                        >
-                            <svg className="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                            <span className="play-text">Play Video</span>
-                        </button>
-                    </div>
                 )}
 
                 <div className="hero-link">
@@ -970,7 +1045,55 @@ function AboutHeroFeaturedCollection({ collection }) {
             </div>
 
             <style dangerouslySetInnerHTML={{
-                __html: heroStyles
+                __html: heroStyles + `
+                
+                 @media (max-width: 767px) {
+                  .hero-background-video {
+                  display: none !important;
+                  }
+                }
+        
+                .hero-background-video {
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                    perspective: 1000px;
+                    will-change: opacity;
+                }
+                
+                .hero-title, .hero-subtitle, .hero-button {
+                    transition: opacity 0.5s ease, transform 0.5s ease;
+                }
+                
+                .hero-content > * {
+                    animation: fadeInUp 0.8s ease-out;
+                }
+                
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @media (prefers-reduced-motion: reduce) {
+                    .hero-title, .hero-subtitle, .hero-button, .hero-background-video {
+                        transition: none !important;
+                        animation: none !important;
+                    }
+                }
+                
+                @media (max-width: 768px) {
+                    .hero-background-video {
+                        image-rendering: optimizeSpeed;
+                        image-rendering: -webkit-optimize-contrast;
+                        image-rendering: optimize-contrast;
+                    }
+                }
+            `
             }} />
         </>
     );
@@ -1405,6 +1528,37 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
     const metafields = data?.shop?.metafields || [];
     const featuredCollection = data?.featuredCollection || null;
 
+    const getCollectionMetafield = (key, namespace = 'custom') => {
+        try {
+            if (!featuredCollection?.metafields || !Array.isArray(featuredCollection.metafields)) {
+                return null;
+            }
+
+            return featuredCollection.metafields.find(
+                metafield => metafield &&
+                    metafield.key === key &&
+                    metafield.namespace === namespace
+            );
+        } catch (error) {
+            console.warn('Error getting metafield:', error);
+            return null;
+        }
+    };
+
+    const getBannerContent = () => {
+        const backgroundImage = getCollectionMetafield('about_banner_background_image');
+        const bannerTitle = getCollectionMetafield(locale === 'fr' ? 'about_banner_title_fr' : 'about_banner_title_en');
+
+        return {
+            backgroundImage: backgroundImage?.value || aboutBg,
+            title: bannerTitle?.value || (locale === 'fr'
+                    ? 'Autonomiser les femmes noires grâce à notre plateforme de technologie beauté'
+                    : 'Empowering Black women through our beauty tech platform'
+            )
+        };
+    };
+
+
     // Only apply header hiding on the about page
     useEffect(() => {
         // Only run this effect on the about page
@@ -1536,6 +1690,8 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
         };
     }, [location.pathname]);
 
+    const bannerContent = getBannerContent();
+
     return (
         <div className="about-page-container">
             <TransparentHeader
@@ -1580,7 +1736,7 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
             <section
                 className="relative w-full min-h-screen flex items-center justify-center"
                 style={{
-                    backgroundImage: `url(${aboutBg})`,
+                    backgroundImage: `url(${bannerContent.backgroundImage})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
@@ -1595,10 +1751,7 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
                 {/* Content */}
                 <div className="relative z-10 text-center w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
                     <p className="text-[34px] sm:text-5xl md:text-5xl font-light font-poppins text-white mb-6 leading-snug" style={{ lineHeight: '1.2' }}>
-                        {locale === 'fr'
-                            ? 'Autonomiser les femmes noires grâce à notre plateforme de technologie beauté'
-                            : 'Empowering Black women through our beauty tech platform'
-                        }
+                        {bannerContent.title}
                     </p>
                 </div>
             </section>
@@ -1609,32 +1762,6 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
             />
 
             <FAQ product={data.featuredCollection} />
-
-            <section
-                className="relative w-full min-h-screen flex items-center justify-center"
-                style={{
-                    backgroundImage: `url(${aboutBg})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    margin: 0,
-                    padding: 0,
-                    boxSizing: 'border-box'
-                }}
-            >
-                {/* Background overlay for better text readability */}
-                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-
-                {/* Content */}
-                <div className="relative z-10 text-center w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-                    <p className="text-[34px] sm:text-5xl md:text-5xl font-light font-poppins text-white mb-6 leading-snug" style={{ lineHeight: '1.2' }}>
-                        {locale === 'fr'
-                            ? 'Autonomiser les femmes noires grâce à notre plateforme de technologie beauté'
-                            : 'Empowering Black women through our beauty tech platform'
-                        }
-                    </p>
-                </div>
-            </section>
 
             {/* Dynamic Stats Section */}
             {/*<StatsSection metafields={metafields} />*/}

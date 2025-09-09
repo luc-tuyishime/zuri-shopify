@@ -47,37 +47,7 @@ async function loadCriticalData({ context, request }) {
   let allProductsForFilters = null;
 
   if (collectionHandle) {
-    // If filtering by collection, use collection-specific query
-    try {
-      const collectionData = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
-        variables: {
-          handle: collectionHandle,
-          country: 'FR',
-          language: 'FR',
-          sortKey: 'TITLE',
-          reverse: false,
-          ...paginationVariables
-        },
-      });
-
-      selectedCollection = collectionData.collection;
-      products = collectionData.collection?.products || { nodes: [], pageInfo: {} };
-
-      // Also fetch all products from this collection for filter options (without pagination)
-      const allCollectionProducts = await storefront.query(COLLECTION_ALL_PRODUCTS_QUERY, {
-        variables: {
-          handle: collectionHandle,
-          country: 'FR',
-          language: 'FR',
-          first: 250 // Get more products for filter generation
-        },
-      });
-      allProductsForFilters = allCollectionProducts.collection?.products?.nodes || [];
-
-    } catch (error) {
-      products = { nodes: [], pageInfo: {} };
-    }
-  } else {
+    // Build filter query parts even when filtering by collection
     const queryParts = [];
 
     if (searchParams.get('category') && searchParams.get('category') !== '') {
@@ -95,9 +65,9 @@ async function loadCriticalData({ context, request }) {
 
         const valueQueries = values.map(val => {
           if (filterKey === 'longueur') {
-            return `${val}`;
+            return `variants.title:*${val}*`; // Use proper search syntax
           } else if (filterKey === 'texture') {
-            return null;
+            return `(variants.title:"${val}" OR tag:"${val}")`;
           } else if (filterKey === 'capSize') {
             const cleanVal = val.replace(/[()""]/g, '');
             return `(variants.title:*${cleanVal}* OR tag:"${cleanVal}")`;
@@ -111,7 +81,6 @@ async function loadCriticalData({ context, request }) {
       }
     });
 
-
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
 
@@ -124,44 +93,67 @@ async function loadCriticalData({ context, request }) {
     }
 
     const query = queryParts.length > 0 ? queryParts.join(' AND ') : '';
-    const sortKey = searchParams.get('sortKey') || 'TITLE';
-    const reverse = searchParams.get('reverse') === 'true';
 
-    if (query === '') {
+    try {
+      if (query === '') {
+        // No additional filters, use regular collection query
+        const collectionData = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
+          variables: {
+            handle: collectionHandle,
+            country: 'FR',
+            language: 'FR',
+            sortKey: 'TITLE',
+            reverse: false,
+            ...paginationVariables
+          },
+        });
 
-      const productsData = await storefront.query(ALL_PRODUCTS_QUERY, {
+        selectedCollection = collectionData.collection;
+        products = collectionData.collection?.products || { nodes: [], pageInfo: {} };
+      } else {
+        // Apply filters to collection using search query
+        const filteredQuery = `collection:${collectionHandle} AND ${query}`;
+        const productsData = await storefront.query(CATALOG_QUERY, {
+          variables: {
+            query: filteredQuery,
+            sortKey: 'TITLE',
+            reverse: false,
+            country: 'FR',
+            language: 'FR',
+            ...paginationVariables
+          },
+        });
+        products = productsData.products;
+
+        // Still get collection info for title/metadata
+        const collectionInfo = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
+          variables: {
+            handle: collectionHandle,
+            country: 'FR',
+            language: 'FR',
+            first: 1
+          },
+        });
+        selectedCollection = collectionInfo.collection;
+      }
+
+      // Also fetch all products from this collection for filter options (without pagination)
+      const allCollectionProducts = await storefront.query(COLLECTION_ALL_PRODUCTS_QUERY, {
         variables: {
-          sortKey,
-          reverse,
+          handle: collectionHandle,
           country: 'FR',
           language: 'FR',
-          ...paginationVariables
+          first: 250
         },
       });
-      products = productsData.products;
-    } else {
-      const productsData = await storefront.query(CATALOG_QUERY, {
-        variables: {
-          query,
-          sortKey,
-          reverse,
-          country: 'FR',
-          language: 'FR',
-          ...paginationVariables
-        },
-      });
-      products = productsData.products;
+      allProductsForFilters = allCollectionProducts.collection?.products?.nodes || [];
+
+    } catch (error) {
+      console.error('Collection filtering error:', error);
+      products = { nodes: [], pageInfo: {} };
     }
-
-    const allProductsData = await storefront.query(ALL_PRODUCTS_FOR_FILTERS_QUERY, {
-      variables: {
-        country: 'FR',
-        language: 'FR',
-        first: 250
-      },
-    });
-    allProductsForFilters = allProductsData.products.nodes;
   }
+
 
   return {
     products,
@@ -196,23 +188,17 @@ function extractVariantOptions(products, locale) {
       optionSets.category.add(product.productType);
     }
 
-    // Extract from variants
+    // Extract ONLY from actual variant options (not titles)
     if (product.variants && product.variants.nodes) {
       product.variants.nodes.forEach(variant => {
-        // Check variant options
         if (variant.selectedOptions) {
           variant.selectedOptions.forEach(option => {
             const optionName = option.name.toLowerCase();
             const optionValue = option.value;
 
-            // Map option names to our filter categories
+            // Map option names to filter categories
             if (optionName.includes('longueur') || optionName.includes('length')) {
-              const cleanValue = option.value.split(' ')[0];
-              if (cleanValue && /^\d+$/.test(cleanValue)) {
-                optionSets.longueur.add(cleanValue);
-              } else {
-                console.log(`🔍 DEBUG: Skipped invalid length value: ${option.value}`);
-              }
+              optionSets.longueur.add(optionValue);
             } else if (optionName.includes('texture')) {
               optionSets.texture.add(optionValue);
             } else if (optionName.includes('couleur') || optionName.includes('color') || optionName.includes('colour')) {
@@ -222,67 +208,31 @@ function extractVariantOptions(products, locale) {
             }
           });
         }
-
-        // Also check variant title for common patterns
-        if (variant.title && variant.title !== 'Default Title') {
-          const title = variant.title.toLowerCase();
-
-          // Extract length patterns (e.g., "16\"", "20 inches")
-          const lengthMatch = title.match(/(\d+)["'']|(\d+)\s*inch/i);
-          if (lengthMatch) {
-            const length = lengthMatch[1] || lengthMatch[2];
-            optionSets.longueur.add(`${length}"`);
-          }
-
-          // Extract common texture patterns
-          if (title.includes('straight') || title.includes('lisse')) optionSets.texture.add(locale === 'fr' ? 'Lisse' : 'Straight');
-          if (title.includes('wavy') || title.includes('ondulé')) optionSets.texture.add(locale === 'fr' ? 'Ondulé' : 'Wavy');
-          if (title.includes('curly') || title.includes('bouclé')) optionSets.texture.add(locale === 'fr' ? 'Bouclé' : 'Curly');
-          if (title.includes('kinky') || title.includes('crépu')) optionSets.texture.add(locale === 'fr' ? 'Crépu' : 'Kinky');
-        }
       });
     }
 
-    // Extract from tags as fallback
+    // Extract from tags (but only add if they match expected patterns)
     if (product.tags) {
       product.tags.forEach(tag => {
         const tagLower = tag.toLowerCase();
 
-        // Length tags
-        if (tagLower.match(/\d+["'']/)) {
+        // Only add length tags that have proper format
+        if (tagLower.match(/^\d+["'']\s*$/)) {
           optionSets.longueur.add(tag);
         }
 
-        // Texture tags
-        if (['straight', 'lisse', 'wavy', 'ondulé', 'curly', 'bouclé', 'kinky', 'crépu'].some(texture =>
-            tagLower.includes(texture))) {
+        // Only add predefined texture values that exist in your products
+        if (['straight', 'wavy', 'curly', 'kinky'].includes(tagLower)) {
           optionSets.texture.add(tag);
-        }
-
-        // Color tags
-        if (['black', 'noir', 'brown', 'brun', 'blonde', 'châtain', 'auburn'].some(color =>
-            tagLower.includes(color))) {
-          optionSets.couleur.add(tag);
-        }
-
-        // Size tags
-        if (['small', 'petit', 'medium', 'moyen', 'large', 'grand'].some(size =>
-            tagLower.includes(size))) {
-          optionSets.capSize.add(tag);
         }
       });
     }
   });
 
-  // Convert sets to sorted arrays with proper formatting
+  // Convert sets to sorted arrays
   return {
     category: Array.from(optionSets.category).sort(),
-    longueur: Array.from(optionSets.longueur).sort((a, b) => {
-      // Sort by numeric value for lengths
-      const aNum = parseInt(a.replace(/[^0-9]/g, ''));
-      const bNum = parseInt(b.replace(/[^0-9]/g, ''));
-      return aNum - bNum;
-    }),
+    longueur: Array.from(optionSets.longueur).sort(),
     texture: Array.from(optionSets.texture).sort(),
     couleur: Array.from(optionSets.couleur).sort(),
     capSize: Array.from(optionSets.capSize).sort()
