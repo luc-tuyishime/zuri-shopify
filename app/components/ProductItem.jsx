@@ -381,7 +381,7 @@ export const ProductItem = memo(function ProductItem({
                                         {!selectedVariant
                                             ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
                                             : product.tags?.includes('sold-out')
-                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
+                                                ? (locale === 'fr' ? 'Pre-commander (3 semaines Coloration Sur Mesure)' : 'Pre-order (3 weeks Custom Coloring)')
                                                 : fetcher.state !== 'idle'
                                                     ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
                                                     : (locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART')

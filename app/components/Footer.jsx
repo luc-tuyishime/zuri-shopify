@@ -245,30 +245,30 @@ function FooterContent({footer, footerData, locale, t}) {
       ),
       url: getFooterMetafieldValue(metafields, 'wigs_url', '/collections/wigs')
     },
-    {
-      text: getFooterMetafieldValue(
-          metafields,
-          locale === 'fr' ? 'wig_care_text_fr' : 'wig_care_text_en',
-          t.footer.wigCare
-      ),
-      url: getFooterMetafieldValue(metafields, 'wig_care_url', '/pages/wig-care')
-    },
-    {
-      text: getFooterMetafieldValue(
-          metafields,
-          locale === 'fr' ? 'hair_care_text_fr' : 'hair_care_text_en',
-          t.footer.hairCare
-      ),
-      url: getFooterMetafieldValue(metafields, 'hair_care_url', '/pages/hair-care')
-    },
-    {
-      text: getFooterMetafieldValue(
-          metafields,
-          locale === 'fr' ? 'community_text_fr' : 'community_text_en',
-          t.footer.community
-      ),
-      url: getFooterMetafieldValue(metafields, 'community_url', '/pages/community')
-    }
+    // {
+    //   text: getFooterMetafieldValue(
+    //       metafields,
+    //       locale === 'fr' ? 'wig_care_text_fr' : 'wig_care_text_en',
+    //       t.footer.wigCare
+    //   ),
+    //   url: getFooterMetafieldValue(metafields, 'wig_care_url', '/pages/wig-care')
+    // },
+    // {
+    //   text: getFooterMetafieldValue(
+    //       metafields,
+    //       locale === 'fr' ? 'hair_care_text_fr' : 'hair_care_text_en',
+    //       t.footer.hairCare
+    //   ),
+    //   url: getFooterMetafieldValue(metafields, 'hair_care_url', '/pages/hair-care')
+    // },
+    // {
+    //   text: getFooterMetafieldValue(
+    //       metafields,
+    //       locale === 'fr' ? 'community_text_fr' : 'community_text_en',
+    //       t.footer.community
+    //   ),
+    //   url: getFooterMetafieldValue(metafields, 'community_url', '/pages/community')
+    // }
   ];
 
   // Build shop locations dynamically

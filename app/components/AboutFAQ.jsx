@@ -1,17 +1,24 @@
 import { useState } from 'react';
 import { useLocale } from '~/hooks/useLocale';
 
-export function FAQ({ product }) {
+export function AboutFAQ({ collection }) {
     const [locale] = useLocale();
     const [openFAQ, setOpenFAQ] = useState(null);
 
+    if (collection?.metafields) {
+        const faqKeys = collection.metafields
+            .filter(m => m?.key?.includes('faq'))
+            .map(m => m.key);
+        console.log('Available FAQ metafield keys:', faqKeys);
+    }
+
     const getMetafield = (key, namespace = 'custom') => {
         try {
-            if (!product?.metafields || !Array.isArray(product.metafields)) {
+            if (!collection?.metafields || !Array.isArray(collection.metafields)) {
                 return null;
             }
 
-            return product.metafields
+            return collection.metafields
                 .filter(metafield => metafield !== null)
                 .find(metafield =>
                     metafield &&
@@ -19,28 +26,29 @@ export function FAQ({ product }) {
                     metafield.namespace === namespace
                 );
         } catch (error) {
-            console.warn('Error getting metafield:', error);
+            console.warn(error);
             return null;
         }
     };
 
-    // Check if ANY relevant metafields exist
     const hasRelevantMetafields = () => {
-        if (!product?.metafields || !Array.isArray(product.metafields)) {
+        if (!collection?.metafields || !Array.isArray(collection.metafields)) {
             return false;
         }
 
-        // Check for FAQ title
-        const hasFAQTitle = getMetafield(`faq_title_${locale}`) ||
-            getMetafield('faq_title');
+        const hasFAQTitle = getMetafield(`about_faq_title_${locale}`) ||
+            getMetafield('about_faq_title_fr') ||
+            getMetafield('about_faq_title');
 
-        // Check for FAQ items (check up to 10 FAQs)
         let hasFAQItems = false;
         for (let i = 1; i <= 10; i++) {
-            const hasQuestion = getMetafield(`faq_${i}_question_${locale}`) ||
-                getMetafield(`faq_${i}_question`);
-            const hasAnswer = getMetafield(`faq_${i}_answer_${locale}`) ||
-                getMetafield(`faq_${i}_answer`);
+            // Try current locale first, then fallback to 'fr', then no suffix
+            const hasQuestion = getMetafield(`about_faq_${i}_question_${locale}`) ||
+                getMetafield(`about_faq_${i}_question_fr`) ||
+                getMetafield(`about_faq_${i}_question`);
+            const hasAnswer = getMetafield(`about_faq_${i}_answer_${locale}`) ||
+                getMetafield(`about_faq_${i}_answer_fr`) ||
+                getMetafield(`about_faq_${i}_answer`);
 
             if (hasQuestion && hasAnswer) {
                 hasFAQItems = true;
@@ -48,24 +56,22 @@ export function FAQ({ product }) {
             }
         }
 
-        console.log('FAQ metafields check:', {
-            hasFAQTitle,
-            hasFAQItems,
-            hasAnyRelevant: hasFAQTitle || hasFAQItems
-        });
-
-        return hasFAQTitle || hasFAQItems;
+        const result = hasFAQTitle || hasFAQItems;
+        return result;
     };
 
-    // Early return - don't render component if no relevant metafields exist
+    // DEBUG: Check this early return
     if (!hasRelevantMetafields()) {
-        console.log('FAQ: No relevant metafields found, hiding component');
         return null;
     }
 
     const getLocalizedContent = (baseKey, fallbackText) => {
+        // Try current locale first, then fallback to 'fr', then no suffix
         const localizedField = getMetafield(`${baseKey}_${locale}`);
         if (localizedField?.value) return localizedField.value;
+
+        const frenchField = getMetafield(`${baseKey}_fr`);
+        if (frenchField?.value) return frenchField.value;
 
         const defaultField = getMetafield(baseKey);
         if (defaultField?.value) return defaultField.value;
@@ -77,17 +83,17 @@ export function FAQ({ product }) {
         setOpenFAQ(openFAQ === index ? null : index);
     };
 
-    const faqTitle = getLocalizedContent('faq_title',
+    const faqTitle = getLocalizedContent('about_faq_title',
         locale === 'fr' ? 'QUESTIONS FRÉQUEMMENT POSÉES' : 'FREQUENTLY ASKED QUESTIONS'
     );
 
     const getFAQsData = () => {
         const faqsData = [];
 
-        // Try to get up to 10 FAQs from metafields
+        // Try to get up to 10 About FAQs from metafields
         for (let i = 1; i <= 10; i++) {
-            const question = getLocalizedContent(`faq_${i}_question`, '');
-            const answer = getLocalizedContent(`faq_${i}_answer`, '');
+            const question = getLocalizedContent(`about_faq_${i}_question`, '');
+            const answer = getLocalizedContent(`about_faq_${i}_answer`, '');
 
             if (question && answer) {
                 faqsData.push({ question, answer });
@@ -99,11 +105,10 @@ export function FAQ({ product }) {
 
     const faqs = getFAQsData();
 
-    // If we have metafields but no valid FAQ data, don't render
     if (faqs.length === 0) {
-        console.log('FAQ: No valid FAQ data found, hiding component');
         return null;
     }
+
 
     return (
         <div className="bg-white py-16">

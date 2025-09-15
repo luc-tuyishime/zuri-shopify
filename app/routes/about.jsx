@@ -11,6 +11,7 @@ import VIDEO3 from '~/assets/video.mp4'
 import MOBILE_VIDEO from '../assets/aaa.webm'
 import {BestSellersProducts} from "~/routes/_index.jsx";
 import {FAQ} from "~/components/Faq.jsx";
+import {AboutFAQ} from "~/components/AboutFAQ.jsx";
 
 // Add the Best Sellers and Recommended Products queries at the top of the file
 const BEST_SELLERS_COLLECTION_QUERY = `#graphql
@@ -179,7 +180,62 @@ const ABOUT_PAGE_QUERY = `#graphql
           {namespace: "custom", key: "about_hero_subtitle_slide_3_fr"},
           {namespace: "custom", key: "about_hero_button_text_slide_3_en"},
           {namespace: "custom", key: "about_hero_button_text_slide_3_fr"},
-          {namespace: "custom", key: "about_hero_button_url_slide_3"}
+          {namespace: "custom", key: "about_hero_button_url_slide_3"},
+          {namespace: "custom", key: "about_faq_title_en"},
+          {namespace: "custom", key: "about_faq_title_fr"},
+          {namespace: "custom", key: "about_faq_1_question_en"},
+          {namespace: "custom", key: "about_faq_1_question_fr"},
+          {namespace: "custom", key: "about_faq_1_answer_en"},
+          {namespace: "custom", key: "about_faq_1_answer_fr"},
+          {namespace: "custom", key: "about_faq_2_question_en"},
+          {namespace: "custom", key: "about_faq_2_question_fr"},
+          {namespace: "custom", key: "about_faq_2_answer_en"},
+          {namespace: "custom", key: "about_faq_2_answer_fr"},
+          {namespace: "custom", key: "about_faq_3_question_en"},
+          {namespace: "custom", key: "about_faq_3_question_fr"},
+          {namespace: "custom", key: "about_faq_3_answer_en"},
+          {namespace: "custom", key: "about_faq_3_answer_fr"},
+          {namespace: "custom", key: "about_faq_4_question_en"},
+          {namespace: "custom", key: "about_faq_4_question_fr"},
+          {namespace: "custom", key: "about_faq_4_answer_en"},
+          {namespace: "custom", key: "about_faq_4_answer_fr"},
+          {namespace: "custom", key: "about_faq_5_question_en"},
+          {namespace: "custom", key: "about_faq_5_question_fr"},
+          {namespace: "custom", key: "about_faq_5_answer_en"},
+          {namespace: "custom", key: "about_faq_5_answer_fr"},
+          
+          # Bottom Slider Mobile Video
+          {namespace: "custom", key: "about_bottom_slider_mobile_video"},
+          
+          # Bottom Slider Slide 1
+          {namespace: "custom", key: "about_bottom_slider_background_image"},
+          {namespace: "custom", key: "about_bottom_slider_title_en"},
+          {namespace: "custom", key: "about_bottom_slider_title_fr"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_en"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_en"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_url_slide_1"},
+          
+          # Bottom Slider Slide 2
+          {namespace: "custom", key: "about_bottom_slider_background_image_slide_2"},
+          {namespace: "custom", key: "about_bottom_slider_title_slide_2_en"},
+          {namespace: "custom", key: "about_bottom_slider_title_slide_2_fr"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_slide_2_en"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_slide_2_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_slide_2_en"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_slide_2_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_url_slide_2"},
+          
+          # Bottom Slider Slide 3
+          {namespace: "custom", key: "about_bottom_slider_background_image_slide_3"},
+          {namespace: "custom", key: "about_bottom_slider_title_slide_3_en"},
+          {namespace: "custom", key: "about_bottom_slider_title_slide_3_fr"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_slide_3_en"},
+          {namespace: "custom", key: "about_bottom_slider_subtitle_slide_3_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_slide_3_en"},
+          {namespace: "custom", key: "about_bottom_slider_button_text_slide_3_fr"},
+          {namespace: "custom", key: "about_bottom_slider_button_url_slide_3"},
         ]) {
           id
           namespace
@@ -289,8 +345,6 @@ export const handle = {
 };
 
 
-
-// Helper function to get metafield value
 function getMetafieldValue(metafields, key, fallback = '') {
     const metafield = metafields?.find(m => m?.key === key);
     if (metafield?.reference?.image?.url) {
@@ -413,7 +467,6 @@ function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
     );
 }
 
-// FeaturedCollection Component (adapted for About page)
 function AboutHeroFeaturedCollection({ collection }) {
     const [isMobile, setIsMobile] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -492,7 +545,6 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, [currentVideoIndex, collection?.metafields, videoErrors]);
 
     const handleVideoError = (videoUrl) => {
-        console.error('❌ Video failed to load:', videoUrl);
         setVideoErrors(prev => new Set([...prev, videoUrl]));
     };
 
@@ -1099,6 +1151,423 @@ function AboutHeroFeaturedCollection({ collection }) {
     );
 }
 
+
+function AboutBottomSlider({ collection }) {
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
+    const [videoLoaded, setVideoLoaded] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [isIntersecting, setIsIntersecting] = useState(false);
+    const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+    const [videoErrors, setVideoErrors] = useState(new Set());
+
+    const containerRef = useRef(null);
+    const videoRef = useRef(null);
+    const [locale] = useLocale();
+
+    const getMetafield = (key, namespace = 'custom') => {
+        try {
+            if (!collection?.metafields || !Array.isArray(collection.metafields)) {
+                return null;
+            }
+
+            return collection.metafields.find(
+                metafield => metafield &&
+                    metafield.key === key &&
+                    metafield.namespace === namespace
+            );
+        } catch (error) {
+            console.warn('Error getting metafield:', error);
+            return null;
+        }
+    };
+
+    const getCurrentVideoSource = useMemo(() => {
+        try {
+            let customBg = null;
+
+            switch (currentVideoIndex) {
+                case 0:
+                    customBg = getMetafield('about_bottom_slider_background_image');
+                    break;
+                case 1:
+                    customBg = getMetafield('about_bottom_slider_background_image_slide_2');
+                    break;
+                case 2:
+                    customBg = getMetafield('about_bottom_slider_background_image_slide_3');
+                    break;
+                default:
+                    customBg = getMetafield('about_bottom_slider_background_image');
+            }
+
+            // Check if it's a direct URL string (Cloudinary)
+            if (customBg?.value && typeof customBg.value === 'string' && customBg.value.startsWith('http')) {
+                return customBg.value;
+            }
+
+            // Check if it's a video reference
+            if (customBg?.reference?.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
+                const videoSource = customBg.reference.sources[0];
+                let videoUrl = videoSource.url;
+
+                if (!videoErrors.has(videoUrl)) {
+                    return videoUrl;
+                }
+            }
+
+            return null;
+
+        } catch (error) {
+            console.error('Error getting bottom slider video source:', error);
+            return null;
+        }
+    }, [currentVideoIndex, collection?.metafields, videoErrors]);
+
+    const handleVideoError = (videoUrl) => {
+        setVideoErrors(prev => new Set([...prev, videoUrl]));
+    };
+
+    const collectionUrl = useMemo(() => {
+        return collection?.handle ? `/collections/${collection.handle}` : '/collections/all';
+    }, [collection?.handle]);
+
+    const OPTIMIZED_MOBILE_VIDEO = useMemo(() => {
+        const mobileVideoMetafield = getMetafield('about_bottom_slider_mobile_video');
+        if (mobileVideoMetafield?.value && mobileVideoMetafield.value.startsWith('http')) {
+            return mobileVideoMetafield.value;
+        }
+        return getCurrentVideoSource;
+    }, [collection?.metafields, getCurrentVideoSource]);
+
+    const desktopVideos = useMemo(() => {
+        const videos = [];
+
+        const video1Metafield = getMetafield('about_bottom_slider_background_image');
+        if (video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) {
+            videos.push(video1Metafield.value);
+        } else if (video1Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video1Metafield.reference.sources[0].url);
+        }
+
+        const video2Metafield = getMetafield('about_bottom_slider_background_image_slide_2');
+        if (video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) {
+            videos.push(video2Metafield.value);
+        } else if (video2Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video2Metafield.reference.sources[0].url);
+        }
+
+        const video3Metafield = getMetafield('about_bottom_slider_background_image_slide_3');
+        if (video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) {
+            videos.push(video3Metafield.value);
+        } else if (video3Metafield?.reference?.sources?.[0]?.url) {
+            videos.push(video3Metafield.reference.sources[0].url);
+        }
+
+        return videos;
+    }, [collection?.metafields]);
+
+    const slideContent = useMemo(() => {
+        try {
+            const slides = [];
+
+            // Check for bottom slider videos
+            const video1Metafield = getMetafield('about_bottom_slider_background_image');
+            const video2Metafield = getMetafield('about_bottom_slider_background_image_slide_2');
+            const video3Metafield = getMetafield('about_bottom_slider_background_image_slide_3');
+
+            // Bottom Slider Slide 1
+            if ((video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) ||
+                video1Metafield?.reference?.sources?.[0]?.url) {
+
+                const slide1Title = getMetafield(locale === 'fr' ? 'about_bottom_slider_title_fr' : 'about_bottom_slider_title_en');
+                const slide1Subtitle = getMetafield(locale === 'fr' ? 'about_bottom_slider_subtitle_fr' : 'about_bottom_slider_subtitle_en');
+                const slide1Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_fr' : 'about_bottom_slider_button_text_en');
+                const slide1Url = getMetafield('about_bottom_slider_button_url_slide_1');
+
+                slides.push({
+                    title: slide1Title?.value || (locale === 'fr'
+                        ? 'Innovation Continue'
+                        : 'Continuous Innovation'),
+                    subtitle: slide1Subtitle?.value || (locale === 'fr'
+                        ? 'Découvrez nos dernières innovations'
+                        : 'Discover our latest innovations'),
+                    buttonText: slide1Button?.value || (locale === 'fr'
+                        ? 'DÉCOUVRIR'
+                        : 'DISCOVER'),
+                    url: slide1Url?.value || collectionUrl
+                });
+            }
+
+            // Bottom Slider Slide 2
+            if ((video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) ||
+                video2Metafield?.reference?.sources?.[0]?.url) {
+
+                const slide2Title = getMetafield(locale === 'fr' ? 'about_bottom_slider_title_slide_2_fr' : 'about_bottom_slider_title_slide_2_en');
+                const slide2Subtitle = getMetafield(locale === 'fr' ? 'about_bottom_slider_subtitle_slide_2_fr' : 'about_bottom_slider_subtitle_slide_2_en');
+                const slide2Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_slide_2_fr' : 'about_bottom_slider_button_text_slide_2_en');
+                const slide2Url = getMetafield('about_bottom_slider_button_url_slide_2');
+
+                slides.push({
+                    title: slide2Title?.value || (locale === 'fr'
+                        ? 'Qualité Premium'
+                        : 'Premium Quality'),
+                    subtitle: slide2Subtitle?.value || (locale === 'fr'
+                        ? 'Des produits de qualité exceptionnelle'
+                        : 'Exceptional quality products'),
+                    buttonText: slide2Button?.value || (locale === 'fr'
+                        ? 'EXPLORER'
+                        : 'EXPLORE'),
+                    url: slide2Url?.value || collectionUrl
+                });
+            }
+
+            // Bottom Slider Slide 3
+            if ((video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) ||
+                video3Metafield?.reference?.sources?.[0]?.url) {
+
+                const slide3Title = getMetafield(locale === 'fr' ? 'about_bottom_slider_title_slide_3_fr' : 'about_bottom_slider_title_slide_3_en');
+                const slide3Subtitle = getMetafield(locale === 'fr' ? 'about_bottom_slider_subtitle_slide_3_fr' : 'about_bottom_slider_subtitle_slide_3_en');
+                const slide3Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_slide_3_fr' : 'about_bottom_slider_button_text_slide_3_en');
+                const slide3Url = getMetafield('about_bottom_slider_button_url_slide_3');
+
+                slides.push({
+                    title: slide3Title?.value || (locale === 'fr'
+                        ? 'Communauté Globale'
+                        : 'Global Community'),
+                    subtitle: slide3Subtitle?.value || (locale === 'fr'
+                        ? 'Rejoignez notre communauté mondiale'
+                        : 'Join our global community'),
+                    buttonText: slide3Button?.value || (locale === 'fr'
+                        ? 'REJOINDRE'
+                        : 'JOIN US'),
+                    url: slide3Url?.value || collectionUrl
+                });
+            }
+
+            return slides;
+
+        } catch (error) {
+            console.error('Error generating bottom slider content:', error);
+            return [];
+        }
+    }, [collection?.title, collection?.handle, collection?.metafields, locale, collectionUrl]);
+
+    const getCurrentSlideContent = () => {
+        if (!slideContent || slideContent.length === 0) {
+            return null;
+        }
+
+        const safeIndex = Math.max(0, Math.min(currentVideoIndex, slideContent.length - 1));
+        return slideContent[safeIndex] || slideContent[0];
+    };
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsIntersecting(true);
+                    if (getCurrentVideoSource) {
+                        setTimeout(() => {
+                            setShouldLoadVideo(true);
+                        }, 500);
+                    }
+                }
+            },
+            {
+                threshold: 0.1,
+                rootMargin: '100px'
+            }
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => {
+            if (containerRef.current) {
+                observer.unobserve(containerRef.current);
+            }
+        };
+    }, [getCurrentVideoSource]);
+
+    useEffect(() => {
+        setIsClient(true);
+
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
+            const interval = setInterval(() => {
+                setCurrentVideoIndex((prevIndex) => {
+                    const nextIndex = (prevIndex + 1) % desktopVideos.length;
+                    setVideoLoaded(false);
+                    return nextIndex;
+                });
+            }, 8000);
+
+            return () => {
+                clearInterval(interval);
+            };
+        }
+    }, [isMobile, isClient, shouldLoadVideo, desktopVideos.length]);
+
+    // Don't render if no slides or videos
+    if (!slideContent || slideContent.length === 0 || !getCurrentVideoSource) {
+        return null;
+    }
+
+    const showVideo = isIntersecting;
+    const currentContent = getCurrentSlideContent();
+
+    if (!currentContent) {
+        return null;
+    }
+
+    return (
+        <div ref={containerRef} className="hero-video-container" style={{ marginTop: '2rem' }}>
+            {getCurrentVideoSource && (
+                <video
+                    key={`bottom-slider-bg-video-${currentVideoIndex}`}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="hero-background-video desktop-video-only"
+                    src={getCurrentVideoSource}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        zIndex: 1,
+                        transition: 'opacity 0.5s ease'
+                    }}
+                    onError={(e) => {
+                        console.error('Bottom slider video failed to load:', getCurrentVideoSource);
+                        handleVideoError(getCurrentVideoSource);
+                    }}
+                >
+                    <source src={getCurrentVideoSource} type="video/mp4" />
+                    <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                </video>
+            )}
+
+            {(showVideo || getCurrentVideoSource) && (
+                <>
+                    {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
+                        <video
+                            ref={videoRef}
+                            key="bottom-slider-mobile-video"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            preload="metadata"
+                            onLoadedData={() => setVideoLoaded(true)}
+                            onCanPlay={() => setVideoLoaded(true)}
+                            className="hero-video"
+                            style={{
+                                opacity: videoLoaded ? 1 : 0,
+                                transition: 'opacity 1s ease',
+                                willChange: 'opacity',
+                                zIndex: 2,
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                            }}
+                            decoding="async"
+                            disablePictureInPicture
+                        >
+                            <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
+                        </video>
+                    ) : (
+                        !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
+                            <video
+                                key={`bottom-slider-desktop-video-${currentVideoIndex}`}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                preload="metadata"
+                                onLoadedData={() => setVideoLoaded(true)}
+                                className="hero-video"
+                                style={{
+                                    opacity: videoLoaded ? 1 : 0,
+                                    transition: 'opacity 0.8s ease',
+                                    zIndex: 2,
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                }}
+                                onError={() => handleVideoError(getCurrentVideoSource)}
+                                decoding="async"
+                                disablePictureInPicture
+                            >
+                                <source src={getCurrentVideoSource} type="video/mp4" />
+                                <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
+                            </video>
+                        )
+                    )}
+                </>
+            )}
+
+            <div className="hero-link">
+                <div className="hero-content">
+                    <h1 className="hero-title" key={`bottom-slider-title-${currentVideoIndex}`}>
+                        {currentContent.title}
+                    </h1>
+                    <p className="hero-subtitle" key={`bottom-slider-subtitle-${currentVideoIndex}`}>
+                        {currentContent.subtitle}
+                    </p>
+                    <Link
+                        to={currentContent.url}
+                        className="hero-button"
+                        key={`bottom-slider-button-${currentVideoIndex}`}
+                    >
+                        {currentContent.buttonText}
+                    </Link>
+                </div>
+
+                {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
+                    <div className="slideshow-indicators">
+                        {desktopVideos.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => {
+                                    setCurrentVideoIndex(index);
+                                }}
+                                className={`indicator ${index === currentVideoIndex ? 'active' : ''}`}
+                                aria-label={`Go to slide ${index + 1}: ${slideContent[index]?.title || 'Slide'}`}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // Dynamic Stats Section Component
 function StatsSection({ metafields }) {
     const [locale] = useLocale();
@@ -1228,6 +1697,17 @@ function FounderSection({ metafields }) {
 
 // Hero styles (from original FeaturedCollection)
 const heroStyles = `
+    /* Add overflow-x hidden to body and html on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+        
+        html {
+            overflow-x: hidden;
+        }
+    }
+
     .hero-video-container {
         position: relative;
         width: 100vw;
@@ -1235,13 +1715,29 @@ const heroStyles = `
         min-height: 500px;
         margin: 0;
         padding: 0;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
         overflow: hidden;
         transform: translateZ(0);
         backface-visibility: hidden;
+        
+        /* Mobile-specific fixes */
+        @media (max-width: 768px) {
+            width: 100%;
+            max-width: 100%;
+            left: 0;
+            right: 0;
+            margin-left: 0;
+            margin-right: 0;
+            height: 70vh;
+            min-height: 400px;
+        }
+        
+        /* Desktop full-width behavior */
+        @media (min-width: 769px) {
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
     }
 
     .hero-background-image,
@@ -1264,65 +1760,11 @@ const heroStyles = `
     }
 
     @media (max-width: 768px) {
-        .hero-video-container {
-            height: 70vh;
-            min-height: 400px;
-        }
-        
         .hero-video {
             image-rendering: optimizeSpeed;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: optimize-contrast;
         }
-    }
-
-    .video-play-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.3);
-        z-index: 5;
-        backdrop-filter: blur(2px);
-    }
-
-    .play-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        border-radius: 50px;
-        padding: 20px 30px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .play-button:hover {
-        background: rgba(255, 255, 255, 1);
-        transform: scale(1.05);
-    }
-
-    .play-icon {
-        width: 24px;
-        height: 24px;
-        color: #333;
-        margin-bottom: 8px;
-    }
-
-    .play-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
     .hero-link {
@@ -1346,7 +1788,10 @@ const heroStyles = `
         flex-direction: column;
         justify-content: center;
         padding: 20px;
-        padding-left: 80px;
+        
+        @media (min-width: 769px) {
+            padding-left: 80px;
+        }
     }
 
     .hero-title {
@@ -1411,6 +1856,10 @@ const heroStyles = `
         display: flex;
         gap: 12px;
         z-index: 3;
+        
+        @media (max-width: 768px) {
+            display: none;
+        }
     }
 
     .indicator {
@@ -1460,10 +1909,6 @@ const heroStyles = `
             width: auto;
             min-width: 160px;
         }
-
-        .slideshow-indicators {
-            display: none;
-        }
     }
 
     @media (min-width: 769px) and (max-width: 1024px) {
@@ -1481,13 +1926,11 @@ const heroStyles = `
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .hero-button,
-        .play-button {
+        .hero-button {
             transition: none;
         }
         
-        .hero-button:hover,
-        .play-button:hover {
+        .hero-button:hover {
             transform: none;
         }
 
@@ -1502,10 +1945,6 @@ const heroStyles = `
 
     @media (prefers-reduced-data: reduce) {
         .hero-video {
-            display: none !important;
-        }
-        
-        .video-play-overlay {
             display: none !important;
         }
     }
@@ -1693,7 +2132,11 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
     const bannerContent = getBannerContent();
 
     return (
-        <div className="about-page-container">
+        <div className="about-page-container" style={{
+            overflowX: 'hidden',
+            width: '100%',
+            maxWidth: '100%'
+        }}>
             <TransparentHeader
                 cart={cart}
                 header={header}
@@ -1705,7 +2148,7 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
             {featuredCollection ? (
                 <AboutHeroFeaturedCollection collection={featuredCollection} />
             ) : (
-                /* Fallback - shows nothing if no video available */
+                /* Fallback content */
                 <div className="hero-video-container" style={{
                     background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
                     display: 'flex',
@@ -1732,42 +2175,76 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
                 </div>
             )}
 
-            {/* Original About Hero Image Section - Now below sliders */}
-            <section
-                className="relative w-full min-h-screen flex items-center justify-center"
-                style={{
-                    backgroundImage: `url(${bannerContent.backgroundImage})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    margin: 0,
-                    padding: 0,
-                    boxSizing: 'border-box'
-                }}
-            >
-                {/* Background overlay for better text readability */}
-                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+            {/* Rest of your content with proper container constraints */}
+            <div style={{ overflowX: 'hidden', width: '100%' }}>
+                {/* Original About Hero Image Section */}
+                <section
+                    className="relative w-full min-h-screen flex items-center justify-center"
+                    style={{
+                        backgroundImage: `url(${bannerContent.backgroundImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        margin: 0,
+                        padding: 0,
+                        boxSizing: 'border-box',
+                        maxWidth: '100%',
+                        overflowX: 'hidden'
+                    }}
+                >
+                    <div className="absolute inset-0 bg-black bg-opacity-20"></div>
 
-                {/* Content */}
-                <div className="relative z-10 text-center w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-                    <p className="text-[34px] sm:text-5xl md:text-5xl font-light font-poppins text-white mb-6 leading-snug" style={{ lineHeight: '1.2' }}>
-                        {bannerContent.title}
-                    </p>
-                </div>
-            </section>
+                    <div className="relative z-10 text-center w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+                        <div className="text-white">
+                            {(() => {
+                                const text = bannerContent.title;
+                                const parts = text.split(/(?:\s+(?:Fondatrice|Founder)\s*&\s*(?:CEO|PDG))/i);
 
-            <BestSellersProducts
-                bestSellersCollection={data.bestSellersCollection}
-                fallbackProducts={data.recommendedProducts}
-            />
+                                if (parts.length > 1) {
+                                    const name = parts[0].trim();
+                                    const title = text.replace(name, '').trim();
 
-            <FAQ product={data.featuredCollection} />
+                                    return (
+                                        <>
+                                            <h1 className="text-[28px] sm:text-[36px] md:text-[42px] lg:text-[48px] font-light font-poppins mb-2 leading-tight tracking-wide">
+                                                {name}
+                                            </h1>
+                                            <p className="text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] font-light font-poppins opacity-90">
+                                                {title}
+                                            </p>
+                                        </>
+                                    );
+                                } else {
+                                    const words = text.split(' ');
+                                    const midPoint = Math.ceil(words.length / 2);
+                                    const firstLine = words.slice(0, midPoint).join(' ');
+                                    const secondLine = words.slice(midPoint).join(' ');
 
-            {/* Dynamic Stats Section */}
-            {/*<StatsSection metafields={metafields} />*/}
+                                    return (
+                                        <>
+                                            <h1 className="text-[28px] sm:text-[36px] md:text-[42px] lg:text-[48px] font-light font-poppins mb-2 leading-tight tracking-wide">
+                                                {firstLine}
+                                            </h1>
+                                            <p className="text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] font-light font-poppins opacity-90">
+                                                {secondLine}
+                                            </p>
+                                        </>
+                                    );
+                                }
+                            })()}
+                        </div>
+                    </div>
+                </section>
 
-            {/* Dynamic Founder Section */}
-            {/*<FounderSection metafields={metafields} />*/}
+                <BestSellersProducts
+                    bestSellersCollection={data.bestSellersCollection}
+                    fallbackProducts={data.recommendedProducts}
+                />
+
+                <AboutBottomSlider collection={data.featuredCollection} />
+
+                <AboutFAQ collection={data.featuredCollection} />
+            </div>
         </div>
     );
 }

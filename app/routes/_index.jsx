@@ -122,47 +122,53 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
     const sectionRef = useRef(null);
-    const scrollContainerRef = useRef(null); // ✅ Add scroll container ref
+    const scrollContainerRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
     const [shouldPrioritizeImages, setShouldPrioritizeImages] = useState(false);
-    const [canScrollLeft, setCanScrollLeft] = useState(false); // ✅ Scroll state
-    const [canScrollRight, setCanScrollRight] = useState(true); // ✅ Scroll state
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
 
-    // ✅ Scroll functions
+    // Check if mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Scroll functions (only for desktop)
     const scrollLeft = () => {
-        if (scrollContainerRef.current) {
+        if (scrollContainerRef.current && !isMobile) {
             scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
         }
     };
 
     const scrollRight = () => {
-        if (scrollContainerRef.current) {
+        if (scrollContainerRef.current && !isMobile) {
             scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
         }
     };
 
-    // ✅ Check scroll position to show/hide arrows
+    // Check scroll position (only for desktop)
     const checkScrollPosition = () => {
-        if (scrollContainerRef.current) {
+        if (scrollContainerRef.current && !isMobile) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-            setCanScrollLeft(scrollLeft > 5); // ✅ Allow small tolerance
-            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5); // ✅ Allow small tolerance
+            setCanScrollLeft(scrollLeft > 5);
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
         }
     };
 
-    // PERFORMANCE: Intersection Observer for lazy section loading
+    // Intersection Observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    setIsIntersecting(true);
-
-                    // Load video if we have metafield source OR desktop videos
-                    if (!isMobile && !isSlowConnection && (getCurrentVideoSource || desktopVideos.length > 0)) {
-                        setTimeout(() => {
-                            setShouldLoadVideo(true);
-                        }, 1000);
-                    }
+                    setIsVisible(true);
+                    setShouldPrioritizeImages(true);
                 }
             },
             {
@@ -170,15 +176,26 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 rootMargin: '100px'
             }
         );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
+        return () => {
+            if (sectionRef.current) {
+                observer.unobserve(sectionRef.current);
+            }
+        };
     }, []);
 
-
+    // Scroll position tracking (desktop only)
     useEffect(() => {
+        if (isMobile) return;
+
         const container = scrollContainerRef.current;
         if (container) {
             container.addEventListener('scroll', checkScrollPosition);
 
-            // Add resize observer for container size changes
             const resizeObserver = new ResizeObserver(() => {
                 checkScrollPosition();
             });
@@ -194,9 +211,9 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 clearTimeout(timeoutId);
             };
         }
-    }, []);
+    }, [isMobile]);
 
-    // PERFORMANCE: Preload critical images when section becomes visible
+    // Preload images
     useEffect(() => {
         if (shouldPrioritizeImages && bestSellersCollection) {
             const preloadImages = async () => {
@@ -227,102 +244,106 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
     }, [shouldPrioritizeImages, bestSellersCollection]);
 
     const fallbackSkeleton = useMemo(() => (
-        <div className="horizontal-scroll-container">
-            <div className="horizontal-scroll-grid">
-                {Array.from({ length: 8 }).map((_, index) => (
+        <div className={isMobile ? "mobile-grid-container" : "horizontal-scroll-container"}>
+            <div className={isMobile ? "mobile-grid" : "horizontal-scroll-grid"}>
+                {Array.from({ length: isMobile ? 6 : 8 }).map((_, index) => (
                     <ProductSkeleton key={index} />
                 ))}
             </div>
         </div>
-    ), []);
+    ), [isMobile]);
 
     return (
         <div className="recommended-products" ref={sectionRef}>
-            <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                {/* ✅ Header with scroll controls */}
+            <div className={`container-fluid mx-auto ${isMobile ? 'px-2' : 'px-4 md:px-14'}`} id="best-sellers" style={{ scrollMarginTop: '80px' }}>
+                {/* Header with scroll controls (desktop only) */}
                 <div className="flex items-center justify-between pt-8 pb-8 md:pt-14 md:pb-14">
                     <p className="text-2xl md:text-[45px] font-poppins font-regular">
                         {t.homepage.ourBestSellers}
                     </p>
 
-                    {/* ✅ Scroll Controls */}
-                    <div className="hidden md:flex items-center space-x-2">
-                        <button
-                            onClick={scrollLeft}
-                            disabled={!canScrollLeft}
-                            className={`p-2 rounded-full border ${
-                                canScrollLeft
-                                    ? 'border-gray-300 hover:border-gray-500 text-gray-700 hover:text-gray-900'
-                                    : 'border-gray-200 text-gray-300 cursor-not-allowed'
-                            } transition-colors`}
-                            aria-label="Scroll left"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={scrollRight}
-                            disabled={!canScrollRight}
-                            className={`p-2 rounded-full border ${
-                                canScrollRight
-                                    ? 'border-[#8B4513] hover:border-gray-500 text-[#8B4513] hover:text-[#8B4513]'
-                                    : 'border-gray-200 text-gray-300 cursor-not-allowed'
-                            } transition-colors`}
-                            aria-label="Scroll right"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
+                    {/* Desktop scroll controls */}
+                    {!isMobile && (
+                        <div className="hidden md:flex items-center space-x-2">
+                            <button
+                                onClick={scrollLeft}
+                                disabled={!canScrollLeft}
+                                className={`p-2 rounded-full border ${
+                                    canScrollLeft
+                                        ? 'border-gray-300 hover:border-gray-500 text-gray-700 hover:text-gray-900'
+                                        : 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                } transition-colors`}
+                                aria-label="Scroll left"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={scrollRight}
+                                disabled={!canScrollRight}
+                                className={`p-2 rounded-full border ${
+                                    canScrollRight
+                                        ? 'border-[#8B4513] hover:border-gray-500 text-[#8B4513] hover:text-[#8B4513]'
+                                        : 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                } transition-colors`}
+                                aria-label="Scroll right"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <Suspense fallback={fallbackSkeleton}>
                     <Await resolve={bestSellersCollection}>
                         {(bestSellersResponse) => (
                             <>
-                                {/* Show Best Sellers Collection if it exists and has products */}
                                 {bestSellersResponse?.collection?.products?.nodes?.length > 0 ? (
-                                    <div className="horizontal-scroll-container">
+                                    <div className={isMobile ? "mobile-grid-container" : "horizontal-scroll-container"}>
                                         <div
                                             ref={scrollContainerRef}
-                                            className="horizontal-scroll-grid"
+                                            className={isMobile ? "mobile-grid" : "horizontal-scroll-grid"}
                                         >
-                                            {bestSellersResponse.collection.products.nodes.map((product, index) => (
-                                                <div key={product.id} className="horizontal-scroll-item">
-                                                    <ProductItem
-                                                        product={product}
-                                                        variant="roundedText"
-                                                        loading={index < 4 ? "eager" : "lazy"}
-                                                        fetchpriority={index < 4 ? "high" : "auto"}
-                                                    />
-                                                </div>
-                                            ))}
+                                            {bestSellersResponse.collection.products.nodes
+                                                .map((product, index) => (
+                                                    <div key={product.id} className={isMobile ? "mobile-grid-item" : "horizontal-scroll-item"}>
+                                                        <ProductItem
+                                                            product={product}
+                                                            variant="roundedText"
+                                                            loading={index < 4 ? "eager" : "lazy"}
+                                                            fetchpriority={index < 4 ? "high" : "auto"}
+                                                        />
+                                                    </div>
+                                                ))}
                                         </div>
                                     </div>
                                 ) : (
-                                    /* Fallback to recommended products if Best Sellers collection is empty */
+                                    /* Fallback to recommended products */
                                     <Suspense fallback={fallbackSkeleton}>
                                         <Await resolve={fallbackProducts}>
                                             {(fallbackResponse) => (
                                                 <>
                                                     {fallbackResponse?.products?.nodes ? (
-                                                        <div className="horizontal-scroll-container">
+                                                        <div className={isMobile ? "mobile-grid-container" : "horizontal-scroll-container"}>
                                                             <div
                                                                 ref={scrollContainerRef}
-                                                                className="horizontal-scroll-grid"
+                                                                className={isMobile ? "mobile-grid" : "horizontal-scroll-grid"}
                                                             >
-                                                                {fallbackResponse.products.nodes.map((product, index) => (
-                                                                    <div key={product.id} className="horizontal-scroll-item">
-                                                                        <ProductItem
-                                                                            product={product}
-                                                                            variant="roundedText"
-                                                                            loading={index < 4 ? "eager" : "lazy"}
-                                                                            fetchpriority={index < 4 ? "high" : "auto"}
-                                                                        />
-                                                                    </div>
-                                                                ))}
+                                                                {fallbackResponse.products.nodes
+                                                                    .slice(0, isMobile ? 6 : undefined)
+                                                                    .map((product, index) => (
+                                                                        <div key={product.id} className={isMobile ? "mobile-grid-item" : "horizontal-scroll-item"}>
+                                                                            <ProductItem
+                                                                                product={product}
+                                                                                variant="roundedText"
+                                                                                loading={index < 4 ? "eager" : "lazy"}
+                                                                                fetchpriority={index < 4 ? "high" : "auto"}
+                                                                            />
+                                                                        </div>
+                                                                    ))}
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -346,69 +367,72 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 </Suspense>
             </div>
 
-            {/* ✅ Updated styles for horizontal scroll */}
+            {/* Updated styles with mobile grid support */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                /* Horizontal scroll container */
+                /* Desktop horizontal scroll container */
                 .horizontal-scroll-container {
                     position: relative;
                     width: 100%;
                 }
 
-                /* Horizontal scroll grid */
                 .horizontal-scroll-grid {
                     display: flex;
                     gap: 1.5rem;
                     overflow-x: auto;
                     padding-bottom: 1rem;
                     scroll-behavior: smooth;
-                    
-                    /* Hide scrollbar but keep functionality */
-                    scrollbar-width: none; /* Firefox */
-                    -ms-overflow-style: none; /* IE and Edge */
+                    scrollbar-width: none;
+                    -ms-overflow-style: none;
                 }
 
                 .horizontal-scroll-grid::-webkit-scrollbar {
-                    display: none; /* Chrome, Safari, Opera */
+                    display: none;
                 }
 
-                /* Individual product items */
                 .horizontal-scroll-item {
-                    flex: 0 0 280px; /* Fixed width, no shrink/grow */
+                    flex: 0 0 280px;
                     max-width: 280px;
                 }
 
-                /* Mobile responsive */
-                @media (max-width: 640px) {
-                    .horizontal-scroll-item {
-                        flex: 0 0 250px;
-                        max-width: 250px;
-                    }
-                    
-                    .horizontal-scroll-grid {
-                        gap: 1rem;
-                        padding-left: 1rem;
-                        padding-right: 1rem;
-                        margin-left: -1rem;
-                        margin-right: -1rem;
-                    }
+                /* Mobile grid container */
+                .mobile-grid-container {
+                    position: relative;
+                    width: 100%;
+                    margin: 0;
                 }
 
+                .mobile-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 0.75rem;
+                    padding: 0;
+                    width: 100%;
+                }
+
+                .mobile-grid-item {
+                    width: 100%;
+                    min-width: 0; /* Prevent grid blowout */
+                    overflow: hidden; /* Prevent content overflow */
+                }
+
+                /* Mobile breakpoints */
                 @media (max-width: 480px) {
-                    .horizontal-scroll-item {
-                        flex: 0 0 220px;
-                        max-width: 220px;
+                    .mobile-grid {
+                        gap: 0.75rem;
                     }
                 }
 
                 /* Performance optimizations */
-                .horizontal-scroll-grid {
+                .horizontal-scroll-grid,
+                .mobile-grid {
                     transform: translateZ(0);
                     backface-visibility: hidden;
                     contain: layout style paint;
                 }
 
-                .horizontal-scroll-item {
+                .horizontal-scroll-item,
+                .mobile-grid-item {
                     contain: layout style;
                     transform: translateZ(0);
                     will-change: transform;
@@ -416,7 +440,8 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
 
                 /* Hover effects only on capable devices */
                 @media (hover: hover) and (pointer: fine) {
-                    .horizontal-scroll-item:hover {
+                    .horizontal-scroll-item:hover,
+                    .mobile-grid-item:hover {
                         transform: translateZ(0) translateY(-2px);
                         transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                     }
@@ -428,12 +453,14 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                         scroll-behavior: auto;
                     }
                     
-                    .horizontal-scroll-item {
+                    .horizontal-scroll-item,
+                    .mobile-grid-item {
                         transition: none !important;
                         will-change: auto !important;
                     }
                     
-                    .horizontal-scroll-item:hover {
+                    .horizontal-scroll-item:hover,
+                    .mobile-grid-item:hover {
                         transform: translateZ(0) !important;
                     }
                 }
@@ -1781,7 +1808,13 @@ const FEATURED_COLLECTION_QUERY = `#graphql
       {namespace: "custom", key: "guide_step_3_text"},
       {namespace: "custom", key: "guide_step_3_image"},
       {namespace: "custom", key: "guide_step_4_text"},
-      {namespace: "custom", key: "guide_step_4_image"}
+      {namespace: "custom", key: "guide_step_4_image"},
+      {namespace: "custom", key: "guide_title_en"},
+      {namespace: "custom", key: "guide_description_en"},
+      {namespace: "custom", key: "guide_step_1_text_en"},
+      {namespace: "custom", key: "guide_step_2_text_en"},
+      {namespace: "custom", key: "guide_step_3_text_en"},
+      {namespace: "custom", key: "guide_step_4_text_en"},
     ]) {
       id
       namespace

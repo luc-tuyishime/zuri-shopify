@@ -18,7 +18,7 @@ export function ProductForm({productOptions, selectedVariant, product}) {
     const buttonText = !selectedVariant
         ? (locale === 'fr' ? 'Non disponible' : 'Unavailable')
         : isSoldOut
-            ? (locale === 'fr' ? 'Épuisé' : 'Sold out')
+            ? (locale === 'fr' ? 'Pre-commander (3 semaines Coloration Sur Mesure)' : 'Pre-order (3 weeks Custom Coloring)')
             : selectedVariant?.availableForSale
                 ? (locale === 'fr' ? 'Ajouter au panier' : 'Add to cart')
                 : (locale === 'fr' ? 'Épuisé' : 'Sold out');

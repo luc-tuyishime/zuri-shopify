@@ -329,6 +329,9 @@ export default function Collection() {
   const t = useTranslation(locale);
   const {open} = useAside();
 
+  // Add mobile filter state
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   // Get the current collection filter from URL
   const currentCollectionFilter = searchParams.get('collection') || '';
 
@@ -355,7 +358,6 @@ export default function Collection() {
   // Generate dynamic filter options from products
   const filterOptions = useMemo(() => {
     if (!allProductsForFilters || allProductsForFilters.length === 0) {
-      // Fallback to static options if no products available
       return {
         category: [],
         longueur: [],
@@ -417,9 +419,7 @@ export default function Collection() {
   };
 
   const updateFilter = (key, value) => {
-
     if (key === 'minPrice' || key === 'maxPrice') {
-      // Handle price inputs normally
       const newFilters = { ...filters, [key]: value };
       setFilters(newFilters);
 
@@ -436,7 +436,6 @@ export default function Collection() {
     } else {
       const currentValues = filters[key] || [];
 
-      // Clean the incoming value first for comparison
       let cleanValue = value;
       if (key === 'longueur') {
         const cleanVal = value.split(' ')[0];
@@ -452,20 +451,17 @@ export default function Collection() {
         newValues = [...currentValues, cleanValue];
       }
 
-      // Remove duplicates just in case
       newValues = [...new Set(newValues)];
 
       const newFilters = { ...filters, [key]: newValues };
       setFilters(newFilters);
 
-      // Update URL params
       const newSearchParams = new URLSearchParams(searchParams);
       if (newValues.length > 0) {
         newSearchParams.set(key, newValues.join(','));
       } else {
         newSearchParams.delete(key);
       }
-      // Reset pagination when filters change
       newSearchParams.delete('cursor');
       newSearchParams.delete('direction');
 
@@ -490,7 +486,6 @@ export default function Collection() {
       minPrice: '',
       maxPrice: '',
     });
-    // Keep the collection filter when clearing other filters
     const newSearchParams = new URLSearchParams();
     if (currentCollectionFilter) {
       newSearchParams.set('collection', currentCollectionFilter);
@@ -498,13 +493,11 @@ export default function Collection() {
     setSearchParams(newSearchParams);
   };
 
-  // Determine the collection title
   const getCollectionTitle = () => {
     if (selectedCollection) {
       return selectedCollection.title;
     }
     if (currentCollectionFilter) {
-      // Fallback title based on handle
       const formattedHandle = currentCollectionFilter
           .split('-')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -517,7 +510,6 @@ export default function Collection() {
   const collectionTitle = getCollectionTitle();
 
   const FilterSection = ({ title, filterKey, options }) => {
-    // Don't render the section if there are no options
     if (!options || options.length === 0) {
       return null;
     }
@@ -549,8 +541,8 @@ export default function Collection() {
                               ? 'text-[#FF7575] font-medium'
                               : 'text-[#00000066]'
                       }`}>
-                {option.label}
-              </span>
+                        {option.label}
+                      </span>
                     </label>
                 ))}
               </div>
@@ -559,148 +551,141 @@ export default function Collection() {
     );
   };
 
+  // Filter component that can be reused for both mobile and desktop
+  const FilterContent = () => (
+      <div className="bg-white p-6">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-[23px] font-poppins font-bold text-[#000000]">
+            {locale === 'fr' ? 'FILTRER PAR' : 'FILTER BY'}
+          </h2>
+          <button
+              onClick={clearAllFilters}
+              className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            {locale === 'fr' ? 'Effacer tout' : 'Clear all'}
+          </button>
+        </div>
+
+        <FilterSection
+            title={locale === 'fr' ? 'Catégorie' : 'Category'}
+            filterKey="category"
+            options={filterOptions.category}
+        />
+
+        <FilterSection
+            title={locale === 'fr' ? 'Longueur' : 'Length'}
+            filterKey="longueur"
+            options={filterOptions.longueur}
+        />
+
+        <FilterSection
+            title={locale === 'fr' ? 'Texture' : 'Texture'}
+            filterKey="texture"
+            options={filterOptions.texture}
+        />
+
+        <FilterSection
+            title={locale === 'fr' ? 'Couleur' : 'Color'}
+            filterKey="couleur"
+            options={filterOptions.couleur}
+        />
+
+        <FilterSection
+            title={locale === 'fr' ? 'Tour de tête' : 'Cap Size'}
+            filterKey="capSize"
+            options={filterOptions.capSize}
+        />
+
+        {/* Price Filter */}
+        <div className="mb-8">
+          <button
+              onClick={() => toggleSection('price')}
+              className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
+          >
+            <span>{locale === 'fr' ? 'Prix' : 'Price'}</span>
+            <span className="text-lg">{expandedSections.price ? '−' : '+'}</span>
+          </button>
+          {expandedSections.price && (
+              <div className="space-y-4 ml-0">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">
+                    {locale === 'fr' ? 'Prix minimum' : 'Min Price'}
+                  </label>
+                  <input
+                      type="number"
+                      value={filters.minPrice}
+                      onChange={(e) => updateFilter('minPrice', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
+                      placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">
+                    {locale === 'fr' ? 'Prix maximum' : 'Max Price'}
+                  </label>
+                  <input
+                      type="number"
+                      value={filters.maxPrice}
+                      onChange={(e) => updateFilter('maxPrice', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
+                      placeholder="999"
+                  />
+                </div>
+              </div>
+          )}
+        </div>
+      </div>
+  );
 
   return (
       <div className="collection-page min-h-screen bg-white pt-24">
         <div className="container mx-auto px-4 py-8">
-          {/* Collection Filter Display */}
-          {currentCollectionFilter && (
-              <div className="mb-6">
-                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600">
-                      {locale === 'fr' ? 'Collection filtrée:' : 'Filtered by collection:'}
-                    </span>
-                    <span className="bg-[#542C17] text-white px-3 py-1 rounded-full text-sm font-medium">
-                      {selectedCollection?.title || currentCollectionFilter}
-                    </span>
-                  </div>
-                  <button
-                      onClick={() => {
-                        const newSearchParams = new URLSearchParams(searchParams);
-                        newSearchParams.delete('collection');
-                        setSearchParams(newSearchParams);
-                      }}
-                      className="text-gray-500 hover:text-gray-700 text-sm"
-                  >
-                    {locale === 'fr' ? 'Supprimer le filtre' : 'Remove filter'}
-                  </button>
-                </div>
-              </div>
-          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Filters Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white p-6">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-[23px] font-poppins font-bold text-[#000000]">
-                    {locale === 'fr' ? 'FILTRER PAR' : 'FILTER BY'}
-                  </h2>
-                  <button
-                      onClick={clearAllFilters}
-                      className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    {locale === 'fr' ? 'Effacer tout' : 'Clear all'}
-                  </button>
-                </div>
-
-                {/* Dynamic Filter Sections - Only render if options exist */}
-                <FilterSection
-                    title={locale === 'fr' ? 'Catégorie' : 'Category'}
-                    filterKey="category"
-                    options={filterOptions.category}
-                />
-
-                <FilterSection
-                    title={locale === 'fr' ? 'Longueur' : 'Length'}
-                    filterKey="longueur"
-                    options={filterOptions.longueur}
-                />
-
-                <FilterSection
-                    title={locale === 'fr' ? 'Texture' : 'Texture'}
-                    filterKey="texture"
-                    options={filterOptions.texture}
-                />
-
-                <FilterSection
-                    title={locale === 'fr' ? 'Couleur' : 'Color'}
-                    filterKey="couleur"
-                    options={filterOptions.couleur}
-                />
-
-                <FilterSection
-                    title={locale === 'fr' ? 'Tour de tête' : 'Cap Size'}
-                    filterKey="capSize"
-                    options={filterOptions.capSize}
-                />
-
-                {/* Price Filter - Keep static as requested */}
-                <div className="mb-8">
-                  <button
-                      onClick={() => toggleSection('price')}
-                      className="flex items-center justify-between w-full text-left text-[14.63px] font-poppins font-regular text-[#000000] font-medium mb-4"
-                  >
-                    <span>{locale === 'fr' ? 'Prix' : 'Price'}</span>
-                    <span className="text-lg">{expandedSections.price ? '−' : '+'}</span>
-                  </button>
-                  {expandedSections.price && (
-                      <div className="space-y-4 ml-0">
-                        <div>
-                          <label className="block text-sm text-gray-700 mb-2">
-                            {locale === 'fr' ? 'Prix minimum' : 'Min Price'}
-                          </label>
-                          <input
-                              type="number"
-                              value={filters.minPrice}
-                              onChange={(e) => updateFilter('minPrice', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
-                              placeholder="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-700 mb-2">
-                            {locale === 'fr' ? 'Prix maximum' : 'Max Price'}
-                          </label>
-                          <input
-                              type="number"
-                              value={filters.maxPrice}
-                              onChange={(e) => updateFilter('maxPrice', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
-                              placeholder="999"
-                          />
-                        </div>
-                      </div>
-                  )}
-                </div>
-               </div>
-              </div>
+            {/* Desktop Filters Sidebar */}
+            <div className="hidden lg:block lg:col-span-1">
+              <FilterContent />
+            </div>
 
             {/* Products Grid */}
             <div className="lg:col-span-3">
+              {/* Mobile Header with Filter Icon */}
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-[32px] font-medium text-gray-900 font-poppins">
+                <h1 className="text-[24px] lg:text-[32px] font-medium text-gray-900 font-poppins">
                   {collectionTitle}
                 </h1>
-                <div className="text-sm text-gray-500">
+
+                {/* Mobile Filter Button */}
+                <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="lg:hidden flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {locale === 'fr' ? 'Filtres' : 'Filters'}
+                  </span>
+                </button>
+
+                {/* Desktop filter count */}
+                <div className="hidden lg:block text-sm text-gray-500">
                   {allProductsForFilters && (
                       <span>
-                      {locale === 'fr'
-                          ? `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} options de filtre disponibles`
-                          : `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} filter options available`
-                      }
-                    </span>
+                        {locale === 'fr'
+                            ? `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} options de filtre disponibles`
+                            : `${filterOptions.category.length + filterOptions.longueur.length + filterOptions.texture.length + filterOptions.couleur.length + filterOptions.capSize.length} filter options available`
+                        }
+                      </span>
                   )}
                 </div>
               </div>
 
               <PaginatedResourceSection
                   connection={finalProductsConnection}
-                  resourcesClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+                  resourcesClassName="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
               >
                 {({node: product, index}) => {
-
                   return (
                       <div key={product.id} className="bg-white overflow-hidden hover:shadow-lg transition-shadow">
                         <ProductItem
@@ -725,6 +710,43 @@ export default function Collection() {
             </div>
           </div>
         </div>
+
+        {/* Mobile Filter Modal */}
+        {showMobileFilters && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
+              <div className="fixed inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto">
+                {/* Mobile filter header */}
+                <div className="flex items-center justify-between p-6 border-b">
+                  <h2 className="text-lg font-semibold">
+                    {locale === 'fr' ? 'Filtres' : 'Filters'}
+                  </h2>
+                  <button
+                      onClick={() => setShowMobileFilters(false)}
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Mobile filter content */}
+                <div className="p-0">
+                  <FilterContent />
+                </div>
+
+                {/* Mobile filter footer */}
+                <div className="p-6 border-t bg-white">
+                  <button
+                      onClick={() => setShowMobileFilters(false)}
+                      className="w-full bg-[#542C17] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#442017] transition-colors"
+                  >
+                    {locale === 'fr' ? 'Appliquer les filtres' : 'Apply Filters'}
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
       </div>
   );
 }

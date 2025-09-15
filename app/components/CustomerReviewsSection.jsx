@@ -2,6 +2,7 @@ import {useLoaderData} from '@remix-run/react';
 import IMAGE from '../assets/image.png';
 import {useLocale} from "~/hooks/useLocale.js";
 import {useTranslation} from "~/lib/i18n.js";
+import {useState} from "react";
 
 const CUSTOMER_REVIEWS_QUERY = `#graphql
   query CustomerReviews($country: CountryCode, $language: LanguageCode)
@@ -101,8 +102,57 @@ function getMetafieldValue(metafields, key, fallback = '') {
 export function CustomerReviewsSection({ reviewsData }) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
+    const [expandedReviews, setExpandedReviews] = useState(new Set());
 
     const products = reviewsData?.products?.nodes || [];
+
+    const toggleReviewExpansion = (reviewId) => {
+        setExpandedReviews(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(reviewId)) {
+                newSet.delete(reviewId);
+            } else {
+                newSet.add(reviewId);
+            }
+            return newSet;
+        });
+    };
+
+    const truncateText = (text, maxLength = 80) => {
+        if (!text || text.length <= maxLength) return text;
+        return text.slice(0, maxLength).trim() + '...';
+    };
+
+    const ReviewText = ({ review }) => {
+        const isExpanded = expandedReviews.has(review.id);
+        const needsTruncation = review.text && review.text.length > 80;
+
+        if (!needsTruncation) {
+            return (
+                <p className="text-sm font-poppins text-gray-700 mb-3 leading-relaxed">
+                    "{review.text}"
+                </p>
+            );
+        }
+
+        return (
+            <div className="mb-3">
+                <p className="text-sm font-poppins text-gray-700 leading-relaxed">
+                    "{isExpanded ? review.text : truncateText(review.text)}"
+                </p>
+                <button
+                    onClick={() => toggleReviewExpansion(review.id)}
+                    className="text-xs text-[#542C17] hover:text-[#3d1f10] font-medium mt-1 transition-colors duration-200"
+                >
+                    {isExpanded
+                        ? (locale === 'fr' ? 'Voir moins' : 'View less')
+                        : (locale === 'fr' ? 'Voir plus' : 'View more')
+                    }
+                </button>
+            </div>
+        );
+    };
+
 
     console.log('🔍 Found products with potential reviews:', products.length);
 
@@ -284,20 +334,6 @@ export function CustomerReviewsSection({ reviewsData }) {
     return (
         <div className="customer-reviews-section bg-white py-16">
             <div className="container mx-auto">
-                {/* Debug info in development */}
-                {/*{process.env.NODE_ENV === 'development' && (*/}
-                {/*    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">*/}
-                {/*        <p className="text-sm text-blue-800">*/}
-                {/*            <strong>Debug:</strong> Found {reviews.length} product reviews, displaying {displayReviews.length} total*/}
-                {/*        </p>*/}
-                {/*        {reviews.length > 0 && (*/}
-                {/*            <div className="mt-2 text-xs text-blue-600">*/}
-                {/*                Products with reviews: {reviews.map(r => r.productTitle).join(', ')}*/}
-                {/*            </div>*/}
-                {/*        )}*/}
-                {/*    </div>*/}
-                {/*)}*/}
-
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
                     <div>
                         <h2 className="text-[45px] font-poppins font-medium leading-tight mb-8">
@@ -312,7 +348,7 @@ export function CustomerReviewsSection({ reviewsData }) {
                     </div>
 
                     <div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {displayReviews.map((review) => (
                                 <div key={review.id} className="review-card">
                                     {/* Review Image */}
@@ -320,7 +356,7 @@ export function CustomerReviewsSection({ reviewsData }) {
                                         <img
                                             src={review.image}
                                             alt={`Review by ${review.name}`}
-                                            className="w-full h-40 object-cover rounded-lg"
+                                            className="w-full aspect-square object-cover rounded-lg"
                                             loading="lazy"
                                             onLoad={() => console.log(`✅ Review image loaded: ${review.image}`)}
                                             onError={(e) => {
@@ -332,7 +368,7 @@ export function CustomerReviewsSection({ reviewsData }) {
 
                                     <StarRating rating={review.rating} />
 
-                                    {/* ✅ Add Product Name Link */}
+                                    {/* Product Name Link */}
                                     {review.productHandle && review.productTitle && (
                                         <div className="mb-3">
                                             <a
@@ -344,9 +380,8 @@ export function CustomerReviewsSection({ reviewsData }) {
                                         </div>
                                     )}
 
-                                    <p className="text-sm font-poppins text-gray-700 mb-3 leading-relaxed">
-                                        "{review.text}"
-                                    </p>
+                                    {/* Expandable Review Text */}
+                                    <ReviewText review={review} />
 
                                     {review.date && (
                                         <p className="text-xs font-poppins text-gray-500 mb-3 italic">
