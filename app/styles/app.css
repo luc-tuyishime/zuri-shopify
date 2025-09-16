@@ -591,3 +591,88 @@ form[action="/cart"] button {
 .account-logout {
   display: inline-block;
 }
+
+.policy-content {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.policy-content h1,
+.policy-content h2,
+.policy-content h3,
+.policy-content h4,
+.policy-content h5,
+.policy-content h6 {
+  color: #5C2E1C;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.policy-content h1 { font-size: 2rem; }
+.policy-content h2 { font-size: 1.75rem; }
+.policy-content h3 { font-size: 1.5rem; }
+.policy-content h4 { font-size: 1.25rem; }
+
+.policy-content p {
+  margin-bottom: 1.25rem;
+  text-align: justify;
+}
+
+.policy-content ul,
+.policy-content ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.75rem;
+}
+
+.policy-content li {
+  margin-bottom: 0.5rem;
+}
+
+.policy-content strong,
+.policy-content b {
+  font-weight: 600;
+  color: #5C2E1C;
+}
+
+.policy-content a {
+  color: #5C2E1C;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.policy-content a:hover {
+  color: #4A2318;
+}
+
+.policy-content blockquote {
+  border-left: 4px solid #5C2E1C;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 0.375rem;
+}
+
+.policy-content table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+}
+
+.policy-content th,
+.policy-content td {
+  border: 1px solid #d1d5db;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.policy-content th {
+  background-color: #5C2E1C;
+  color: white;
+  font-weight: 600;
+}
