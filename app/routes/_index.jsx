@@ -719,6 +719,7 @@ function FeaturedCollection({ collection }) {
     const slideContent = useMemo(() => {
         try {
             const slides = [];
+            const isEnglish = locale === 'en';
 
             // Only add slide content if we have a corresponding video
             const video1Metafield = getMetafield('hero_background_image');
@@ -727,45 +728,63 @@ function FeaturedCollection({ collection }) {
 
             // Slide 1 - Only add if video exists
             if (video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) {
-                const slide1Title = getMetafield('hero_title');
-                const slide1Subtitle = getMetafield('hero_subtitle');
-                const slide1Button = getMetafield('hero_button_text');
+                const slide1Title = getMetafield(isEnglish ? 'hero_title_en' : 'hero_title');
+                const slide1Subtitle = getMetafield(isEnglish ? 'hero_subtitle_en' : 'hero_subtitle');
+                const slide1Button = getMetafield(isEnglish ? 'hero_button_text_en' : 'hero_button_text');
                 const slide1Url = getMetafield('hero_button_url_slide_1');
 
                 slides.push({
-                    title: slide1Title?.value || t.hero?.defaultTitle || `Discover ${collection?.title || 'Our Collection'}`,
-                    subtitle: slide1Subtitle?.value || t.hero?.defaultSubtitle || 'Premium Quality Collection',
-                    buttonText: slide1Button?.value || t.hero?.defaultButton || 'SHOP COLLECTION',
+                    title: slide1Title?.value ||
+                        (isEnglish ? t.hero?.defaultTitle : `Découvrez ${collection?.title || 'Notre Collection'}`) ||
+                        `Discover ${collection?.title || 'Our Collection'}`,
+                    subtitle: slide1Subtitle?.value ||
+                        (isEnglish ? t.hero?.defaultSubtitle : 'Collection de Qualité Premium') ||
+                        'Premium Quality Collection',
+                    buttonText: slide1Button?.value ||
+                        (isEnglish ? t.hero?.defaultButton : 'ACHETER LA COLLECTION') ||
+                        'SHOP COLLECTION',
                     url: slide1Url?.value || collectionUrl
                 });
             }
 
             // Slide 2 - Only add if video exists
             if (video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) {
-                const slide2Title = getMetafield('hero_title_slide_2');
-                const slide2Subtitle = getMetafield('hero_subtitle_slide_2');
-                const slide2Button = getMetafield('hero_button_text_slide_2');
+                const slide2Title = getMetafield(isEnglish ? 'hero_title_slide_2_en' : 'hero_title_slide_2');
+                const slide2Subtitle = getMetafield(isEnglish ? 'hero_subtitle_slide_2_en' : 'hero_subtitle_slide_2');
+                const slide2Button = getMetafield(isEnglish ? 'hero_button_text_slide_2_en' : 'hero_button_text_slide_2');
                 const slide2Url = getMetafield('hero_button_url_slide_2');
 
                 slides.push({
-                    title: slide2Title?.value || t.hero?.slide2Title || 'Natural Beauty Redefined',
-                    subtitle: slide2Subtitle?.value || t.hero?.slide2Subtitle || '100% Human Hair Collection',
-                    buttonText: slide2Button?.value || t.hero?.slide2Button || 'EXPLORE STYLES',
+                    title: slide2Title?.value ||
+                        (isEnglish ? t.hero?.slide2Title : 'Beauté Naturelle Redéfinie') ||
+                        'Natural Beauty Redefined',
+                    subtitle: slide2Subtitle?.value ||
+                        (isEnglish ? t.hero?.slide2Subtitle : 'Collection 100% Cheveux Humains') ||
+                        '100% Human Hair Collection',
+                    buttonText: slide2Button?.value ||
+                        (isEnglish ? t.hero?.slide2Button : 'EXPLORER LES STYLES') ||
+                        'EXPLORE STYLES',
                     url: slide2Url?.value || collectionUrl
                 });
             }
 
             // Slide 3 - Only add if video exists
             if (video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) {
-                const slide3Title = getMetafield('hero_title_slide_3');
-                const slide3Subtitle = getMetafield('hero_subtitle_slide_3');
-                const slide3Button = getMetafield('hero_button_text_slide_3');
+                const slide3Title = getMetafield(isEnglish ? 'hero_title_slide_3_en' : 'hero_title_slide_3');
+                const slide3Subtitle = getMetafield(isEnglish ? 'hero_subtitle_slide_3_en' : 'hero_subtitle_slide_3');
+                const slide3Button = getMetafield(isEnglish ? 'hero_button_text_slide_3_en' : 'hero_button_text_slide_3');
                 const slide3Url = getMetafield('hero_button_url_slide_3');
 
                 slides.push({
-                    title: slide3Title?.value || t.hero?.slide3Title || 'Transform Your Style',
-                    subtitle: slide3Subtitle?.value || t.hero?.slide3Subtitle || 'Expert Crafted Designs',
-                    buttonText: slide3Button?.value || t.hero?.slide3Button || 'VIEW ALL',
+                    title: slide3Title?.value ||
+                        (isEnglish ? t.hero?.slide3Title : 'Transformez Votre Style') ||
+                        'Transform Your Style',
+                    subtitle: slide3Subtitle?.value ||
+                        (isEnglish ? t.hero?.slide3Subtitle : 'Designs Fabriqués par des Experts') ||
+                        'Expert Crafted Designs',
+                    buttonText: slide3Button?.value ||
+                        (isEnglish ? t.hero?.slide3Button : 'VOIR TOUT') ||
+                        'VIEW ALL',
                     url: slide3Url?.value || collectionUrl
                 });
             }
@@ -776,9 +795,9 @@ function FeaturedCollection({ collection }) {
             console.error('Error generating slide content:', error);
             return [
                 {
-                    title: 'Our Collection',
-                    subtitle: 'Premium Quality',
-                    buttonText: 'SHOP NOW',
+                    title: locale === 'en' ? 'Our Collection' : 'Notre Collection',
+                    subtitle: locale === 'en' ? 'Premium Quality' : 'Qualité Premium',
+                    buttonText: locale === 'en' ? 'SHOP NOW' : 'ACHETER MAINTENANT',
                     url: '/collections/all'
                 }
             ];
@@ -1783,6 +1802,18 @@ const FEATURED_COLLECTION_QUERY = `#graphql
       {namespace: "custom", key: "hero_subtitle"},
       {namespace: "custom", key: "hero_button_text"},
       {namespace: "custom", key: "hero_button_url_slide_1"},  # ✅ ADD THIS
+      
+      {namespace: "custom", key: "hero_title_en"},
+      {namespace: "custom", key: "hero_subtitle_en"},
+      {namespace: "custom", key: "hero_button_text_en"},
+      
+      {namespace: "custom", key: "hero_title_slide_2_en"},
+      {namespace: "custom", key: "hero_subtitle_slide_2_en"},
+      {namespace: "custom", key: "hero_button_text_slide_2_en"},
+      
+      {namespace: "custom", key: "hero_title_slide_3_en"},
+      {namespace: "custom", key: "hero_subtitle_slide_3_en"},
+      {namespace: "custom", key: "hero_button_text_slide_3_en"},
       
       # Slide 2
       {namespace: "custom", key: "hero_background_image_slide_2"},
