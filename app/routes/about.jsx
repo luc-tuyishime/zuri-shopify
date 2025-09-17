@@ -2243,7 +2243,7 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
 
                 <AboutBottomSlider collection={data.featuredCollection} />
 
-                <AboutFAQ collection={data.featuredCollection} />
+                {/*<AboutFAQ collection={data.featuredCollection} />*/}
             </div>
         </div>
     );
