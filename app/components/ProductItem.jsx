@@ -303,24 +303,18 @@ export const ProductItem = memo(function ProductItem({
 
                                     if (fetcher.state === 'idle' && fetcher.data) {
                                         console.log('✅ Cart submission successful!');
-                                        console.log('- Response data:', fetcher.data);
-
-                                        // Method 1: Try the aside:open event
-                                        console.log('📢 Method 1: Dispatching aside:open event');
                                         const asideEvent = new CustomEvent('aside:open', {
                                             detail: { type: 'cart' },
                                             bubbles: true
                                         });
                                         document.dispatchEvent(asideEvent);
 
-                                        // Method 2: Try to find and click cart button/trigger in header
-                                        console.log('🔍 Method 2: Looking for cart trigger in header');
                                         const cartTriggers = [
                                             '[data-cart-open]',
                                             '[data-cart-trigger]',
                                             '[aria-label*="cart" i]',
                                             '[aria-label*="Cart"]',
-                                            'button[aria-label*="panier" i]', // French for cart
+                                            'button[aria-label*="panier" i]',
                                             'button[title*="cart" i]',
                                             'button[title*="panier" i]',
                                             '.cart-trigger',
@@ -328,41 +322,11 @@ export const ProductItem = memo(function ProductItem({
                                             '#cart-trigger'
                                         ];
 
-                                        let cartOpened = false;
                                         for (const selector of cartTriggers) {
                                             const cartElement = document.querySelector(selector);
                                             if (cartElement) {
-                                                console.log('✅ Found cart trigger:', selector, cartElement);
                                                 cartElement.click();
-                                                cartOpened = true;
                                                 break;
-                                            }
-                                        }
-
-                                        if (!cartOpened) {
-                                            console.log('❌ No cart trigger found, trying Aside provider methods');
-
-                                            // Method 3: Try to find Aside provider context
-                                            const asideElements = document.querySelectorAll('[data-aside], .aside, [class*="aside"]');
-                                            console.log('🔍 Found aside elements:', asideElements);
-
-                                            // Method 4: Check if there's a global cart open function
-                                            if (window.openCart) {
-                                                console.log('🌐 Found window.openCart function');
-                                                window.openCart();
-                                            } else if (window.Shopify && window.Shopify.cart) {
-                                                console.log('🛍️ Found Shopify cart object');
-                                                // Some themes have global cart opening functions
-                                            } else {
-                                                console.log('⚠️ No global cart opening method found');
-                                                console.log('💡 Consider adding a cart icon click simulation');
-
-                                                // Method 5: Try finding cart icon/badge and click it
-                                                const cartIcons = document.querySelectorAll('svg[data-cart], .cart-icon, [class*="cart-icon"]');
-                                                console.log('🛒 Found cart icons:', cartIcons);
-                                                if (cartIcons.length > 0) {
-                                                    cartIcons[0].closest('button, a')?.click();
-                                                }
                                             }
                                         }
                                     }
@@ -371,19 +335,20 @@ export const ProductItem = memo(function ProductItem({
                                 return (
                                     <button
                                         type="submit"
-                                        // onClick={...} ← REMOVE THIS COMPLETELY
-                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
+                                        // FIXED: Only disable when no variant exists OR when fetcher is actively working
+                                        disabled={!selectedVariant || fetcher.state === 'submitting' || fetcher.state === 'loading'}
                                         className={`flex-1 px-2 py-2 sm:px-3 sm:py-3 bg-[#8B4513] border rounded-lg font-poppins text-xs sm:text-sm border-[#8B4513] text-white font-medium hover:bg-gray-900 hover:border-gray-900 transition-colors duration-200 active:scale-95 ${
-                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle') ? 'opacity-50 cursor-not-allowed' : ''
+                                            // FIXED: Only apply disabled styles when actually disabled
+                                            (!selectedVariant || fetcher.state === 'submitting' || fetcher.state === 'loading') ? 'opacity-50 cursor-not-allowed' : ''
                                         }`}
                                         style={{ transform: 'translateZ(0)', contain: 'layout style' }}
                                     >
                                         {!selectedVariant
                                             ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
-                                            : product.tags?.includes('sold-out')
-                                                ? (locale === 'fr' ? 'Pre-commander (3 semaines Coloration Sur Mesure)' : 'Pre-order (3 weeks Custom Coloring)')
-                                                : fetcher.state !== 'idle'
-                                                    ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
+                                            : fetcher.state === 'submitting' || fetcher.state === 'loading'
+                                                ? (locale === 'fr' ? 'AJOUT...' : 'ADDING...')
+                                                : product.tags?.includes('sold-out')
+                                                    ? (locale === 'fr' ? 'Pre-commander (3 semaines Coloration Sur Mesure)' : 'Pre-order (3 weeks Custom Coloring)')
                                                     : (locale === 'fr' ? 'AJOUTER AU PANIER' : 'ADD TO CART')
                                         }
                                     </button>
@@ -455,9 +420,7 @@ export const ProductItem = memo(function ProductItem({
                         <CartForm route="/cart" inputs={{lines: cartLines}} action={CartForm.ACTIONS.LinesAdd}>
                             {(fetcher) => {
                                 useEffect(() => {
-
                                     if (fetcher.state === 'idle' && fetcher.data) {
-
                                         const asideEvent = new CustomEvent('aside:open', {
                                             detail: { type: 'cart' },
                                             bubbles: true
@@ -467,36 +430,18 @@ export const ProductItem = memo(function ProductItem({
                                         const cartButton = document.querySelector('[data-cart-trigger], [aria-label*="cart"], [aria-label*="Cart"]');
                                         if (cartButton) {
                                             cartButton.click();
-                                        } else {
-                                            console.log('❌ No cart button found in DOM');
                                         }
-
-                                        // Method 4: Manual reload approach
-                                        setTimeout(() => {
-                                            console.log('⏰ Fallback: Could reload page to show updated cart');
-                                            // window.location.reload(); // Uncomment if needed as last resort
-                                        }, 1000);
                                     }
-
-                                    if (fetcher.state === 'submitting') {
-                                        console.log('⏳ Cart submission in progress...');
-                                    }
-
-                                    if (fetcher.state === 'loading') {
-                                        console.log('📡 Loading cart response...');
-                                    }
-
                                 }, [fetcher.state, fetcher.data, selectedVariant]);
 
                                 return (
                                     <button
                                         type="submit"
-                                        // onClick={(e) => {
-                                        //     handleAddToCart(e);
-                                        // }}
-                                        disabled={!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle'}
+                                        // FIXED: Only disable when no variant exists OR when fetcher is actively working
+                                        disabled={!selectedVariant || fetcher.state === 'submitting' || fetcher.state === 'loading'}
                                         className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg font-poppins text-xs sm:text-sm transition-colors duration-200 active:scale-95 flex items-center justify-center ${
-                                            (!selectedVariant || product.tags?.includes('sold-out') || fetcher.state !== 'idle')
+                                            // FIXED: Only apply disabled styles when actually disabled
+                                            (!selectedVariant || fetcher.state === 'submitting' || fetcher.state === 'loading')
                                                 ? 'bg-gray-400 border-gray-400 text-white opacity-50 cursor-not-allowed'
                                                 : 'bg-[#8B4513] border-[#8B4513] text-white font-medium hover:bg-[#8B4513] hover:border-[#8B4513]'
                                         }`}
@@ -504,10 +449,10 @@ export const ProductItem = memo(function ProductItem({
                                     >
                                         {!selectedVariant
                                             ? (locale === 'fr' ? 'NON DISPONIBLE' : 'UNAVAILABLE')
-                                            : product.tags?.includes('sold-out')
-                                                ? (locale === 'fr' ? 'ÉPUISÉ' : 'SOLD OUT')
-                                                : fetcher.state !== 'idle'
-                                                    ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
+                                            : fetcher.state === 'submitting' || fetcher.state === 'loading'
+                                                ? (locale === 'fr' ? 'AJOUT..' : 'ADDING...')
+                                                : product.tags?.includes('sold-out')
+                                                    ? (locale === 'fr' ? 'PRÉ-COMMANDER' : 'PRE-ORDER')
                                                     : (locale === 'fr' ? 'AJOUTER' : 'ADD TO CART')
                                         }
                                     </button>

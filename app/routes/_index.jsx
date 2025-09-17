@@ -521,6 +521,34 @@ function FeaturedCollection({ collection }) {
         }
     };
 
+    const getVideoAspectRatio = (videoUrl) => {
+        // For now, assume vertical videos for mobile, horizontal for desktop
+        // You could enhance this by actually loading video metadata
+        return isMobile ? 'vertical' : 'horizontal';
+    };
+
+    // 2. Dynamic object positioning based on device and aspect ratio
+    const getObjectPosition = (videoUrl = null) => {
+        if (isMobile) {
+            // On mobile, show more of the top portion of videos
+            return 'center 20%';
+        }
+        // On desktop, center the video
+        return 'center center';
+    };
+
+    const getVideoStyleProps = (videoUrl) => {
+        const aspectRatio = getVideoAspectRatio(videoUrl);
+        const objectPosition = getObjectPosition(videoUrl);
+
+        return {
+            objectFit: 'cover',
+            objectPosition,
+            // Add data attribute for CSS targeting if needed
+            'data-aspect': aspectRatio
+        };
+    };
+
     const getCurrentVideoSource = useMemo(() => {
 
         try {
@@ -935,12 +963,14 @@ function FeaturedCollection({ collection }) {
                                 objectPosition: 'center',
                                 zIndex: 1,
                                 opacity: 0,
-                                transition: 'opacity 1s ease'
+                                transition: 'opacity 1s ease',
+                                ...getVideoStyleProps(getCurrentVideoSource)
                             }}
                             onError={() => handleVideoError(getCurrentVideoSource)}
                             onCanPlay={(e) => {
                                 e.target.style.opacity = '1';
                             }}
+                            data-aspect={getVideoAspectRatio(getCurrentVideoSource)}
                         >
                             <source src={getCurrentVideoSource} type="video/mp4" />
                         </video>
@@ -971,10 +1001,11 @@ function FeaturedCollection({ collection }) {
                                         left: 0,
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'cover'
+                                        ...getVideoStyleProps(OPTIMIZED_MOBILE_VIDEO)
                                     }}
                                     decoding="async"
                                     disablePictureInPicture
+                                    data-aspect={getVideoAspectRatio(OPTIMIZED_MOBILE_VIDEO)}
                                 >
                                     <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                                 </video>
@@ -1129,7 +1160,7 @@ function FeaturedCollection({ collection }) {
                                     left: 0,
                                     width: '100%',
                                     height: '100%',
-                                    objectFit: 'cover'
+                                    ...getVideoStyleProps(getCurrentVideoSource)
                                 }}
                                 decoding="async"
                                 disablePictureInPicture
@@ -1265,33 +1296,74 @@ function FeaturedCollection({ collection }) {
 
 const styles = `
     .hero-video-container {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        min-height: 500px;
-        margin: 0;
-        padding: 0;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        overflow: hidden;
-        /* GPU acceleration */
-        transform: translateZ(0);
-        backface-visibility: hidden;
-    }
+    position: relative;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    overflow: hidden;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    
+    /* Responsive heights */
+    height: 100vh; /* Desktop default */
+    min-height: 500px;
+}
 
     .hero-background-image,
     .hero-video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-        z-index: 1;
+         position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: opacity;
     }
+    
+    @media (max-width: 768px) {
+    .hero-video {
+        /* Optimize for mobile performance */
+        image-rendering: optimizeSpeed;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: optimize-contrast;
+        
+        /* Better object positioning for mobile */
+        object-position: center center;
+    }
+    
+    /* For vertical videos on mobile */
+    .hero-video[data-aspect="vertical"] {
+        object-position: center top;
+    }
+    
+    /* For square videos on mobile */
+    .hero-video[data-aspect="square"] {
+        object-position: center center;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .hero-video-container {
+        height: 80vh;
+        min-height: 450px;
+    }
+}
+
+/* Large desktop */
+@media (min-width: 1440px) {
+    .hero-video-container {
+        height: 90vh;
+        min-height: 600px;
+        max-height: 800px; /* Prevent too tall on very large screens */
+    }
+}
 
     .hero-video {
         /* Performance optimizations */
@@ -1300,12 +1372,27 @@ const styles = `
         perspective: 1000px;
         will-change: opacity;
     }
+    
+    @media (max-width: 480px) {
+    .hero-video-container {
+        height: 60vh;
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    .hero-video-container {
+        height: 85vh;
+        min-height: 300px;
+    }
+}
 
     /* Critical: Optimize video loading on mobile */
     @media (max-width: 768px) {
         .hero-video-container {
             height: 70vh;
             min-height: 400px;
+            max-height: 600px;
         }
         
         .hero-video {

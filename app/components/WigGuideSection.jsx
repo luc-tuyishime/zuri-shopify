@@ -37,7 +37,7 @@ export function WigGuideSection({ collection }) {
         return fallbackKey || '';
     };
 
-    // Get section title and description with proper fallbacks
+    // Get section title with proper fallbacks
     const sectionTitle = getLocalizedContent(
         'guide_title',
         locale === 'fr'
@@ -45,116 +45,53 @@ export function WigGuideSection({ collection }) {
             : 'How To Choose Your Perfect Wig'
     );
 
-    const sectionDescription = getLocalizedContent(
-        'guide_description',
-        locale === 'fr'
-            ? 'Découvrez la confiance dans chaque mèche avec nos conseils d\'experts.'
-            : 'Discover confidence in every strand with our expert guidance.'
+    // Get only step 4 content
+    const step4Text = getLocalizedContent(
+        'guide_step_4_text',
+        locale === 'fr' ? 'Étape 4' : 'Step 4'
     );
 
-    // Get step content with localization
-    const getStepContent = (stepNumber) => {
-        const stepText = getLocalizedContent(
-            `guide_step_${stepNumber}_text`,
-            locale === 'fr' ? `Étape ${stepNumber}` : `Step ${stepNumber}`
-        );
-
-        const stepImage = getMetafield(`guide_step_${stepNumber}_image`)?.reference?.image?.url;
-
-        return {
-            text: stepText,
-            image: stepImage
-        };
-    };
-
-    const step1 = getStepContent(1);
-    const step2 = getStepContent(2);
-    const step3 = getStepContent(3);
-    const step4 = getStepContent(4);
+    const step4Image = getMetafield('guide_step_4_image')?.reference?.image?.url;
 
     return (
         <div className="wig-guide-section bg-white py-16">
             <div className="container mx-auto px-14">
-                {/* Top section with title and description */}
-                <div className="grid text-center  gap-12 mb-16">
-                    {/* Left side - Title */}
-                    <div>
-                        <h2 className="text-[45px] font-poppins font-regular text-[#000000] leading-tight">
-                            {sectionTitle}
-                        </h2>
-                    </div>
-
-                    {/* Right side - Description */}
-                    {/*<div className="flex items-center">*/}
-                    {/*    <p className="text-[19px] font-poppins font-regular text-[#542C17] leading-relaxed">*/}
-                    {/*        {sectionDescription}*/}
-                    {/*    </p>*/}
-                    {/*</div>*/}
+                {/* Section title */}
+                <div className="text-center mb-16">
+                    <h2 className="text-[45px] font-poppins font-regular text-[#000000] leading-tight">
+                        {sectionTitle}
+                    </h2>
                 </div>
 
-                {/* Steps section */}
-                <div className="steps-container">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        {/* Step 1 */}
-                        {/*<div className="step-card relative">*/}
-                        {/*    <div*/}
-                        {/*        className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"*/}
-                        {/*        style={{*/}
-                        {/*            backgroundImage: step1.image ? `url(${step1.image})` : "url('')",*/}
-                        {/*            backgroundPosition: 'center 30%',*/}
-                        {/*        }}*/}
-                        {/*    >*/}
-                        {/*        <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">*/}
-                        {/*            {step1.text}*/}
-                        {/*        </span>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
+                {/* Only Step 4 */}
+                <div className="flex justify-center">
+                    <div className="step-card relative w-full md:w-5/6 lg:w-2/3 xl:w-3/5">
+                        <div className="w-full relative overflow-hidden rounded-lg">
+                            {step4Image ? (
+                                <div className="relative">
+                                    <img
+                                        src={step4Image}
+                                        alt="Wig guide step"
+                                        className="w-full h-auto object-contain"
+                                        onLoad={(e) => {
+                                            console.log('Image dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight);
+                                        }}
+                                    />
 
-                        {/* Step 2 */}
-                        {/*<div className="step-card relative">*/}
-                        {/*    <div*/}
-                        {/*        className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"*/}
-                        {/*        style={{*/}
-                        {/*            backgroundImage: step2.image ? `url(${step2.image})` : "url('')",*/}
-                        {/*            backgroundPosition: 'center 30%',*/}
-                        {/*        }}*/}
-                        {/*    >*/}
-                        {/*        <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">*/}
-                        {/*            {step2.text}*/}
-                        {/*        </span>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
-
-                        {/* Step 3 */}
-                        {/*<div className="step-card relative">*/}
-                        {/*    <div*/}
-                        {/*        className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"*/}
-                        {/*        style={{*/}
-                        {/*            backgroundImage: step3.image ? `url(${step3.image})` : "url('')",*/}
-                        {/*            backgroundPosition: 'center 30%',*/}
-                        {/*        }}*/}
-                        {/*    >*/}
-                        {/*        <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">*/}
-                        {/*            {step3.text}*/}
-                        {/*        </span>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
-                    </div>
-
-                    {/* Bottom row - 1 centered step */}
-                    <div className="flex justify-center">
-                        <div className="step-card relative w-full md:w-5/6 lg:w-2/3 xl:w-3/5">
-                            <div
-                                className="w-full h-80 bg-cover bg-center flex items-end justify-end relative"
-                                style={{
-                                    backgroundImage: step4.image ? `url(${step4.image})` : "url('')",
-                                    backgroundPosition: 'center 25%',
-                                }}
-                            >
-                                <span className="relative z-10 text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-20 rounded-lg">
-                                    {step4.text}
-                                </span>
-                            </div>
+                                    {/* Text overlay positioned absolutely over the image */}
+                                    {/*{step4Text && (*/}
+                                    {/*    <div className="absolute inset-0 flex items-end justify-end">*/}
+                                    {/*        <span className="text-white text-xl font-poppins font-medium text-center px-4 py-3 m-4 bg-black bg-opacity-50 rounded-lg backdrop-blur-sm">*/}
+                                    {/*            {step4Text}*/}
+                                    {/*        </span>*/}
+                                    {/*    </div>*/}
+                                    {/*)}*/}
+                                </div>
+                            ) : (
+                                <div className="w-full h-80 bg-gray-200 flex items-center justify-center">
+                                    <span className="text-gray-500">No image available</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

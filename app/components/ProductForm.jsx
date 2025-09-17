@@ -13,7 +13,8 @@ export function ProductForm({productOptions, selectedVariant, product}) {
     const [locale] = useLocale();
 
     const isSoldOut = product?.tags?.includes('sold-out');
-    const isDisabled = !selectedVariant || !selectedVariant.availableForSale || isSoldOut;
+    // FIXED: Remove isSoldOut from isDisabled condition
+    const isDisabled = !selectedVariant || !selectedVariant.availableForSale;
 
     const buttonText = !selectedVariant
         ? (locale === 'fr' ? 'Non disponible' : 'Unavailable')
@@ -54,7 +55,7 @@ export function ProductForm({productOptions, selectedVariant, product}) {
             <CartForm
                 route="/cart"
                 inputs={{
-                    lines: selectedVariant && !isSoldOut
+                    lines: selectedVariant
                         ? [
                             {
                                 merchandiseId: selectedVariant.id,
@@ -72,7 +73,8 @@ export function ProductForm({productOptions, selectedVariant, product}) {
                         onClick={() => {
                             open('cart');
                         }}
-                        disabled={isDisabled || (fetcher.state !== 'idle')}
+                        // FIXED: Only disable when no variant or fetcher is working
+                        disabled={isDisabled || (fetcher.state === 'submitting' || fetcher.state === 'loading')}
                         style={{
                             marginTop: '2rem',
                             padding: '1rem 1.5rem',
@@ -86,38 +88,46 @@ export function ProductForm({productOptions, selectedVariant, product}) {
                             transform: 'scale(1)',
                             border: 'none',
                             outline: 'none',
-                            cursor: isDisabled ? 'not-allowed' : 'pointer',
-                            backgroundColor: isDisabled ? '#9CA3AF' : '#8B4513',
-                            boxShadow: isDisabled ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                            // FIXED: Update cursor and styling conditions
+                            cursor: (isDisabled || fetcher.state === 'submitting' || fetcher.state === 'loading') ? 'not-allowed' : 'pointer',
+                            backgroundColor: (isDisabled || fetcher.state === 'submitting' || fetcher.state === 'loading') ? '#9CA3AF' : '#8B4513',
+                            boxShadow: (isDisabled || fetcher.state === 'submitting' || fetcher.state === 'loading') ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                         }}
                         onMouseEnter={(e) => {
-                            if (!isDisabled) {
+                            // FIXED: Update hover condition
+                            if (!isDisabled && fetcher.state !== 'submitting' && fetcher.state !== 'loading') {
                                 e.target.style.backgroundColor = '#7A3A0F';
                                 e.target.style.transform = 'scale(1.02)';
                                 e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
                             }
                         }}
                         onMouseLeave={(e) => {
-                            if (!isDisabled) {
+                            // FIXED: Update hover condition
+                            if (!isDisabled && fetcher.state !== 'submitting' && fetcher.state !== 'loading') {
                                 e.target.style.backgroundColor = '#8B4513';
                                 e.target.style.transform = 'scale(1)';
                                 e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
                             }
                         }}
                         onMouseDown={(e) => {
-                            if (!isDisabled) {
+                            // FIXED: Update click condition
+                            if (!isDisabled && fetcher.state !== 'submitting' && fetcher.state !== 'loading') {
                                 e.target.style.transform = 'scale(0.95)';
                                 e.target.style.backgroundColor = '#6B320C';
                             }
                         }}
                         onMouseUp={(e) => {
-                            if (!isDisabled) {
+                            // FIXED: Update click condition
+                            if (!isDisabled && fetcher.state !== 'submitting' && fetcher.state !== 'loading') {
                                 e.target.style.transform = 'scale(1.02)';
                                 e.target.style.backgroundColor = '#7A3A0F';
                             }
                         }}
                     >
-                        {buttonText}
+                        {fetcher.state === 'submitting' || fetcher.state === 'loading'
+                            ? (locale === 'fr' ? 'Ajout en cours...' : 'Adding...')
+                            : buttonText
+                        }
                     </button>
                 )}
             </CartForm>
