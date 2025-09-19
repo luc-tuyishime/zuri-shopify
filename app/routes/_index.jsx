@@ -1120,15 +1120,17 @@ function FeaturedCollection({ collection }) {
                             left: 0,
                             width: '100%',
                             height: '100%',
-                            objectFit: 'cover',
-                            objectPosition: 'center',
                             zIndex: 1,
-                            transition: 'opacity 0.5s ease'
+                            transition: 'opacity 0.5s ease',
+                            // ADD THE ENHANCED VIDEO STYLE PROPS:
+                            ...getVideoStyleProps(getCurrentVideoSource)
                         }}
                         onError={(e) => {
                             console.error('❌ Video background failed to load:', getCurrentVideoSource);
                             handleVideoError(getCurrentVideoSource);
                         }}
+                        // ADD DATA ATTRIBUTE:
+                        data-aspect={getVideoAspectRatio(getCurrentVideoSource)}
                     >
                         <source src={getCurrentVideoSource} type="video/mp4" />
                         <source src={getCurrentVideoSource.replace('.mp4', '.webm')} type="video/webm" />
@@ -1298,6 +1300,7 @@ const styles = `
     .hero-video-container {
     position: relative;
     width: 100vw;
+    height: 100vh;
     margin: 0;
     padding: 0;
     left: 50%;
@@ -1359,9 +1362,9 @@ const styles = `
 /* Large desktop */
 @media (min-width: 1440px) {
     .hero-video-container {
-        height: 90vh;
+        height: 100vh;
         min-height: 600px;
-        max-height: 800px; /* Prevent too tall on very large screens */
+   
     }
 }
 
