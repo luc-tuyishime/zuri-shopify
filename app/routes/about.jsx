@@ -539,7 +539,7 @@ function AboutHeroFeaturedCollection({ collection }) {
             return null;
 
         } catch (error) {
-            console.error('🚨 Error getting video source:', error);
+            console.error('Error getting video source:', error);
             return null;
         }
     }, [currentVideoIndex, collection?.metafields, videoErrors]);
@@ -557,7 +557,6 @@ function AboutHeroFeaturedCollection({ collection }) {
         if (mobileVideoMetafield?.value && mobileVideoMetafield.value.startsWith('http')) {
             return mobileVideoMetafield.value;
         }
-        // Fallback to first desktop video for mobile if no mobile-specific video
         return getCurrentVideoSource;
     }, [collection?.metafields, getCurrentVideoSource]);
 
@@ -597,7 +596,7 @@ function AboutHeroFeaturedCollection({ collection }) {
             const video2Metafield = getMetafield('about_hero_background_image_slide_2');
             const video3Metafield = getMetafield('about_hero_background_image_slide_3');
 
-            // About Slide 1 - Only add if video exists
+            // About Slide 1 - Only add if video exists AND metafields have content
             if ((video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) ||
                 video1Metafield?.reference?.sources?.[0]?.url) {
 
@@ -606,21 +605,18 @@ function AboutHeroFeaturedCollection({ collection }) {
                 const slide1Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_fr' : 'about_hero_button_text_en');
                 const slide1Url = getMetafield('about_hero_button_url_slide_1');
 
-                slides.push({
-                    title: slide1Title?.value || (locale === 'fr'
-                        ? 'Notre Histoire'
-                        : 'Our Story'),
-                    subtitle: slide1Subtitle?.value || (locale === 'fr'
-                        ? 'Découvrez l\'aventure Zuri'
-                        : 'Discover the Zuri Journey'),
-                    buttonText: slide1Button?.value || (locale === 'fr'
-                        ? 'EN SAVOIR PLUS'
-                        : 'LEARN MORE'),
-                    url: slide1Url?.value || '#founder'
-                });
+                // Only add slide if we have at least title content
+                if (slide1Title?.value) {
+                    slides.push({
+                        title: slide1Title.value,
+                        subtitle: slide1Subtitle?.value || '',
+                        buttonText: slide1Button?.value || '',
+                        url: slide1Url?.value || '#founder'
+                    });
+                }
             }
 
-            // About Slide 2 - Only add if video exists
+            // About Slide 2 - Only add if video exists AND metafields have content
             if ((video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) ||
                 video2Metafield?.reference?.sources?.[0]?.url) {
 
@@ -629,21 +625,18 @@ function AboutHeroFeaturedCollection({ collection }) {
                 const slide2Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_slide_2_fr' : 'about_hero_button_text_slide_2_en');
                 const slide2Url = getMetafield('about_hero_button_url_slide_2');
 
-                slides.push({
-                    title: slide2Title?.value || (locale === 'fr'
-                        ? 'Innovation Beauté'
-                        : 'Beauty Innovation'),
-                    subtitle: slide2Subtitle?.value || (locale === 'fr'
-                        ? 'Redéfinir les standards de beauté'
-                        : 'Redefining Beauty Standards'),
-                    buttonText: slide2Button?.value || (locale === 'fr'
-                        ? 'DÉCOUVRIR'
-                        : 'DISCOVER'),
-                    url: slide2Url?.value || collectionUrl
-                });
+                // Only add slide if we have at least title content
+                if (slide2Title?.value) {
+                    slides.push({
+                        title: slide2Title.value,
+                        subtitle: slide2Subtitle?.value || '',
+                        buttonText: slide2Button?.value || '',
+                        url: slide2Url?.value || collectionUrl
+                    });
+                }
             }
 
-            // About Slide 3 - Only add if video exists
+            // About Slide 3 - Only add if video exists AND metafields have content
             if ((video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) ||
                 video3Metafield?.reference?.sources?.[0]?.url) {
 
@@ -652,50 +645,33 @@ function AboutHeroFeaturedCollection({ collection }) {
                 const slide3Button = getMetafield(locale === 'fr' ? 'about_hero_button_text_slide_3_fr' : 'about_hero_button_text_slide_3_en');
                 const slide3Url = getMetafield('about_hero_button_url_slide_3');
 
-                slides.push({
-                    title: slide3Title?.value || (locale === 'fr'
-                        ? 'Autonomisation Féminine'
-                        : 'Women Empowerment'),
-                    subtitle: slide3Subtitle?.value || (locale === 'fr'
-                        ? 'Soutenir les femmes entrepreneures'
-                        : 'Supporting Women Entrepreneurs'),
-                    buttonText: slide3Button?.value || (locale === 'fr'
-                        ? 'REJOINDRE'
-                        : 'JOIN US'),
-                    url: slide3Url?.value || collectionUrl
-                });
+                // Only add slide if we have at least title content
+                if (slide3Title?.value) {
+                    slides.push({
+                        title: slide3Title.value,
+                        subtitle: slide3Subtitle?.value || '',
+                        buttonText: slide3Button?.value || '',
+                        url: slide3Url?.value || collectionUrl
+                    });
+                }
             }
 
             return slides;
 
         } catch (error) {
             console.error('Error generating slide content:', error);
-            return [
-                {
-                    title: locale === 'fr' ? 'Notre Histoire' : 'Our Story',
-                    subtitle: locale === 'fr' ? 'Découvrez Zuri' : 'Discover Zuri',
-                    buttonText: locale === 'fr' ? 'EN SAVOIR PLUS' : 'LEARN MORE',
-                    url: '#founder'
-                }
-            ];
+            return [];
         }
     }, [collection?.title, collection?.handle, collection?.metafields, locale, collectionUrl]);
 
     const getCurrentSlideContent = () => {
         if (!slideContent || slideContent.length === 0) {
-            return {
-                title: locale === 'fr' ? 'Notre Histoire' : 'Our Story',
-                subtitle: locale === 'fr' ? 'Découvrez Zuri' : 'Discover Zuri',
-                buttonText: locale === 'fr' ? 'EN SAVOIR PLUS' : 'LEARN MORE',
-                url: '#founder'
-            };
+            return null;
         }
 
         const safeIndex = Math.max(0, Math.min(currentVideoIndex, slideContent.length - 1));
-        return slideContent[safeIndex] || slideContent[0];
+        return slideContent[safeIndex] || null;
     };
-
-
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -703,7 +679,6 @@ function AboutHeroFeaturedCollection({ collection }) {
                 if (entry.isIntersecting) {
                     setIsIntersecting(true);
 
-                    // Always load video when intersecting and we have a video source
                     if (getCurrentVideoSource) {
                         setTimeout(() => {
                             setShouldLoadVideo(true);
@@ -754,7 +729,6 @@ function AboutHeroFeaturedCollection({ collection }) {
     }, []);
 
     useEffect(() => {
-        // Only start slideshow if we have more than 1 video
         if (!isMobile && isClient && shouldLoadVideo && desktopVideos.length > 1) {
             const interval = setInterval(() => {
                 setCurrentVideoIndex((prevIndex) => {
@@ -798,17 +772,9 @@ function AboutHeroFeaturedCollection({ collection }) {
     }
 
     if (!isClient) {
-        const currentContent = slideContent[0] || {
-            title: locale === 'fr' ? 'Notre Histoire' : 'Our Story',
-            subtitle: locale === 'fr' ? 'Découvrez Zuri' : 'Discover Zuri',
-            buttonText: locale === 'fr' ? 'EN SAVOIR PLUS' : 'LEARN MORE',
-            url: '#founder'
-        };
-
         return (
             <>
                 <div ref={containerRef} className="hero-video-container">
-                    {/* Only show videos - no background images */}
                     {!isMobile && getCurrentVideoSource && (
                         <video
                             key={`bg-video-${currentVideoIndex}`}
@@ -841,7 +807,6 @@ function AboutHeroFeaturedCollection({ collection }) {
 
                     {(showVideo || getCurrentVideoSource) && (
                         <>
-                            {/* Mobile Video - Show same video as desktop */}
                             {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                                 <video
                                     ref={videoRef}
@@ -872,7 +837,6 @@ function AboutHeroFeaturedCollection({ collection }) {
                                     <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                                 </video>
                             ) : (
-                                /* Desktop Video - Only show on desktop when videos exist */
                                 !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
                                     <video
                                         key={`desktop-video-${currentVideoIndex}`}
@@ -908,24 +872,39 @@ function AboutHeroFeaturedCollection({ collection }) {
 
                     <div className="hero-link">
                         <div className="hero-content">
-                            <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
-                                {getCurrentSlideContent().title}
-                            </h1>
-                            <p className="hero-subtitle" key={`subtitle-${currentVideoIndex}`}>
-                                {getCurrentSlideContent().subtitle}
-                            </p>
-                            <Link
-                                to={getCurrentSlideContent().url}
-                                className="hero-button"
-                                key={`button-${currentVideoIndex}`}
-                            >
-                                {getCurrentSlideContent().buttonText}
-                            </Link>
+                            {(() => {
+                                const currentContent = getCurrentSlideContent();
+                                if (!currentContent) return null;
+
+                                return (
+                                    <>
+                                        {currentContent.title && (
+                                            <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
+                                                {currentContent.title}
+                                            </h1>
+                                        )}
+                                        {currentContent.subtitle && (
+                                            <p className="hero-subtitle" key={`subtitle-${currentVideoIndex}`}>
+                                                {currentContent.subtitle}
+                                            </p>
+                                        )}
+                                        {currentContent.buttonText && (
+                                            <Link
+                                                to={currentContent.url}
+                                                className="hero-button"
+                                                key={`button-${currentVideoIndex}`}
+                                            >
+                                                {currentContent.buttonText}
+                                            </Link>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
 
-                        {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
+                        {!isMobile && isClient && showVideo && slideContent && slideContent.length > 1 && (
                             <div className="slideshow-indicators">
-                                {desktopVideos.map((_, index) => (
+                                {slideContent.map((_, index) => (
                                     <button
                                         key={index}
                                         onClick={() => {
@@ -964,7 +943,6 @@ function AboutHeroFeaturedCollection({ collection }) {
     return (
         <>
             <div ref={containerRef} className="hero-video-container">
-                {/* Only show videos from metafields - no background images */}
                 {getCurrentVideoSource && (
                     <video
                         key={`bg-video-${currentVideoIndex}`}
@@ -986,7 +964,7 @@ function AboutHeroFeaturedCollection({ collection }) {
                             transition: 'opacity 0.5s ease'
                         }}
                         onError={(e) => {
-                            console.error('❌ Video background failed to load:', getCurrentVideoSource);
+                            console.error('Video background failed to load:', getCurrentVideoSource);
                             handleVideoError(getCurrentVideoSource);
                         }}
                     >
@@ -997,7 +975,6 @@ function AboutHeroFeaturedCollection({ collection }) {
 
                 {(showVideo || getCurrentVideoSource) && (
                     <>
-                        {/* Mobile Video - Show same video as desktop */}
                         {isMobile && OPTIMIZED_MOBILE_VIDEO ? (
                             <video
                                 ref={videoRef}
@@ -1028,7 +1005,6 @@ function AboutHeroFeaturedCollection({ collection }) {
                                 <source src={OPTIMIZED_MOBILE_VIDEO} type="video/mp4" />
                             </video>
                         ) : (
-                            /* Desktop Video - Only show on desktop when videos exist */
                             !isMobile && desktopVideos.length > 0 && getCurrentVideoSource && (
                                 <video
                                     key={`desktop-video-${currentVideoIndex}`}
@@ -1064,24 +1040,39 @@ function AboutHeroFeaturedCollection({ collection }) {
 
                 <div className="hero-link">
                     <div className="hero-content">
-                        <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
-                            {getCurrentSlideContent().title}
-                        </h1>
-                        <p className="hero-subtitle" key={`subtitle-${currentVideoIndex}`}>
-                            {getCurrentSlideContent().subtitle}
-                        </p>
-                        <Link
-                            to={getCurrentSlideContent().url}
-                            className="hero-button"
-                            key={`button-${currentVideoIndex}`}
-                        >
-                            {getCurrentSlideContent().buttonText}
-                        </Link>
+                        {(() => {
+                            const currentContent = getCurrentSlideContent();
+                            if (!currentContent) return null;
+
+                            return (
+                                <>
+                                    {currentContent.title && (
+                                        <h1 className="hero-title" key={`title-${currentVideoIndex}`}>
+                                            {currentContent.title}
+                                        </h1>
+                                    )}
+                                    {currentContent.subtitle && (
+                                        <p className="hero-subtitle" key={`subtitle-${currentVideoIndex}`}>
+                                            {currentContent.subtitle}
+                                        </p>
+                                    )}
+                                    {currentContent.buttonText && (
+                                        <Link
+                                            to={currentContent.url}
+                                            className="hero-button"
+                                            key={`button-${currentVideoIndex}`}
+                                        >
+                                            {currentContent.buttonText}
+                                        </Link>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
 
-                    {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
+                    {!isMobile && isClient && showVideo && slideContent && slideContent.length > 1 && (
                         <div className="slideshow-indicators">
-                            {desktopVideos.map((_, index) => (
+                            {slideContent.map((_, index) => (
                                 <button
                                     key={index}
                                     onClick={() => {
@@ -1205,12 +1196,10 @@ function AboutBottomSlider({ collection }) {
                     customBg = getMetafield('about_bottom_slider_background_image');
             }
 
-            // Check if it's a direct URL string (Cloudinary)
             if (customBg?.value && typeof customBg.value === 'string' && customBg.value.startsWith('http')) {
                 return customBg.value;
             }
 
-            // Check if it's a video reference
             if (customBg?.reference?.sources && Array.isArray(customBg.reference.sources) && customBg.reference.sources.length > 0) {
                 const videoSource = customBg.reference.sources[0];
                 let videoUrl = videoSource.url;
@@ -1280,7 +1269,7 @@ function AboutBottomSlider({ collection }) {
             const video2Metafield = getMetafield('about_bottom_slider_background_image_slide_2');
             const video3Metafield = getMetafield('about_bottom_slider_background_image_slide_3');
 
-            // Bottom Slider Slide 1
+            // Bottom Slider Slide 1 - Only add if video exists AND metafields have content
             if ((video1Metafield?.value && typeof video1Metafield.value === 'string' && video1Metafield.value.startsWith('http')) ||
                 video1Metafield?.reference?.sources?.[0]?.url) {
 
@@ -1289,21 +1278,18 @@ function AboutBottomSlider({ collection }) {
                 const slide1Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_fr' : 'about_bottom_slider_button_text_en');
                 const slide1Url = getMetafield('about_bottom_slider_button_url_slide_1');
 
-                slides.push({
-                    title: slide1Title?.value || (locale === 'fr'
-                        ? 'Innovation Continue'
-                        : 'Continuous Innovation'),
-                    subtitle: slide1Subtitle?.value || (locale === 'fr'
-                        ? 'Découvrez nos dernières innovations'
-                        : 'Discover our latest innovations'),
-                    buttonText: slide1Button?.value || (locale === 'fr'
-                        ? 'DÉCOUVRIR'
-                        : 'DISCOVER'),
-                    url: slide1Url?.value || collectionUrl
-                });
+                // Only add slide if we have at least title content
+                if (slide1Title?.value) {
+                    slides.push({
+                        title: slide1Title.value,
+                        subtitle: slide1Subtitle?.value || '',
+                        buttonText: slide1Button?.value || '',
+                        url: slide1Url?.value || collectionUrl
+                    });
+                }
             }
 
-            // Bottom Slider Slide 2
+            // Bottom Slider Slide 2 - Only add if video exists AND metafields have content
             if ((video2Metafield?.value && typeof video2Metafield.value === 'string' && video2Metafield.value.startsWith('http')) ||
                 video2Metafield?.reference?.sources?.[0]?.url) {
 
@@ -1312,21 +1298,18 @@ function AboutBottomSlider({ collection }) {
                 const slide2Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_slide_2_fr' : 'about_bottom_slider_button_text_slide_2_en');
                 const slide2Url = getMetafield('about_bottom_slider_button_url_slide_2');
 
-                slides.push({
-                    title: slide2Title?.value || (locale === 'fr'
-                        ? 'Qualité Premium'
-                        : 'Premium Quality'),
-                    subtitle: slide2Subtitle?.value || (locale === 'fr'
-                        ? 'Des produits de qualité exceptionnelle'
-                        : 'Exceptional quality products'),
-                    buttonText: slide2Button?.value || (locale === 'fr'
-                        ? 'EXPLORER'
-                        : 'EXPLORE'),
-                    url: slide2Url?.value || collectionUrl
-                });
+                // Only add slide if we have at least title content
+                if (slide2Title?.value) {
+                    slides.push({
+                        title: slide2Title.value,
+                        subtitle: slide2Subtitle?.value || '',
+                        buttonText: slide2Button?.value || '',
+                        url: slide2Url?.value || collectionUrl
+                    });
+                }
             }
 
-            // Bottom Slider Slide 3
+            // Bottom Slider Slide 3 - Only add if video exists AND metafields have content
             if ((video3Metafield?.value && typeof video3Metafield.value === 'string' && video3Metafield.value.startsWith('http')) ||
                 video3Metafield?.reference?.sources?.[0]?.url) {
 
@@ -1335,18 +1318,15 @@ function AboutBottomSlider({ collection }) {
                 const slide3Button = getMetafield(locale === 'fr' ? 'about_bottom_slider_button_text_slide_3_fr' : 'about_bottom_slider_button_text_slide_3_en');
                 const slide3Url = getMetafield('about_bottom_slider_button_url_slide_3');
 
-                slides.push({
-                    title: slide3Title?.value || (locale === 'fr'
-                        ? 'Communauté Globale'
-                        : 'Global Community'),
-                    subtitle: slide3Subtitle?.value || (locale === 'fr'
-                        ? 'Rejoignez notre communauté mondiale'
-                        : 'Join our global community'),
-                    buttonText: slide3Button?.value || (locale === 'fr'
-                        ? 'REJOINDRE'
-                        : 'JOIN US'),
-                    url: slide3Url?.value || collectionUrl
-                });
+                // Only add slide if we have at least title content
+                if (slide3Title?.value) {
+                    slides.push({
+                        title: slide3Title.value,
+                        subtitle: slide3Subtitle?.value || '',
+                        buttonText: slide3Button?.value || '',
+                        url: slide3Url?.value || collectionUrl
+                    });
+                }
             }
 
             return slides;
@@ -1363,7 +1343,7 @@ function AboutBottomSlider({ collection }) {
         }
 
         const safeIndex = Math.max(0, Math.min(currentVideoIndex, slideContent.length - 1));
-        return slideContent[safeIndex] || slideContent[0];
+        return slideContent[safeIndex] || null;
     };
 
     useEffect(() => {
@@ -1429,11 +1409,6 @@ function AboutBottomSlider({ collection }) {
     }
 
     const showVideo = isIntersecting;
-    const currentContent = getCurrentSlideContent();
-
-    if (!currentContent) {
-        return null;
-    }
 
     return (
         <div ref={containerRef} className="hero-video-container" style={{ marginTop: '2rem' }}>
@@ -1534,24 +1509,39 @@ function AboutBottomSlider({ collection }) {
 
             <div className="hero-link">
                 <div className="hero-content">
-                    <h1 className="hero-title" key={`bottom-slider-title-${currentVideoIndex}`}>
-                        {currentContent.title}
-                    </h1>
-                    <p className="hero-subtitle" key={`bottom-slider-subtitle-${currentVideoIndex}`}>
-                        {currentContent.subtitle}
-                    </p>
-                    <Link
-                        to={currentContent.url}
-                        className="hero-button"
-                        key={`bottom-slider-button-${currentVideoIndex}`}
-                    >
-                        {currentContent.buttonText}
-                    </Link>
+                    {(() => {
+                        const currentContent = getCurrentSlideContent();
+                        if (!currentContent) return null;
+
+                        return (
+                            <>
+                                {currentContent.title && (
+                                    <h1 className="hero-title" key={`bottom-slider-title-${currentVideoIndex}`}>
+                                        {currentContent.title}
+                                    </h1>
+                                )}
+                                {currentContent.subtitle && (
+                                    <p className="hero-subtitle" key={`bottom-slider-subtitle-${currentVideoIndex}`}>
+                                        {currentContent.subtitle}
+                                    </p>
+                                )}
+                                {currentContent.buttonText && (
+                                    <Link
+                                        to={currentContent.url}
+                                        className="hero-button"
+                                        key={`bottom-slider-button-${currentVideoIndex}`}
+                                    >
+                                        {currentContent.buttonText}
+                                    </Link>
+                                )}
+                            </>
+                        );
+                    })()}
                 </div>
 
-                {!isMobile && isClient && showVideo && desktopVideos.length > 1 && (
+                {!isMobile && isClient && showVideo && slideContent && slideContent.length > 1 && (
                     <div className="slideshow-indicators">
-                        {desktopVideos.map((_, index) => (
+                        {slideContent.map((_, index) => (
                             <button
                                 key={index}
                                 onClick={() => {
