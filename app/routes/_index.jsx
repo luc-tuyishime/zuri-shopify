@@ -4,6 +4,7 @@ import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
 import {WigGuideSection} from '~/components/WigGuideSection';
 import {CUSTOMER_REVIEWS_QUERY, CustomerReviewsSection} from '~/components/CustomerReviewsSection';
+import { EmailCapture } from '~/components/EmailCapture';
 import BG from '~/assets/bg.svg'
 // import VIDEO1 from '~/assets/video.mp4'
 // import VIDEO2 from '~/assets/video.mp4'
@@ -106,7 +107,10 @@ export default function Homepage() {
                     )}
                 </Await>
             </Suspense>
+            <div>
 
+                <EmailCapture />
+            </div>
         </div>
     );
 }

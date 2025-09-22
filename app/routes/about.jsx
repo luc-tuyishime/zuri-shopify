@@ -12,6 +12,7 @@ import MOBILE_VIDEO from '../assets/aaa.webm'
 import {BestSellersProducts} from "~/routes/_index.jsx";
 import {FAQ} from "~/components/Faq.jsx";
 import {AboutFAQ} from "~/components/AboutFAQ.jsx";
+import {LanguageSwitcher} from "~/components/LanguageSwitcher.jsx";
 
 // Add the Best Sellers and Recommended Products queries at the top of the file
 const BEST_SELLERS_COLLECTION_QUERY = `#graphql
@@ -356,6 +357,7 @@ function getMetafieldValue(metafields, key, fallback = '') {
 function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
     const [locale] = useLocale();
     const location = useLocation();
+    const [currentLocale, setCurrentLocale] = useLocale();
     const [isScrolled, setIsScrolled] = useState(false);
 
     // Create language switcher URLs that preserve current route
@@ -385,7 +387,7 @@ function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
                 left: 0,
                 right: 0,
                 zIndex: 9999,
-                background: isScrolled ? 'rgba(139, 69, 19, 1)' : 'transparent',
+                background: isScrolled ? 'rgba(139, 69, 19, 0.8)' : 'transparent',
                 display: 'block',
                 visibility: 'visible',
                 opacity: 1
@@ -420,6 +422,10 @@ function TransparentHeader({ cart, header, isLoggedIn, publicStoreDomain }) {
                             >
                                 {locale === 'fr' ? 'À PROPOS' : 'ABOUT US'}
                             </Link>
+                            <LanguageSwitcher
+                                currentLocale={currentLocale}
+                                onLocaleChange={setCurrentLocale}
+                            />
                         </nav>
 
                         {/* Right side actions */}
@@ -1977,6 +1983,17 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
     const getBannerContent = () => {
         const backgroundImage = getCollectionMetafield('about_banner_background_image');
         const bannerTitle = getCollectionMetafield(locale === 'fr' ? 'about_banner_title_fr' : 'about_banner_title_en');
+
+        console.log('Collection being used:', featuredCollection?.title, featuredCollection?.handle, featuredCollection?.id);
+        console.log('All metafields:', featuredCollection?.metafields);
+
+        console.log('backgroundImage metafield:', backgroundImage);
+        console.log('backgroundImage value:', backgroundImage?.value);
+
+
+
+        const finalImage = backgroundImage?.value || aboutBg;
+        console.log('Final image URL:', finalImage);
 
         return {
             backgroundImage: backgroundImage?.value || aboutBg,
