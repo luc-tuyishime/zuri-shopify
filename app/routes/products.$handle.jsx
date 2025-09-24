@@ -63,7 +63,7 @@ function getPreviewImageUrl(media) {
   return null;
 }
 
-// Enhanced ZoomModal component with video support
+
 const ZoomModalWithVideo = memo(({
                                    isOpen,
                                    onClose,
@@ -71,16 +71,53 @@ const ZoomModalWithVideo = memo(({
                                    selectedIndex,
                                    onPrevious,
                                    onNext,
-                                   productTitle
+                                   productTitle,
+                                   locale = 'en'
                                  }) => {
-  // ALL hooks must be declared first, before any early returns
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const imageRef = useRef(null);
 
-  // All useCallback hooks
+
+  const getText = useCallback((key) => {
+    const translations = {
+      en: {
+        tapToZoom: 'Tap to zoom • Swipe left/right to navigate',
+        hoverToZoom: 'Hover to zoom',
+        zoomedTapExit: '2.0x • Tap to exit',
+        zoomedDesktop: '2.5x Zoom',
+        video: 'Video',
+        swipeNavigate: '← Swipe to navigate →'
+      },
+      fr: {
+        tapToZoom: 'Touchez pour zoomer • Balayez gauche/droite pour naviguer',
+        hoverToZoom: 'Survolez pour zoomer',
+        zoomedTapExit: '2.0x • Touchez pour quitter',
+        zoomedDesktop: 'Zoom 2.5x',
+        video: 'Vidéo',
+        swipeNavigate: '← Balayez pour naviguer →'
+      }
+    };
+
+    return translations[locale]?.[key] || translations.en[key];
+  }, [locale]);
+
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+
   const handleMouseMove = useCallback((e) => {
-    if (!imageRef.current) return;
+    if (!imageRef.current || isMobile) return;
 
     const rect = imageRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -90,23 +127,101 @@ const ZoomModalWithVideo = memo(({
       x: Math.max(0, Math.min(100, x)),
       y: Math.max(0, Math.min(100, y))
     });
-  }, []);
+  }, [isMobile]);
 
   const handleMouseEnter = useCallback(() => {
-    setIsZoomed(true);
-  }, []);
+    if (!isMobile) {
+      setIsZoomed(true);
+    }
+  }, [isMobile]);
 
   const handleMouseLeave = useCallback(() => {
-    setIsZoomed(false);
-  }, []);
+    if (!isMobile) {
+      setIsZoomed(false);
+    }
+  }, [isMobile]);
 
-  // All useEffect hooks
+  const handleTouchStart = useCallback((e) => {
+    if (!isMobile || !imageRef.current) return;
+
+    const touch = e.touches[0];
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+    setZoomPosition({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    });
+    setIsDragging(false);
+  }, [isMobile]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!isMobile || !imageRef.current || !isZoomed) return;
+
+    const touch = e.touches[0];
+    const rect = imageRef.current.getBoundingClientRect();
+
+    const deltaX = Math.abs(touch.clientX - touchStart.x);
+    const deltaY = Math.abs(touch.clientY - touchStart.y);
+
+    if (deltaX > 10 || deltaY > 10) {
+      setIsDragging(true);
+    }
+
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+
+    setZoomPosition({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    });
+  }, [isMobile, isZoomed, touchStart]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (!isMobile) return;
+
+    if (!isDragging) {
+      setIsZoomed(prev => !prev);
+    }
+
+    setIsDragging(false);
+  }, [isMobile, isDragging]);
+
+  const handleSwipe = useCallback((e) => {
+    if (!isMobile || media.length <= 1) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = Math.abs(touch.clientY - touchStart.y);
+
+    if (Math.abs(deltaX) > 50 && deltaY < 100) {
+      if (deltaX > 0 && selectedIndex > 0) {
+        onPrevious();
+      } else if (deltaX < 0 && selectedIndex < media.length - 1) {
+        onNext();
+      }
+    }
+  }, [isMobile, media.length, selectedIndex, touchStart, onPrevious, onNext]);
+
   useEffect(() => {
     setIsZoomed(false);
     setZoomPosition({ x: 50, y: 50 });
   }, [selectedIndex]);
 
-  // NOW we can do early returns after ALL hooks are declared
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentMedia = media[selectedIndex];
@@ -114,92 +229,123 @@ const ZoomModalWithVideo = memo(({
 
   return (
       <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-2 sm:p-4"
+          className="fixed inset-0 bg-black bg-opacity-95 z-[60] flex items-center justify-center"
           onClick={onClose}
       >
-        <div className="relative max-w-4xl max-h-full w-full">
-          {/* Close Button */}
+        <div className={`
+        relative w-full h-full flex items-center justify-center
+        ${isMobile ? 'p-2' : 'p-4'}
+      `}>
           <button
               onClick={onClose}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-full p-2 shadow-lg z-10 hover:bg-gray-100 transition-colors"
+              className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-2 shadow-lg z-30 transition-all"
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
-          {/* Media Content */}
           <div
-              className="relative overflow-hidden rounded-lg shadow-2xl"
+              className={`
+            relative overflow-hidden rounded-lg shadow-2xl
+            ${isMobile
+                  ? 'w-full h-full max-w-sm max-h-[70vh]'
+                  : 'max-w-4xl max-h-[90vh] w-full'
+              }
+          `}
               onClick={(e) => e.stopPropagation()}
           >
             {isCurrentVideo ? (
                 currentMedia.__typename === 'ExternalVideo' ? (
                     // External video (YouTube, Vimeo)
-                    <iframe
-                        src={currentMedia.embedUrl}
-                        className="max-w-full max-h-full w-full h-96 sm:h-[500px] lg:h-[600px] rounded-lg shadow-2xl"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
+                    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+                      <iframe
+                          src={currentMedia.embedUrl}
+                          className={`
+                    w-full rounded-lg
+                    ${isMobile ? 'h-[50vh]' : 'h-96 sm:h-[500px] lg:h-[600px]'}
+                  `}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                      />
+                    </div>
                 ) : (
                     // Native video
-                    <video
-                        src={getMediaUrl(currentMedia)}
-                        controls
-                        autoPlay
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                        poster={getPreviewImageUrl(currentMedia)}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
+                    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+                      <video
+                          src={getMediaUrl(currentMedia)}
+                          controls
+                          autoPlay
+                          playsInline
+                          className={`
+                    w-full object-contain rounded-lg
+                    ${isMobile ? 'h-[50vh]' : 'max-h-[90vh]'}
+                  `}
+                          poster={getPreviewImageUrl(currentMedia)}
+                          onError={() => console.error('Video failed to load')}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
                 )
             ) : (
-                // Image with zoom functionality
                 <div
-                    className="relative max-w-full max-h-full overflow-hidden"
+                    className="relative w-full h-full overflow-hidden bg-gray-100 rounded-lg flex items-center justify-center"
                     onMouseMove={handleMouseMove}
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                 >
                   <img
                       ref={imageRef}
                       src={getMediaUrl(currentMedia)}
                       alt={currentMedia.image?.altText || productTitle}
                       className={`
-                  max-w-full max-h-full object-contain cursor-zoom-in transition-transform duration-300 ease-out
-                  ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}
+                  max-w-full max-h-full object-contain transition-transform duration-300 ease-out
+                  ${isMobile
+                          ? (isZoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')
+                          : (isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in')
+                      }
                 `}
                       style={isZoomed ? {
                         transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                        transform: `scale(2.5)`
+                        transform: `scale(${isMobile ? 2.0 : 2.5})`
                       } : {}}
+                      draggable={false}
                   />
 
-                  {/* Zoom indicator */}
-                  {!isZoomed && (
-                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center opacity-75 hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                        </svg>
-                        Hover to zoom
+                  {isMobile && !isZoomed && (
+                      <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-sm text-center">
+                        {getText('tapToZoom')}
                       </div>
                   )}
 
-                  {/* Zoomed state indicator */}
+                  {!isMobile && !isZoomed && (
+                      <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-full text-xs flex items-center opacity-75 hover:opacity-100 transition-opacity">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                        {getText('hoverToZoom')}
+                      </div>
+                  )}
+
                   {isZoomed && (
-                      <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-full text-xs flex items-center">
+                      <div className={`
+                  absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-xs flex items-center
+                  ${isMobile ? 'text-sm' : ''}
+                `}>
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM15 12H9" />
                         </svg>
-                        2.5x Zoom
+                        {isMobile ? getText('zoomedTapExit') : getText('zoomedDesktop')}
                       </div>
                   )}
                 </div>
             )}
           </div>
 
-          {/* Navigation Buttons - Desktop */}
           {media.length > 1 && (
               <>
                 {selectedIndex > 0 && (
@@ -208,9 +354,14 @@ const ZoomModalWithVideo = memo(({
                           e.stopPropagation();
                           onPrevious();
                         }}
-                        className="hidden sm:block absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors cursor-pointer z-20"
+                        className={`
+                  absolute left-4 top-1/2 transform -translate-y-1/2 
+                  bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg 
+                  transition-all duration-200 z-20
+                  ${isMobile ? 'block' : 'hidden sm:block'}
+                `}
                     >
-                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
@@ -222,9 +373,14 @@ const ZoomModalWithVideo = memo(({
                           e.stopPropagation();
                           onNext();
                         }}
-                        className="hidden sm:block absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-20"
+                        className={`
+                  absolute right-4 top-1/2 transform -translate-y-1/2 
+                  bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg 
+                  transition-all duration-200 z-20
+                  ${isMobile ? 'block' : 'hidden sm:block'}
+                `}
                     >
-                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -232,20 +388,28 @@ const ZoomModalWithVideo = memo(({
               </>
           )}
 
-          {/* Media Counter */}
           {media.length > 1 && (
-              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm z-20">
+              <div className={`
+            absolute bottom-4 left-1/2 transform -translate-x-1/2 
+            bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-sm z-20
+            ${isMobile ? 'text-base' : 'text-sm'}
+          `}>
                 {selectedIndex + 1} / {media.length}
               </div>
           )}
 
-          {/* Media Type Indicator */}
           {isCurrentVideo && (
-              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs flex items-center z-20">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-sm flex items-center z-20">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                 </svg>
-                Video
+                {getText('video')}
+              </div>
+          )}
+
+          {isMobile && media.length > 1 && !isCurrentVideo && (
+              <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-white text-sm opacity-75">
+                {getText('swipeNavigate')}
               </div>
           )}
         </div>
@@ -605,20 +769,6 @@ export default function Product() {
                 </span>
                 </div>
 
-                {/* Description - Responsive */}
-                <div className="font-regular font-poppins text-sm sm:text-base text-[#002F45] mb-4 sm:mb-6 [&_*]:leading-relaxed">
-                  {descriptionHtml ? (
-                      <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
-                  ) : (
-                      <p>
-                        {locale === 'fr'
-                            ? 'Silk Smooth est un shampooing premium conçu pour nettoyer, nourrir et rehausser l\'éclat naturel de vos cheveux. Sa formule douce mais efficace aide à maintenir l\'équilibre hydratant, laissant les cheveux doux, maniables et revitalisés.'
-                            : 'Silk Smooth is a premium shampoo crafted to cleanse, nourish, and enhance the natural shine of your hair. Its gentle yet effective formula helps maintain moisture balance, leaving hair soft, manageable, and revitalized.'
-                        }
-                      </p>
-                  )}
-                </div>
-
                 {/* Product Options - Responsive */}
                 {product.options?.map((option) => {
                   if (option.optionValues.length <= 1) return null;
@@ -698,6 +848,20 @@ export default function Product() {
                       selectedVariant={selectedVariant}
                       product={product}
                   />
+                </div>
+
+                {/* Description - Responsive */}
+                <div className="font-regular font-poppins text-sm sm:text-base text-[#002F45] mb-4 sm:mb-6 [&_*]:leading-relaxed">
+                  {descriptionHtml ? (
+                      <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                  ) : (
+                      <p>
+                        {locale === 'fr'
+                            ? 'Silk Smooth est un shampooing premium conçu pour nettoyer, nourrir et rehausser l\'éclat naturel de vos cheveux. Sa formule douce mais efficace aide à maintenir l\'équilibre hydratant, laissant les cheveux doux, maniables et revitalisés.'
+                            : 'Silk Smooth is a premium shampoo crafted to cleanse, nourish, and enhance the natural shine of your hair. Its gentle yet effective formula helps maintain moisture balance, leaving hair soft, manageable, and revitalized.'
+                        }
+                      </p>
+                  )}
                 </div>
 
                 {/* Collapsible Sections - Responsive */}
@@ -935,6 +1099,7 @@ export default function Product() {
             onPrevious={() => handleMediaNavigation('prev')}
             onNext={() => handleMediaNavigation('next')}
             productTitle={product.title}
+            locale={locale}
         />
 
         {/* Analytics */}

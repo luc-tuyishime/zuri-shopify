@@ -5,7 +5,6 @@ export function WigGuideSection({ collection }) {
     const [locale] = useLocale();
     const t = useTranslation(locale);
 
-    // Helper function to get metafield with null safety
     const getMetafield = (key, namespace = 'custom') => {
         try {
             if (!collection?.metafields || !Array.isArray(collection.metafields)) {
@@ -23,21 +22,16 @@ export function WigGuideSection({ collection }) {
         }
     };
 
-    // Get localized content with fallbacks
     const getLocalizedContent = (baseKey, fallbackKey) => {
-        // Try language-specific metafield first
         const localizedField = getMetafield(`${baseKey}_${locale}`);
         if (localizedField?.value) return localizedField.value;
 
-        // Fall back to default metafield (usually English)
         const defaultField = getMetafield(baseKey);
         if (defaultField?.value) return defaultField.value;
 
-        // Final fallback to translation file
         return fallbackKey || '';
     };
 
-    // Get section title with proper fallbacks
     const sectionTitle = getLocalizedContent(
         'guide_title',
         locale === 'fr'
@@ -45,7 +39,6 @@ export function WigGuideSection({ collection }) {
             : 'How To Choose Your Perfect Wig'
     );
 
-    // Get only step 4 content
     const step4Text = getLocalizedContent(
         'guide_step_4_text',
         locale === 'fr' ? 'Étape 4' : 'Step 4'
@@ -58,9 +51,9 @@ export function WigGuideSection({ collection }) {
             <div className="container mx-auto px-14">
                 {/* Section title */}
                 <div className="text-center mb-16">
-                    <h2 className="text-[45px] font-poppins font-regular text-[#000000] leading-tight">
+                    <p className="text-2xl md:text-[45px] leading-tight font-poppins font-regular">
                         {sectionTitle}
-                    </h2>
+                    </p>
                 </div>
 
                 {/* Only Step 4 */}
