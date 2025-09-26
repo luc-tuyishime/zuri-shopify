@@ -47,7 +47,7 @@ export function WigGuideSection({ collection }) {
     const step4Image = getMetafield('guide_step_4_image')?.reference?.image?.url;
 
     return (
-        <div className="wig-guide-section bg-white py-16">
+        <div className="wig-guide-section bg-white  md:py-16">
             <div className="container mx-auto px-4 md:px-14">
                 {/* Section title - left aligned on mobile, centered on desktop */}
                 <div className="text-left md:text-center mb-5 md:mb-14">

@@ -129,7 +129,7 @@ export function CustomerReviewsSection({ reviewsData }) {
 
         if (!needsTruncation) {
             return (
-                <p className="text-sm font-poppins text-gray-700 mb-3 leading-relaxed">
+                <p className="text-sm font-poppins text-gray-700 mb-1 leading-relaxed">
                     "{review.text}"
                 </p>
             );
@@ -332,11 +332,11 @@ export function CustomerReviewsSection({ reviewsData }) {
     );
 
     return (
-        <div className="customer-reviews-section bg-white py-16">
+        <div className="customer-reviews-section bg-white py-12 md:py-16">
             <div className="container mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
                     <div>
-                        <h2 className="text-2xl md:text-[45px] leading-tight font-poppins font-regular mb-8">
+                        <h2 className="text-2xl md:text-[45px] leading-tight font-poppins font-regular mb-5">
                             {sectionTitle}
                         </h2>
                         <a
