@@ -48,16 +48,16 @@ export function WigGuideSection({ collection }) {
 
     return (
         <div className="wig-guide-section bg-white py-16">
-            <div className="container mx-auto px-14">
-                {/* Section title */}
-                <div className="text-center mb-16">
+            <div className="container mx-auto px-4 md:px-14">
+                {/* Section title - left aligned on mobile, centered on desktop */}
+                <div className="text-left md:text-center mb-5 md:mb-14">
                     <p className="text-2xl md:text-[45px] leading-tight font-poppins font-regular">
                         {sectionTitle}
                     </p>
                 </div>
 
-                {/* Only Step 4 */}
-                <div className="flex justify-center">
+                {/* Only Step 4 - full width on mobile with left alignment */}
+                <div className="flex justify-start md:justify-center">
                     <div className="step-card relative w-full md:w-5/6 lg:w-2/3 xl:w-3/5">
                         <div className="w-full relative overflow-hidden rounded-lg">
                             {step4Image ? (
@@ -65,7 +65,7 @@ export function WigGuideSection({ collection }) {
                                     <img
                                         src={step4Image}
                                         alt="Wig guide step"
-                                        className="w-full h-auto object-contain"
+                                        className="w-full h-auto object-cover md:object-contain rounded-lg"
                                         onLoad={(e) => {
                                             console.log('Image dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight);
                                         }}
@@ -89,6 +89,30 @@ export function WigGuideSection({ collection }) {
                     </div>
                 </div>
             </div>
+
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .wig-guide-section {
+                        padding-left: 0;
+                        padding-right: 0;
+                    }
+                    
+                    .wig-guide-section .container {
+                        padding-left: 0;
+                        padding-right: 0;
+                        max-width: 100%;
+                    }
+                    
+                    .step-card {
+                        margin-left: 0;
+                        margin-right: 0;
+                    }
+                    
+                    .step-card .w-full {
+                        border-radius: 0;
+                    }
+                }
+            `}</style>
         </div>
     );
 }

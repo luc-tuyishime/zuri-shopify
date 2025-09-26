@@ -336,7 +336,7 @@ export function CustomerReviewsSection({ reviewsData }) {
             <div className="container mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
                     <div>
-                        <h2 className="text-[45px] font-poppins font-medium leading-tight mb-8">
+                        <h2 className="text-2xl md:text-[45px] leading-tight font-poppins font-regular mb-8">
                             {sectionTitle}
                         </h2>
                         <a

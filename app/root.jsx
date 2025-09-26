@@ -15,6 +15,7 @@ import {
   ScrollRestoration,
   useRouteLoaderData,
 } from '@remix-run/react';
+import { KlaviyoProvider } from '~/components/KlaviyoProvider';
 import favicon from '~/assets/66.svg';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
@@ -108,6 +109,7 @@ export async function loader(args) {
     locale: 'fr',
     country: 'FR',
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+    klaviyoPublicKey: env.KLAVIYO_PUBLIC_API_KEY,
     shop: getShopAnalytics({
       storefront,
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
@@ -216,7 +218,7 @@ export function Layout({children}) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preload" as="image" href={BG} />
-        <link rel="preload" as="video" href={VIDEO} />
+        <link rel="prefetch" href={VIDEO} />
 
         {/*<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />*/}
         <Meta />
@@ -245,7 +247,7 @@ export function Layout({children}) {
             style={{ display: 'none', visibility: 'hidden' }}
         />
       </noscript>
-
+      <KlaviyoProvider companyId={data?.klaviyoPublicKey}>
       <LanguageProvider>
         {data ? (
             <Analytics.Provider
@@ -261,6 +263,7 @@ export function Layout({children}) {
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </LanguageProvider>
+      </KlaviyoProvider>
       </body>
       </html>
   );

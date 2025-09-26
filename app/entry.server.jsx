@@ -13,55 +13,85 @@ export default async function handleRequest(
 
   // REMOVE THIS MANUAL CSP HEADER:
   // responseHeaders.set('Content-Security-Policy', "...");
-
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
     shop: {
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
-    // Add Cloudinary to defaultSrc
     defaultSrc: [
       "'self'",
       "https://cdn.shopify.com",
       "https://shopify.com",
-      "https://res.cloudinary.com",        // ✅ Add Cloudinary
-      "https://video.cloudinary.com",      // ✅ Add Cloudinary video
+      "https://res.cloudinary.com",
+      "https://video.cloudinary.com",
       "http://localhost:*"
     ],
-    // Add mediaSrc for videos
-    mediaSrc: [
+    frameSrc: [ // Add this for captcha
       "'self'",
-      "https://myzuri.com",
+      "https://geo.captcha-delivery.com",
+      "https://www.google.com",
+      "https://www.gstatic.com"
+    ],
+    scriptSrc: [
+      "'self'",
+      "'unsafe-inline'",
+      "https://static.klaviyo.com",
+      "https://www.googletagmanager.com",
+      "https://www.google-analytics.com", // Add for GA
       "https://cdn.shopify.com",
-      "https://res.cloudinary.com",        // ✅ Add Cloudinary
-      "https://video.cloudinary.com"       // ✅ Add Cloudinary video
+      "http://localhost:*"
+    ],
+    connectSrc: [
+      "'self'",
+      "https://monorail-edge.shopifysvc.com",
+      "https://myzuri.com", // Remove duplicate prefix issues
+      "https://myzurishop.myshopify.com",
+      "https://a.klaviyo.com",
+      "https://fast.a.klaviyo.com",
+      "https://static.klaviyo.com",
+      "https://static-forms.klaviyo.com",
+      "https://www.google-analytics.com", // Add for GA tracking
+      "https://analytics.google.com", // Add for GA4
+      "https://www.googletagmanager.com", // Add for GTM
+      "http://localhost:*",
+      "ws://localhost:*",
+      "ws://127.0.0.1:*",
+      "ws://*.tryhydrogen.dev:*"
     ],
     styleSrc: [
       "'self'",
       "'unsafe-inline'",
       "https://cdn.shopify.com",
       "https://fonts.googleapis.com",
+      "https://static.klaviyo.com", // Add Klaviyo styles
+      "http://localhost:*"
+    ],
+    styleSrcElem: [ // Add this new section
+      "'self'",
+      "'unsafe-inline'",
+      "https://cdn.shopify.com",
+      "https://fonts.googleapis.com",
+      "https://static.klaviyo.com", // Add Klaviyo styles
       "http://localhost:*"
     ],
     fontSrc: [
       "'self'",
       "https://fonts.gstatic.com"
     ],
-    // Add other required sources
-    connectSrc: [
-      "'self'",
-      "https://monorail-edge.shopifysvc.com",
-      "https://myzuri.com",
-      "https://myzurishop.myshopify.com",
-      "http://localhost:*",
-      "ws://localhost:*",
-      "ws://127.0.0.1:*",
-      "ws://*.tryhydrogen.dev:*"
-    ],
     imgSrc: [
       "'self'",
       "data:",
-      "https:"
+      "https:",
+      "https://www.google-analytics.com", // Add for GA tracking pixels
+      "https://www.googletagmanager.com" // Add for GTM
+    ],
+    mediaSrc: [
+      "'self'",
+      "https://myzuri.com",
+      "https://cdn.shopify.com",
+      "https://myzurishop.myshopify.com",
+      "https://res.cloudinary.com",
+      "https://video.cloudinary.com"
     ]
   });
 

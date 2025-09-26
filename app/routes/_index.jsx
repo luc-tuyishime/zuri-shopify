@@ -263,7 +263,7 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 {/* Header with scroll controls (desktop only) */}
                 <div className="flex items-center justify-between pt-8 pb-8 md:pt-14 md:pb-14">
                     <p className="text-2xl md:text-[45px] font-poppins font-regular">
-                        {t.homepage.ourBestSellers}
+                        {locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection'}
                     </p>
 
                     {/* Desktop scroll controls */}
@@ -1969,7 +1969,7 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
   }
   query BestSellersCollection($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    collection(handle: "best-sellers") {
+    collection(handle: "diamant") {
       id
       title
       handle

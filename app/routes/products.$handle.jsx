@@ -93,7 +93,7 @@ const ZoomModalWithVideo = memo(({
         swipeNavigate: '← Swipe to navigate →'
       },
       fr: {
-        tapToZoom: 'Touchez pour zoomer • Balayez gauche/droite pour naviguer',
+        tapToZoom: 'Touchez pour zoomer • Clicker gauche/droite pour naviguer',
         hoverToZoom: 'Survolez pour zoomer',
         zoomedTapExit: '2.0x • Touchez pour quitter',
         zoomedDesktop: 'Zoom 2.5x',

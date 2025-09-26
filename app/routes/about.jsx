@@ -163,6 +163,9 @@ const ABOUT_PAGE_QUERY = `#graphql
           {namespace: "custom", key: "about_banner_title_en"},
           {namespace: "custom", key: "about_banner_title_fr"},
           
+          {namespace: "custom", key: "about_banner_text_en"},
+          {namespace: "custom", key: "about_banner_text_fr"},
+          
           # About Slide 2
           {namespace: "custom", key: "about_hero_background_image_slide_2"},
           {namespace: "custom", key: "about_hero_title_slide_2_en"},
@@ -344,6 +347,73 @@ export const meta = () => {
 export const handle = {
     noLayout: true // Custom flag
 };
+
+function AboutBannerTextSection({ collection }) {
+    const [locale] = useLocale();
+
+    const getCollectionMetafield = (key, namespace = 'custom') => {
+        try {
+            if (!collection?.metafields || !Array.isArray(collection.metafields)) {
+                return null;
+            }
+
+            return collection.metafields.find(
+                metafield => metafield &&
+                    metafield.key === key &&
+                    metafield.namespace === namespace
+            );
+        } catch (error) {
+            console.warn('Error getting metafield:', error);
+            return null;
+        }
+    };
+
+    const getBannerTextContent = () => {
+        const bannerText = getCollectionMetafield(locale === 'fr' ? 'about_banner_text_fr' : 'about_banner_text_en');
+        return bannerText?.value || null;
+    };
+
+    const bannerTextContent = getBannerTextContent();
+
+    // Don't render anything if there's no text content
+    if (!bannerTextContent) {
+        return null;
+    }
+
+    // Split text into paragraphs based on line breaks or periods followed by capital letters
+    const formatTextIntoParagraphs = (text) => {
+        // Split by line breaks first
+        let paragraphs = text.split('\n').filter(p => p.trim());
+
+        // If no line breaks, try to split by sentence patterns that indicate new paragraphs
+        if (paragraphs.length === 1) {
+            // Split on periods followed by capital letters, but preserve the period
+            paragraphs = text.split(/(?<=\.)\s+(?=[A-Z])/).filter(p => p.trim());
+        }
+
+        return paragraphs;
+    };
+
+    const textParagraphs = formatTextIntoParagraphs(bannerTextContent);
+
+    return (
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+            <div className="max-w-4xl mx-auto">
+                <div className="prose prose-lg max-w-none">
+                    {textParagraphs.map((paragraph, index) => (
+                        <p
+                            key={index}
+                            className="text-gray-700 mb-6 leading-relaxed text-base sm:text-lg font-poppins"
+                            style={{ lineHeight: '1.7' }}
+                        >
+                            {paragraph.trim()}
+                        </p>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
 
 
 function getMetafieldValue(metafields, key, fallback = '') {
@@ -1984,19 +2054,19 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
         const backgroundImage = getCollectionMetafield('about_banner_background_image');
         const bannerTitle = getCollectionMetafield(locale === 'fr' ? 'about_banner_title_fr' : 'about_banner_title_en');
 
-        console.log('Collection being used:', featuredCollection?.title, featuredCollection?.handle, featuredCollection?.id);
-        console.log('All metafields:', featuredCollection?.metafields);
+        // Handle file reference metafields properly
+        let imageUrl = aboutBg; // fallback
 
-        console.log('backgroundImage metafield:', backgroundImage);
-        console.log('backgroundImage value:', backgroundImage?.value);
-
-
-
-        const finalImage = backgroundImage?.value || aboutBg;
-        console.log('Final image URL:', finalImage);
+        if (backgroundImage?.reference?.image?.url) {
+            // File reference with image
+            imageUrl = backgroundImage.reference.image.url;
+        } else if (backgroundImage?.value && typeof backgroundImage.value === 'string' && backgroundImage.value.startsWith('http')) {
+            // Direct URL string
+            imageUrl = backgroundImage.value;
+        }
 
         return {
-            backgroundImage: backgroundImage?.value || aboutBg,
+            backgroundImage: imageUrl,
             title: bannerTitle?.value || (locale === 'fr'
                     ? 'Autonomiser les femmes noires grâce à notre plateforme de technologie beauté'
                     : 'Empowering Black women through our beauty tech platform'
@@ -2242,6 +2312,8 @@ export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
                         </div>
                     </div>
                 </section>
+
+                <AboutBannerTextSection collection={data.featuredCollection} />
 
                 <BestSellersProducts
                     bestSellersCollection={data.bestSellersCollection}
