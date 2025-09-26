@@ -107,10 +107,10 @@ export default function Homepage() {
                     )}
                 </Await>
             </Suspense>
-            <div>
+            {/*<div>*/}
 
-                <EmailCapture />
-            </div>
+            {/*    <EmailCapture />*/}
+            {/*</div>*/}
         </div>
     );
 }
@@ -379,6 +379,28 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                     position: relative;
                     width: 100%;
                 }
+                
+                .mobile-grid-item button,
+.horizontal-scroll-item button {
+    font-size: 11px !important; /* Smaller font for long text */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* For mobile, allow text wrapping on very long buttons */
+@media (max-width: 480px) {
+    .mobile-grid-item button {
+        white-space: normal !important;
+        line-height: 1.2 !important;
+        height: auto !important;
+        min-height: 40px !important;
+        font-size: 10px !important;
+    }
+}
 
                 .horizontal-scroll-grid {
                     display: flex;
