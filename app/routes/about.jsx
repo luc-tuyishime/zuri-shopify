@@ -59,7 +59,7 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
   }
   query BestSellersCollection($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    collection(handle: "best-sellers") {
+    collection(handle: "diamant") {
       id
       title
       handle
@@ -2026,8 +2026,9 @@ const heroStyles = `
 // Main About Us Page Component
 export default function About({ cart, header, isLoggedIn, publicStoreDomain }) {
     const [locale] = useLocale();
-    const location = useLocation();
     const data = useLoaderData();
+
+    const location = useLocation();
 
     // Safely access metafields and featured collection with fallbacks
     const metafields = data?.shop?.metafields || [];

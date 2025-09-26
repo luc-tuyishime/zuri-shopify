@@ -1,4 +1,4 @@
-import {Await, useLoaderData, Link} from '@remix-run/react';
+import {Await, useLoaderData, Link, useLocation} from '@remix-run/react';
 import {Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {Image} from '@shopify/hydrogen';
 import {ProductItem} from '~/components/ProductItem';
@@ -132,6 +132,8 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
+    const location = useLocation();
+    const isAboutPage = location.pathname === '/about';
 
     // Check if mobile
     useEffect(() => {
@@ -263,7 +265,10 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 {/* Header with scroll controls (desktop only) */}
                 <div className="flex items-center justify-between pt-8 pb-8 md:pt-14 md:pb-14">
                     <p className="text-2xl md:text-[45px] font-poppins font-regular">
-                        {locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection'}
+                        {isAboutPage
+                            ? (locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection')
+                            : (locale === 'fr' ? 'Nos Meilleures Ventes' : 'Our Best Sellers')
+                        }
                     </p>
 
                     {/* Desktop scroll controls */}
@@ -1653,7 +1658,10 @@ export function RecommendedProducts({products}) {
     return (
         <div className="recommended-products" ref={sectionRef}>
             <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular"> {t.homepage.ourBestSellers}</p>
+                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular"> {isAboutPage
+                    ? (locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection')
+                    : (locale === 'fr' ? 'Nos Meilleures Ventes' : 'Our Best Sellers')
+                }</p>
 
                 <Suspense fallback={fallbackSkeleton}>
                     <Await resolve={products}>
@@ -1991,7 +1999,7 @@ const BEST_SELLERS_COLLECTION_QUERY = `#graphql
   }
   query BestSellersCollection($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    collection(handle: "diamant") {
+    collection(handle: "best-sellers") {
       id
       title
       handle
