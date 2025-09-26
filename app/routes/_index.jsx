@@ -266,8 +266,8 @@ export function BestSellersProducts({bestSellersCollection, fallbackProducts}) {
                 <div className="flex items-center justify-between pt-8 pb-8 md:pt-14 md:pb-14">
                     <p className="text-2xl md:text-[45px] font-poppins font-regular">
                         {isAboutPage
-                            ? (locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection')
-                            : (locale === 'fr' ? 'Nos Meilleures Ventes' : 'Our Best Sellers')
+                            ? (locale === 'fr' ? 'NOTRE COLLECTION DIAMANT' : 'OUR DIAMANT COLLECTION')
+                            : (locale === 'fr' ? 'NOS MEILLEURES VENTES' : 'OUR BEST SELLERS')
                         }
                     </p>
 
@@ -1658,9 +1658,9 @@ export function RecommendedProducts({products}) {
     return (
         <div className="recommended-products" ref={sectionRef}>
             <div className="container-fluid mx-auto px-4 md:px-14" id="best-sellers" style={{ scrollMarginTop: '80px' }}>
-                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular"> {isAboutPage
-                    ? (locale === 'fr' ? 'Notre Collection Diamant' : 'Our Diamant Collection')
-                    : (locale === 'fr' ? 'Nos Meilleures Ventes' : 'Our Best Sellers')
+                <p className="pt-8 pb-8 md:pt-14 md:pb-14 text-2xl md:text-[45px] font-poppins font-regular">  {isAboutPage
+                    ? (locale === 'fr' ? 'NOTRE COLLECTION DIAMANT' : 'OUR DIAMANT COLLECTION')
+                    : (locale === 'fr' ? 'NOS MEILLEURES VENTES' : 'OUR BEST SELLERS')
                 }</p>
 
                 <Suspense fallback={fallbackSkeleton}>
