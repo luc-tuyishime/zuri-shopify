@@ -160,9 +160,7 @@ function FooterContent({footer, footerData, locale, t}) {
     console.log('🔍 Available metafield keys:', metafields.map(m => m?.key).filter(Boolean));
   }
 
-  // Get dynamic content with fallbacks to translation system
   const dynamicContent = {
-    // Company Info
     companyDescription: getFooterMetafieldValue(
         metafields,
         locale === 'fr' ? 'company_description_fr' : 'company_description_en',

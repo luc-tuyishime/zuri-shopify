@@ -88,13 +88,10 @@ function getMetafieldValue(metafields, key, fallback = '') {
     }
 
     if (metafield?.value) {
-        console.log(`✅ Returning value for "${key}":`, metafield.value);
         return metafield.value;
     }
 
-    if (key.includes('image')) {
-        console.log(`⚠️ No image found for "${key}", using fallback:`, fallback);
-    }
+    if (key.includes('image')) {}
 
     return fallback;
 }
@@ -154,16 +151,11 @@ export function CustomerReviewsSection({ reviewsData }) {
     };
 
 
-    console.log('🔍 Found products with potential reviews:', products.length);
-
     products.forEach((product, index) => {
-        console.log(`📦 Product ${index + 1}: "${product.title}" (${product.handle})`);
-        console.log(`   Metafields count: ${product.metafields?.length || 0}`);
 
         const hasReview1Data = product.metafields?.some(m =>
             m?.key?.startsWith('review_1_')
         );
-        console.log(`   Has Review 1 data: ${hasReview1Data}`);
     });
 
     const sectionTitle = locale === 'fr'
@@ -181,8 +173,6 @@ export function CustomerReviewsSection({ reviewsData }) {
     products.forEach((product) => {
         const productMetafields = product.metafields || [];
 
-        console.log(`🔍 Checking product "${product.title}" for reviews...`);
-
         for (let i = 1; i <= 4; i++) {
             const reviewImage = getMetafieldValue(productMetafields, `review_${i}_image`);
             const reviewRating = getMetafieldValue(productMetafields, `review_${i}_rating`);
@@ -195,14 +185,6 @@ export function CustomerReviewsSection({ reviewsData }) {
             const reviewDate = getMetafieldValue(productMetafields, `review_${i}_date`);
 
             if (reviewText || reviewName || reviewRating) {
-                console.log(`✅ Found Review ${i} for "${product.title}":`, {
-                    rating: reviewRating,
-                    name: reviewName,
-                    date: reviewDate || 'No date',
-                    textEn: productMetafields.find(m => m?.key === `review_${i}_text_en`)?.value || 'No English text',
-                    textFr: productMetafields.find(m => m?.key === `review_${i}_text_fr`)?.value || 'No French text',
-                    hasImage: !!reviewImage
-                });
 
                 reviews.push({
                     id: `${product.id}-review-${i}`,
@@ -219,8 +201,6 @@ export function CustomerReviewsSection({ reviewsData }) {
             }
         }
     });
-
-    console.log('✅ Built reviews array:', reviews.length, 'reviews found');
 
 
     const sortedReviews = reviews.sort((a, b) => {
@@ -299,7 +279,7 @@ export function CustomerReviewsSection({ reviewsData }) {
 
             return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', options);
         } catch (error) {
-            console.warn('Error formatting date:', error);
+            console.warn('Error', error);
             return dateString;
         }
     };
@@ -339,12 +319,12 @@ export function CustomerReviewsSection({ reviewsData }) {
                         <h2 className="text-2xl md:text-[45px] leading-tight font-poppins font-regular mb-5">
                             {sectionTitle}
                         </h2>
-                        <a
-                            href={buttonUrl}
-                            className="inline-block border border-gray-800 text-gray-800 px-8 py-3 font-poppins font-medium hover:bg-gray-800 hover:text-white transition-colors duration-300"
-                        >
-                            {buttonText}
-                        </a>
+                        {/*<a*/}
+                        {/*    href={buttonUrl}*/}
+                        {/*    className="inline-block border border-gray-800 text-gray-800 px-8 py-3 font-poppins font-medium hover:bg-gray-800 hover:text-white transition-colors duration-300"*/}
+                        {/*>*/}
+                        {/*    {buttonText}*/}
+                        {/*</a>*/}
                     </div>
 
                     <div>
@@ -360,7 +340,7 @@ export function CustomerReviewsSection({ reviewsData }) {
                                             loading="lazy"
                                             onLoad={() => console.log(`✅ Review image loaded: ${review.image}`)}
                                             onError={(e) => {
-                                                console.error(`❌ Review image failed: ${review.image}`);
+                                                console.error(`Review image failed: ${review.image}`);
                                                 e.target.src = IMAGE;
                                             }}
                                         />
