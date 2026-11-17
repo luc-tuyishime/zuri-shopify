@@ -7,27 +7,21 @@ import {Money} from '@shopify/hydrogen';
  * }}
  */
 export function ProductPrice({price, compareAtPrice}) {
-  // Force EUR display regardless of stored currency
-  const formatAsEUR = (priceData) => {
-    if (!priceData) return null;
-    return `€${parseFloat(priceData.amount).toFixed(2)}`;
-  };
-
   return (
-      <div className="product-price">
-        {compareAtPrice ? (
-            <div className="product-price-on-sale">
-              {price ? <span>{formatAsEUR(price)}</span> : null}
-              <s>
-                <span>{formatAsEUR(compareAtPrice)}</span>
-              </s>
-            </div>
-        ) : price ? (
-            <span>{formatAsEUR(price)}</span>
-        ) : (
-            <span>&nbsp;</span>
-        )}
-      </div>
+    <div className="product-price">
+      {compareAtPrice ? (
+        <div className="product-price-on-sale">
+          {price ? <Money as="span" data={price} /> : null}
+          <s>
+            <Money as="span" data={compareAtPrice} />
+          </s>
+        </div>
+      ) : price ? (
+        <Money as="span" data={price} />
+      ) : (
+        <span>&nbsp;</span>
+      )}
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import {useLoaderData, Link, useNavigation} from '@remix-run/react';
-import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
+import {getPaginationVariables, Analytics, Money} from '@shopify/hydrogen';
 import {SearchForm} from '~/components/SearchForm';
 import { useLocale } from '~/hooks/useLocale';
 import { memo, useMemo, useCallback } from 'react';
@@ -442,9 +442,8 @@ const ProductCard = memo(({ product, expandedTerms, locale }) => {
 
           {price && (
               <p className="text-sm sm:text-base font-bold text-[#0D2936] mb-3">
-                {price.currencyCode === 'EUR' ? '€' : '$'}
-                {parseFloat(price.amount).toFixed(2)}
-              </p>
+              <Money as="span" data={price} />
+            </p>
           )}
             </div>
           <Link

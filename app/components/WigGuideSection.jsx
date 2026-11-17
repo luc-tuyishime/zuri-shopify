@@ -39,12 +39,10 @@ export function WigGuideSection({ collection }) {
             : 'How To Choose Your Perfect Wig'
     );
 
-    const step4Text = getLocalizedContent(
-        'guide_step_4_text',
-        locale === 'fr' ? 'Étape 4' : 'Step 4'
-    );
 
     const step4Image = getMetafield('guide_step_4_image')?.reference?.image?.url;
+
+    const guideDescription = getLocalizedContent('guide_description', '');
 
     return (
         <div className="wig-guide-section bg-white  md:py-16">
@@ -55,6 +53,14 @@ export function WigGuideSection({ collection }) {
                         {sectionTitle}
                     </p>
                 </div>
+
+                {guideDescription && (
+                    <div className="text-left md:text-center mb-5 md:mb-10">
+                        <p className="text-base md:text-lg font-poppins text-gray-700 max-w-2xl md:mx-auto whitespace-pre-line">
+                            {guideDescription}
+                        </p>
+                    </div>
+                )}
 
                 {/* Only Step 4 - full width on mobile with left alignment */}
                 <div className="flex justify-start md:justify-center">
