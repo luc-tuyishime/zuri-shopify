@@ -175,8 +175,10 @@ export const ProductItem = memo(function ProductItem({
     const formattedPrice = useMemo(() => {
         if (!product.priceRange?.minVariantPrice) return '';
         const { amount, currencyCode } = product.priceRange.minVariantPrice;
-        const symbol = currencyCode === 'EUR' ? '€' : '$';
-        return `${symbol}${parseFloat(amount).toFixed(2)}`;
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currencyCode,
+        }).format(parseFloat(amount));
     }, [product.priceRange]);
 
     // Check if product is featured

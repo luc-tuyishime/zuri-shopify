@@ -103,11 +103,13 @@ export async function loader(args) {
 
   const {storefront, env} = args.context;
 
+  const {language, country} = storefront.i18n;
+
   return {
     ...deferredData,
     ...criticalData,
-    locale: 'fr',
-    country: 'FR',
+    locale: language.toLowerCase(),
+    country,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
     klaviyoPublicKey: env.KLAVIYO_PUBLIC_API_KEY,
     shop: getShopAnalytics({
@@ -207,7 +209,7 @@ export function Layout({children}) {
   const data = useRouteLoaderData('root');
 
   return (
-      <html lang="en">
+      <html lang={data?.locale ?? 'fr'}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -248,7 +250,7 @@ export function Layout({children}) {
         />
       </noscript>
       <KlaviyoProvider companyId={data?.klaviyoPublicKey}>
-      <LanguageProvider>
+      <LanguageProvider initialLocale={data?.locale}>
         {data ? (
             <Analytics.Provider
                 cart={data.cart}

@@ -1,17 +1,31 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getLocale } from '~/lib/i18n';
+import { setLocale as persistLocale, reloadKeepingScroll } from '~/lib/i18n';
 
 const LanguageContext = createContext();
 
-export function LanguageProvider({ children }) {
-    const [locale, setLocaleState] = useState('fr');
+export function LanguageProvider({ children, initialLocale }) {
+    const [locale, setLocaleState] = useState(initialLocale ?? 'fr');
 
     useEffect(() => {
-        setLocaleState(getLocale());
+        try {
+            const y = sessionStorage.getItem('zuri-scroll');
+            if (y !== null) {
+                sessionStorage.removeItem('zuri-scroll');
+                // wait a moment so images and videos make the page tall again
+                setTimeout(() => window.scrollTo(0, parseInt(y, 10)), 300);
+            }
+        } catch { /* empty */ }
     }, []);
 
+    const changeLocale = (newLocale) => {
+        if (newLocale === locale) return;
+        persistLocale(newLocale);
+        setLocaleState(newLocale);
+        reloadKeepingScroll();
+    };
+
     return (
-        <LanguageContext.Provider value={{ locale, setLocale: setLocaleState }}>
+        <LanguageContext.Provider value={{ locale, setLocale: changeLocale }}>
             {children}
         </LanguageContext.Provider>
     );

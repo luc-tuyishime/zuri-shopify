@@ -88,23 +88,32 @@ export const translations = {
     }
 };
 
-export function useTranslation(locale = 'fr') {
-    return translations[locale] || translations.fr;
+
+export function useTranslation(locale = 'en') {
+    return translations[locale] || translations.en;
 }
 
-// Simplified locale functions - no URL checking
+function readLangCookie() {
+    if (typeof document === 'undefined') return null;
+    const m = document.cookie.match(/(?:^|;\s*)lang=(en|fr)/);
+    return m ? m[1] : null;
+}
+
 export function getLocale() {
-    if (typeof window !== 'undefined') {
-        const savedLocale = localStorage.getItem('zuri-locale');
-        if (savedLocale && ['fr', 'en'].includes(savedLocale)) {
-            return savedLocale;
-        }
-    }
-    return 'fr'; // Default to French
+    return readLangCookie() || 'en'; // anglais par défaut
 }
 
 export function setLocale(locale) {
     if (typeof window !== 'undefined') {
+        document.cookie = `lang=${locale}; path=/; max-age=31536000; SameSite=Lax`;
         localStorage.setItem('zuri-locale', locale);
     }
+}
+
+export function reloadKeepingScroll() {
+    if (typeof window === 'undefined') return;
+    try {
+        sessionStorage.setItem('zuri-scroll', String(window.scrollY));
+    } catch { /* empty */ }
+    window.location.reload();
 }
