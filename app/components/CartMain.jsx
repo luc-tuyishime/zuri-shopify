@@ -1,6 +1,7 @@
 import {useOptimisticCart} from '@shopify/hydrogen';
-import {Link} from '@remix-run/react';
 import {useAside} from '~/components/Aside';
+import {Link, useRouteLoaderData} from '@remix-run/react';
+import {formatMoney} from '~/lib/formatMoney';
 import { useLocale } from '~/hooks/useLocale';
 import {CartLineItem} from '~/components/CartLineItem';
 import {CartSummary} from './CartSummary';
@@ -8,6 +9,10 @@ import { useEffect, useRef, useState } from 'react';
 
 function CartSummaryGrid({cart, locale}) {
     const {close} = useAside();
+
+    const root = useRouteLoaderData('root');
+    const country = root?.country ?? 'US';
+    const money = (m) => (m?.amount ? formatMoney(m, locale, country) : '');
 
     return (
         <div className="h-full flex flex-col">
@@ -27,10 +32,7 @@ function CartSummaryGrid({cart, locale}) {
                             {locale === 'fr' ? 'Sous-total' : 'Subtotal'}
                         </span>
                         <span className="font-semibold text-gray-900">
-                            {cart?.cost?.subtotalAmount?.amount ?
-                                `€${parseFloat(cart.cost.subtotalAmount.amount).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
-                                : '€0.00'
-                            }
+                            {money(cart?.cost?.subtotalAmount)}
                         </span>
                     </div>
 
@@ -84,10 +86,7 @@ function CartSummaryGrid({cart, locale}) {
                     <div className="flex justify-between items-center text-lg md:text-xl font-bold">
                         <span>{locale === 'fr' ? 'Total' : 'Total'}</span>
                         <span>
-                            {cart?.cost?.totalAmount?.amount ?
-                                `€${parseFloat(cart.cost.totalAmount.amount).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
-                                : '€0.00'
-                            }
+                            {money(cart?.cost?.totalAmount)}
                         </span>
                     </div>
 
