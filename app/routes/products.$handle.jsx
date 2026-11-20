@@ -440,12 +440,11 @@ function getRelatedProductsFromMetafields(product) {
 export async function loader({ params, request, context }) {
   const { handle } = params;
   const { storefront, cart } = context;
+  const { language, country } = storefront.i18n;
 
   const currentCart = await cart.get();
-  if (currentCart?.buyerIdentity?.countryCode !== 'FR') {
-    await cart.updateBuyerIdentity({
-      countryCode: 'FR',
-    });
+  if (currentCart && currentCart.buyerIdentity?.countryCode !== country) {
+    await cart.updateBuyerIdentity({ countryCode: country });
   }
 
   if (!handle) {
@@ -458,15 +457,15 @@ export async function loader({ params, request, context }) {
       variables: {
         handle,
         selectedOptions: getSelectedProductOptions(request),
-        country: 'FR',
-        language: 'FR',
+        country,
+        language,
       },
     }),
     storefront.query(RELATED_PRODUCTS_QUERY, {
       variables: {
         first: 8,
-        country: 'FR',
-        language: 'FR',
+        country,
+        language,
       },
     }),
   ]);
