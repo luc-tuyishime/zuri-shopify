@@ -4,7 +4,7 @@ import { setLocale as persistLocale, reloadKeepingScroll } from '~/lib/i18n';
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children, initialLocale }) {
-    const [locale, setLocaleState] = useState(initialLocale ?? 'fr');
+    const [locale, setLocaleState] = useState(initialLocale ?? 'en');
 
     useEffect(() => {
         try {

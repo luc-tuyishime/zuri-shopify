@@ -4,7 +4,7 @@ import { getLocale, setLocale as saveLocale } from '~/lib/i18n';
 
 export function useLocale() {
     const root = useRouteLoaderData('root');
-    const [locale, setLocaleState] = useState(root?.locale ?? 'fr');
+    const [locale, setLocaleState] = useState(root?.locale ?? 'en');
 
     const setLocale = (newLocale) => {
         if (newLocale === locale) return;

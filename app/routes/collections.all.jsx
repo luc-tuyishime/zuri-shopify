@@ -34,6 +34,7 @@ export async function loader(args) {
  */
 async function loadCriticalData({ context, request }) {
   const { storefront } = context;
+  const {language, country} = storefront.i18n;
   const url = new URL(request.url);
   const searchParams = url.searchParams;
   const paginationVariables = getPaginationVariables(request, {
@@ -100,8 +101,8 @@ async function loadCriticalData({ context, request }) {
         const collectionData = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
           variables: {
             handle: collectionHandle,
-            country: 'FR',
-            language: 'FR',
+            country,
+            language,
             sortKey: 'TITLE',
             reverse: false,
             ...paginationVariables
@@ -118,8 +119,8 @@ async function loadCriticalData({ context, request }) {
             query: filteredQuery,
             sortKey: 'TITLE',
             reverse: false,
-            country: 'FR',
-            language: 'FR',
+            country,
+            language,
             ...paginationVariables
           },
         });
@@ -129,8 +130,8 @@ async function loadCriticalData({ context, request }) {
         const collectionInfo = await storefront.query(COLLECTION_WITH_PRODUCTS_QUERY, {
           variables: {
             handle: collectionHandle,
-            country: 'FR',
-            language: 'FR',
+            country,
+            language,
             first: 1
           },
         });
@@ -141,8 +142,8 @@ async function loadCriticalData({ context, request }) {
       const allCollectionProducts = await storefront.query(COLLECTION_ALL_PRODUCTS_QUERY, {
         variables: {
           handle: collectionHandle,
-          country: 'FR',
-          language: 'FR',
+          country,
+          language,
           first: 250
         },
       });
@@ -207,8 +208,8 @@ async function loadCriticalData({ context, request }) {
         variables: {
           sortKey,
           reverse,
-          country: 'FR',
-          language: 'FR',
+          country,
+          language,
           ...paginationVariables
         },
       });
@@ -219,8 +220,8 @@ async function loadCriticalData({ context, request }) {
           query,
           sortKey,
           reverse,
-          country: 'FR',
-          language: 'FR',
+          country,
+          language,
           ...paginationVariables
         },
       });
@@ -229,8 +230,8 @@ async function loadCriticalData({ context, request }) {
 
     const allProductsData = await storefront.query(ALL_PRODUCTS_FOR_FILTERS_QUERY, {
       variables: {
-        country: 'FR',
-        language: 'FR',
+        country,
+        language,
         first: 250
       },
     });
@@ -509,6 +510,13 @@ export default function Collection() {
 
   const collectionTitle = getCollectionTitle();
 
+  const guideMeta = (key) =>
+    selectedCollection?.metafields?.find((m) => m?.key === key)?.value;
+  const guideDescription =
+    locale === 'en'
+      ? guideMeta('guide_description_en') || guideMeta('guide_description')
+      : guideMeta('guide_description');
+
   const FilterSection = ({ title, filterKey, options }) => {
     if (!options || options.length === 0) {
       return null;
@@ -651,6 +659,9 @@ export default function Collection() {
             <div className="lg:col-span-3">
               {/* Mobile Header with Filter Icon */}
               <div className="flex items-center justify-between mb-6">
+
+              
+              
                 <h1 className="text-[24px] lg:text-[32px] font-medium text-gray-900 font-poppins">
                   {collectionTitle}
                 </h1>
@@ -680,6 +691,12 @@ export default function Collection() {
                   )}
                 </div>
               </div>
+
+              {guideDescription && (
+                <p className="mb-6 text-base text-gray-700 whitespace-pre-line max-w-2xl">
+                  {guideDescription}
+                </p>
+              )}
 
               <PaginatedResourceSection
                   connection={finalProductsConnection}
@@ -822,6 +839,13 @@ const COLLECTION_WITH_PRODUCTS_QUERY = `#graphql
       title
       handle
       description
+      metafields(identifiers: [
+        {namespace: "custom", key: "guide_description"},
+        {namespace: "custom", key: "guide_description_en"}
+      ]) {
+        key
+        value
+      }
       products(
         first: $first
         last: $last
