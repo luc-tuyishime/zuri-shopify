@@ -1,6 +1,6 @@
 const SUPPORTED_LANGUAGES = ['EN', 'FR'];
-const DEFAULT_LANGUAGE = 'FR';
-const DEFAULT_COUNTRY = 'GB';
+const DEFAULT_LANGUAGE = 'EN';
+const DEFAULT_COUNTRY = 'US';
 
 export function getLocaleFromRequest(request) {
   const cookie = request.headers.get('Cookie') || '';
@@ -10,9 +10,11 @@ export function getLocaleFromRequest(request) {
     ? lang
     : DEFAULT_LANGUAGE;
 
-  const country = (
-    request.headers.get('oxygen-buyer-country') || DEFAULT_COUNTRY
-  ).toUpperCase();
+    let country = (request.headers.get('oxygen-buyer-country') || DEFAULT_COUNTRY).toUpperCase();
+    if (import.meta.env?.DEV) {
+      const override = new URL(request.url).searchParams.get('country');
+      if (override) country = override.toUpperCase();
+    }
 
   return {language, country};
 }

@@ -130,6 +130,8 @@ export default function Collection() {
     const [locale] = useLocale();
     const t = useTranslation(locale);
 
+    console.log('PRICE CHECK', collection?.products?.nodes?.[0]?.priceRange?.minVariantPrice);
+
     // Filter states
     const [filters, setFilters] = useState({
         category: searchParams.get('category') || '',

@@ -103,7 +103,10 @@ export async function loader(args) {
 
   const {storefront, env} = args.context;
 
+
   const {language, country} = storefront.i18n;
+
+  console.log('LOCALE', language, country);
 
   return {
     ...deferredData,
@@ -209,7 +212,7 @@ export function Layout({children}) {
   const data = useRouteLoaderData('root');
 
   return (
-      <html lang={data?.locale ?? 'fr'}>
+      <html lang={data?.locale ?? 'en'}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -270,6 +273,8 @@ export function Layout({children}) {
       </html>
   );
 }
+
+
 
 export default function App() {
   return <Outlet />;

@@ -1,6 +1,8 @@
 import {Link} from '@remix-run/react';
 import {Image, Money, CartForm} from '@shopify/hydrogen';
 import {useVariantUrl} from '~/lib/variants';
+import {useRouteLoaderData} from '@remix-run/react';
+import {formatMoney} from '~/lib/formatMoney';
 import {useLocale} from "~/hooks/useLocale.js";
 import {memo, useCallback, useEffect, useMemo, useState} from "react";
 
@@ -41,6 +43,9 @@ export const ProductItem = memo(function ProductItem({
     const variantUrl = useVariantUrl(product.handle);
     const image = product.featuredImage;
     const [locale] = useLocale();
+
+    const root = useRouteLoaderData('root');
+    const country = root?.country ?? 'US';
 
     // Get the first available variant for add to cart
     const selectedVariant = useMemo(() => {
@@ -172,14 +177,11 @@ export const ProductItem = memo(function ProductItem({
     }, [variant]);
 
     // Memoize price calculation
+    // Memoize price calculation
     const formattedPrice = useMemo(() => {
         if (!product.priceRange?.minVariantPrice) return '';
-        const { amount, currencyCode } = product.priceRange.minVariantPrice;
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currencyCode,
-        }).format(parseFloat(amount));
-    }, [product.priceRange]);
+        return formatMoney(product.priceRange.minVariantPrice, locale, country);
+    }, [product.priceRange, locale, country]);
 
     // Check if product is featured
     const isFeatured = useMemo(() =>
